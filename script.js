@@ -235,7 +235,7 @@ let main = {
 
   methods: {
     gamesetup: function() {
-      $('.gamecell').attr('chess', 'null');
+      $('.gamecell').attr('chess', 'null').html('&nbsp;');
       for (let gamepiece in main.variables.pieces) {
         $('#' + main.variables.pieces[gamepiece].position).html(main.variables.pieces[gamepiece].img);
         $('#' + main.variables.pieces[gamepiece].position).attr('chess', gamepiece);
@@ -581,7 +581,7 @@ let main = {
       $('#' + target.id).attr('chess', selectedpiece.name);
 
       // 2. Clear old square
-      $('#' + selectedpiece.id).html('');
+      $('#' + selectedpiece.id).html('&nbsp;');
       $('#' + selectedpiece.id).attr('chess', 'null');
 
       // 3. Update internal object state
@@ -618,7 +618,7 @@ let main = {
       $('#' + target.id).attr('chess', selectedpiece);
 
       // old cell
-      $('#' + main.variables.selectedpiece).html('');
+      $('#' + main.variables.selectedpiece).html('&nbsp;');
       $('#' + main.variables.selectedpiece).attr('chess', 'null');
 
       pieceObj.position = target.id;
