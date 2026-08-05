@@ -667,6 +667,10 @@ let main = {
 $(document).ready(function() {
   main.methods.gamesetup();
 
+  $('#reset-btn').click(function() {
+  location.reload();
+  });
+
   $('.gamecell').click(function(e) {
     var selectedpiece = {
       name: '',
