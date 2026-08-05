@@ -21,6 +21,54 @@ div * {
   margin-top: 20px;
 }
 
+/* Pawn Promotion Modal Styling */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.modal-content h3 {
+  margin-bottom: 15px;
+  font-size: 18px;
+}
+
+#promotion-options {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+}
+
+.promo-choice {
+  font-size: 36pt;
+  cursor: pointer;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 5px 15px;
+  background: #f9f9f9;
+  transition: transform 0.2s, background-color 0.2s;
+}
+
+.promo-choice:hover {
+  transform: scale(1.1);
+  background: #e2e2e2;
+}
+
 .captured-panel {
   width: 120px;
   min-height: 200px;
