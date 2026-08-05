@@ -597,7 +597,7 @@ let main = {
         // White piece was captured -> Append to Black's captured panel
         $('#captured-white .captured-pieces-list').append('<span>' + capturedPieceObj.img + '</span>');
       }
-    }
+    },
 
     move: function (target) {
       let selectedpiece = $('#' + main.variables.selectedpiece).attr('chess');
