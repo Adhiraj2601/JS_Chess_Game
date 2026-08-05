@@ -573,33 +573,31 @@ let main = {
         id: main.variables.selectedpiece
       };
 
-      let pieceObj = main.variables.pieces[selectedpiece.name];
-      let targetRank = target.id.split('_')[1];
+      let capturedPieceName = target.name;
+      let capturedPieceObj = main.variables.pieces[capturedPieceName];
 
-      // Check for Pawn Promotion during capture
-      if (pieceObj.type === 'w_pawn' && targetRank === '8') {
-        pieceObj.type = 'w_queen';
-        pieceObj.img = '&#9813;';
-      } else if (pieceObj.type === 'b_pawn' && targetRank === '1') {
-        pieceObj.type = 'b_queen';
-        pieceObj.img = '&#9819;';
-      }
-
-      // new cell
-      $('#' + target.id).html(pieceObj.img);
+      // 1. Render piece movement on board
+      $('#' + target.id).html(main.variables.pieces[selectedpiece.name].img);
       $('#' + target.id).attr('chess', selectedpiece.name);
 
-      // old cell
+      // 2. Clear old square
       $('#' + selectedpiece.id).html('');
       $('#' + selectedpiece.id).attr('chess', 'null');
 
-      // moved piece
-      pieceObj.position = target.id;
-      pieceObj.moved = true;
+      // 3. Update internal object state
+      main.variables.pieces[selectedpiece.name].position = target.id;
+      main.variables.pieces[selectedpiece.name].moved = true;
+      capturedPieceObj.captured = true;
 
-      // captured piece
-      main.variables.pieces[target.name].captured = true;
-    },
+      // 4. Display captured piece on side panel
+      if (capturedPieceName.startsWith('b_')) {
+        // Black piece was captured -> Append to White's captured panel
+        $('#captured-black .captured-pieces-list').append('<span>' + capturedPieceObj.img + '</span>');
+      } else if (capturedPieceName.startsWith('w_')) {
+        // White piece was captured -> Append to Black's captured panel
+        $('#captured-white .captured-pieces-list').append('<span>' + capturedPieceObj.img + '</span>');
+      }
+    }
 
     move: function (target) {
       let selectedpiece = $('#' + main.variables.selectedpiece).attr('chess');
