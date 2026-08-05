@@ -4,39 +4,39 @@ let main = {
     selectedpiece: '',
     highlighted: [],
     pieces: {
-      w_king: { position: 'e_1', img: '&#9812;', type: 'w_king', moved: false },
-      w_queen: { position: 'd_1', img: '&#9813;', type: 'w_queen', moved: false },
-      w_rook1: { position: 'a_1', img: '&#9814;', type: 'w_rook', moved: false },
-      w_rook2: { position: 'h_1', img: '&#9814;', type: 'w_rook', moved: false },
-      w_bishop1: { position: 'c_1', img: '&#9815;', type: 'w_bishop', moved: false },
-      w_bishop2: { position: 'f_1', img: '&#9815;', type: 'w_bishop', moved: false },
-      w_knight1: { position: 'b_1', img: '&#9816;', type: 'w_knight', moved: false },
-      w_knight2: { position: 'g_1', img: '&#9816;', type: 'w_knight', moved: false },
-      w_pawn1: { position: 'a_2', img: '&#9817;', type: 'w_pawn', moved: false },
-      w_pawn2: { position: 'b_2', img: '&#9817;', type: 'w_pawn', moved: false },
-      w_pawn3: { position: 'c_2', img: '&#9817;', type: 'w_pawn', moved: false },
-      w_pawn4: { position: 'd_2', img: '&#9817;', type: 'w_pawn', moved: false },
-      w_pawn5: { position: 'e_2', img: '&#9817;', type: 'w_pawn', moved: false },
-      w_pawn6: { position: 'f_2', img: '&#9817;', type: 'w_pawn', moved: false },
-      w_pawn7: { position: 'g_2', img: '&#9817;', type: 'w_pawn', moved: false },
-      w_pawn8: { position: 'h_2', img: '&#9817;', type: 'w_pawn', moved: false },
+      w_king: { position: '5_1', img: '&#9812;', type: 'w_king', moved: false },
+      w_queen: { position: '4_1', img: '&#9813;', type: 'w_queen', moved: false },
+      w_rook1: { position: '1_1', img: '&#9814;', type: 'w_rook', moved: false },
+      w_rook2: { position: '8_1', img: '&#9814;', type: 'w_rook', moved: false },
+      w_bishop1: { position: '3_1', img: '&#9815;', type: 'w_bishop', moved: false },
+      w_bishop2: { position: '6_1', img: '&#9815;', type: 'w_bishop', moved: false },
+      w_knight1: { position: '2_1', img: '&#9816;', type: 'w_knight', moved: false },
+      w_knight2: { position: '7_1', img: '&#9816;', type: 'w_knight', moved: false },
+      w_pawn1: { position: '1_2', img: '&#9817;', type: 'w_pawn', moved: false },
+      w_pawn2: { position: '2_2', img: '&#9817;', type: 'w_pawn', moved: false },
+      w_pawn3: { position: '3_2', img: '&#9817;', type: 'w_pawn', moved: false },
+      w_pawn4: { position: '4_2', img: '&#9817;', type: 'w_pawn', moved: false },
+      w_pawn5: { position: '5_2', img: '&#9817;', type: 'w_pawn', moved: false },
+      w_pawn6: { position: '6_2', img: '&#9817;', type: 'w_pawn', moved: false },
+      w_pawn7: { position: '7_2', img: '&#9817;', type: 'w_pawn', moved: false },
+      w_pawn8: { position: '8_2', img: '&#9817;', type: 'w_pawn', moved: false },
 
-      b_king: { position: 'e_8', img: '&#9818;', type: 'b_king', moved: false },
-      b_queen: { position: 'd_8', img: '&#9819;', type: 'b_queen', moved: false },
-      b_rook1: { position: 'a_8', img: '&#9820;', type: 'b_rook', moved: false },
-      b_rook2: { position: 'h_8', img: '&#9820;', type: 'b_rook', moved: false },
-      b_bishop1: { position: 'c_8', img: '&#9821;', type: 'b_bishop', moved: false },
-      b_bishop2: { position: 'f_8', img: '&#9821;', type: 'b_bishop', moved: false },
-      b_knight1: { position: 'b_8', img: '&#9822;', type: 'b_knight', moved: false },
-      b_knight2: { position: 'g_8', img: '&#9822;', type: 'b_knight', moved: false },
-      b_pawn1: { position: 'a_7', img: '&#9823;', type: 'b_pawn', moved: false },
-      b_pawn2: { position: 'b_7', img: '&#9823;', type: 'b_pawn', moved: false },
-      b_pawn3: { position: 'c_7', img: '&#9823;', type: 'b_pawn', moved: false },
-      b_pawn4: { position: 'd_7', img: '&#9823;', type: 'b_pawn', moved: false },
-      b_pawn5: { position: 'e_7', img: '&#9823;', type: 'b_pawn', moved: false },
-      b_pawn6: { position: 'f_7', img: '&#9823;', type: 'b_pawn', moved: false },
-      b_pawn7: { position: 'g_7', img: '&#9823;', type: 'b_pawn', moved: false },
-      b_pawn8: { position: 'h_7', img: '&#9823;', type: 'b_pawn', moved: false }
+      b_king: { position: '5_8', img: '&#9818;', type: 'b_king', moved: false },
+      b_queen: { position: '4_8', img: '&#9819;', type: 'b_queen', moved: false },
+      b_rook1: { position: '1_8', img: '&#9820;', type: 'b_rook', moved: false },
+      b_rook2: { position: '8_8', img: '&#9820;', type: 'b_rook', moved: false },
+      b_bishop1: { position: '3_8', img: '&#9821;', type: 'b_bishop', moved: false },
+      b_bishop2: { position: '6_8', img: '&#9821;', type: 'b_bishop', moved: false },
+      b_knight1: { position: '2_8', img: '&#9822;', type: 'b_knight', moved: false },
+      b_knight2: { position: '7_8', img: '&#9822;', type: 'b_knight', moved: false },
+      b_pawn1: { position: '1_7', img: '&#9823;', type: 'b_pawn', moved: false },
+      b_pawn2: { position: '2_7', img: '&#9823;', type: 'b_pawn', moved: false },
+      b_pawn3: { position: '3_7', img: '&#9823;', type: 'b_pawn', moved: false },
+      b_pawn4: { position: '4_7', img: '&#9823;', type: 'b_pawn', moved: false },
+      b_pawn5: { position: '5_7', img: '&#9823;', type: 'b_pawn', moved: false },
+      b_pawn6: { position: '6_7', img: '&#9823;', type: 'b_pawn', moved: false },
+      b_pawn7: { position: '7_7', img: '&#9823;', type: 'b_pawn', moved: false },
+      b_pawn8: { position: '8_7', img: '&#9823;', type: 'b_pawn', moved: false }
     }
   },
 
@@ -205,7 +205,7 @@ $(document).ready(function () {
     }
   });
 
-  $('#reset-game').click(function () {
+  $('#reset-btn').click(function () {
     location.reload();
   });
 });
