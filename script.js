@@ -690,7 +690,7 @@ let main = {
           $('#turn').removeClass('turnhighlight');
         }, 1500);
 
-      } else if (main.variables.turn = 'b'){
+      } else if (main.variables.turn == 'b'){
         main.variables.turn = 'w';
 
         // toggle highlighted coordinates
