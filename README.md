@@ -36,11 +36,13 @@ The project demonstrates how complex board game logic can be implemented using v
 
 - Complete interactive chess board
 - Two-player local gameplay
-- Turn-based game management
-- Legal move validation
-- Highlight available moves
-- Piece capturing
-- Standard chess starting position
+- Turn-based game management with check indicators
+- Legal move validation & piece safety
+- Check, Checkmate, and Stalemate detection
+- Special moves: Castling (Kingside & Queenside), En Passant, and Pawn Promotion (Queen, Rook, Bishop, Knight)
+- Highlight available moves and selected pieces
+- Captured pieces panel for both White and Black
+- Clean in-place Game Reset functionality
 - Responsive board styling
 - Instant move updates
 
@@ -52,7 +54,7 @@ The project demonstrates how complex board game logic can be implemented using v
 |------------|---------|
 | HTML5 | Board Structure |
 | CSS3 | Styling & Layout |
-| JavaScript (ES6) | Game Logic |
+| JavaScript (ES6) | Game Engine & Rule Validation |
 | jQuery | DOM Manipulation |
 
 ---
@@ -70,25 +72,28 @@ Each chess piece stores information including:
 
 The engine handles:
 
-- Valid movement generation
-- Piece selection
-- Capturing
+- Valid legal movement generation
+- King safety & absolute pin prevention
+- Check, Checkmate & Stalemate detection
+- Castling path & safety validation
+- En Passant tracking and execution
+- Interactive Pawn Promotion modal
+- Piece selection & visual highlights
+- Piece capturing and captured piece display
 - Turn switching
-- Board rendering
-- Highlight management
+- Board rendering and state reset
 
 ---
 
 # 📂 Project Structure
 
 ```
-javascript-chess-game/
+JS_Chess_Game/
 │
-├── source code/
-│   ├── index.html
-│   ├── style.css
-│   └── script.js
-│
+├── index.html
+├── style.css
+├── script.js
+├── test_runner.js
 └── README.md
 ```
 
@@ -99,13 +104,13 @@ javascript-chess-game/
 Clone the repository
 
 ```bash
-git clone https://github.com/yourusername/javascript-chess-game.git
+git clone https://github.com/Adhiraj2601/JS_Chess_Game.git
 ```
 
 Navigate into the project
 
 ```bash
-cd javascript-chess-game
+cd JS_Chess_Game
 ```
 
 Open the project
@@ -116,36 +121,33 @@ Simply open:
 index.html
 ```
 
-in your browser.
+in your browser, or run automated tests with:
 
-No installation required.
+```bash
+node test_runner.js
+```
 
 ---
 
 # 🎮 How to Play
 
-1. Click a chess piece.
-2. Valid moves will be highlighted.
-3. Click one of the highlighted squares.
-4. The selected piece moves.
-5. Turn automatically switches to the opponent.
+1. Click a chess piece of the active player's turn.
+2. Legal moves will be highlighted in green.
+3. Click one of the highlighted squares to move or capture.
+4. If castling or en passant is available, selecting the square will execute the special move.
+5. If a pawn reaches the opposite back rank, choose your promotion piece from the dialog.
+6. Turn automatically switches to the opponent with check/checkmate alerts.
+7. Click **Reset Game** anytime to start a fresh match.
 
 ---
 
 # 💡 Future Improvements
 
-- Check detection
-- Checkmate detection
-- Pawn promotion
-- Castling
-- En passant
-- AI opponent
-- Undo/Redo
-- Move history
-- Chess timer
-- Sound effects
-- Mobile optimization
-- Dark mode
+- AI opponent / Bot integration
+- Move history (PGN notation)
+- Chess clock / timer
+- Move sound effects
+- Dark/Light board themes
 
 ---
 
