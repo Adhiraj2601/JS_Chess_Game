@@ -378,27 +378,131 @@ div * {
   animation-timing-function: ease-in-out;
   animation-iteration-count: infinite; }
 
-#reset-btn {
-  display: block;
-  margin: 12px auto 0;
-  padding: 8px 18px;
-  font-size: 14px;
-  font-weight: bold;
-  cursor: pointer;
-  background: #222;
-  color: #fff;
-  border: 1px solid #444;
-  border-radius: 6px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-  transition: background-color 0.2s, transform 0.1s;
+#btn-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 10px;
+  width: 100%;
 }
 
-#reset-btn:hover {
+.action-btn {
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  background: #2b2b2b;
+  color: #f1f1f1;
+  border: 1px solid #444;
+  border-radius: 5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+.action-btn:hover:not(:disabled) {
   background: #444;
+  color: #fff;
   transform: translateY(-1px);
 }
 
-#reset-btn:active {
+.action-btn:active:not(:disabled) {
   transform: translateY(1px);
 }
+
+.action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+#autoflip-container {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #444;
+  user-select: none;
+}
+
+#autoflip-container label {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.history-panel {
+  width: 180px;
+  min-height: 250px;
+  max-height: 520px;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 10px;
+  background: #f9f9f9;
+  display: flex;
+  flex-direction: column;
+}
+
+.history-panel h3 {
+  font-size: 14px;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+#move-history-list {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 420px;
+  border: 1px solid #e0e0e0;
+  background: #fff;
+  border-radius: 4px;
+  padding: 4px;
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-family: monospace;
+}
+
+.history-table tr {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.history-table td {
+  padding: 3px 4px;
+}
+
+.hist-num {
+  color: #888;
+  width: 28px;
+  text-align: right;
+}
+
+.hist-san {
+  font-weight: 500;
+  color: #222;
+  cursor: default;
+}
+
+.active-move {
+  background-color: #d1ecf1;
+  color: #0c5460;
+  font-weight: bold;
+  border-radius: 3px;
+}
+
+.pgn-actions {
+  margin-top: 8px;
+  text-align: center;
+}
+
+.last-move-from {
+  background: rgba(255, 235, 59, 0.45) !important;
+}
+
+.last-move-to {
+  background: rgba(255, 214, 0, 0.7) !important;
+}
+
 
