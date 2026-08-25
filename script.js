@@ -4,61 +4,79 @@ let main = {
     selectedpiece: '',
     highlighted: [],
     gameOver: false,
-    // NOTE: positions use "col_row" where col is a NUMBER 1-8 (matching the
-    // board's actual cell ids, e.g. id="5_1"). The original file used chess
-    // letters here ("e_1") which never matched any element on the board,
-    // so no pieces were ever placed.
-    pieces: {
-      w_king:    { position: '5_1', img: '&#9812;', type: 'w_king',   moved: false },
-      w_queen:   { position: '4_1', img: '&#9813;', type: 'w_queen',  moved: false },
-      w_rook1:   { position: '1_1', img: '&#9814;', type: 'w_rook',   moved: false },
-      w_rook2:   { position: '8_1', img: '&#9814;', type: 'w_rook',   moved: false },
-      w_bishop1: { position: '3_1', img: '&#9815;', type: 'w_bishop', moved: false },
-      w_bishop2: { position: '6_1', img: '&#9815;', type: 'w_bishop', moved: false },
-      w_knight1: { position: '2_1', img: '&#9816;', type: 'w_knight', moved: false },
-      w_knight2: { position: '7_1', img: '&#9816;', type: 'w_knight', moved: false },
-      w_pawn1:   { position: '1_2', img: '&#9817;', type: 'w_pawn',   moved: false },
-      w_pawn2:   { position: '2_2', img: '&#9817;', type: 'w_pawn',   moved: false },
-      w_pawn3:   { position: '3_2', img: '&#9817;', type: 'w_pawn',   moved: false },
-      w_pawn4:   { position: '4_2', img: '&#9817;', type: 'w_pawn',   moved: false },
-      w_pawn5:   { position: '5_2', img: '&#9817;', type: 'w_pawn',   moved: false },
-      w_pawn6:   { position: '6_2', img: '&#9817;', type: 'w_pawn',   moved: false },
-      w_pawn7:   { position: '7_2', img: '&#9817;', type: 'w_pawn',   moved: false },
-      w_pawn8:   { position: '8_2', img: '&#9817;', type: 'w_pawn',   moved: false },
-
-      b_king:    { position: '5_8', img: '&#9818;', type: 'b_king',   moved: false },
-      b_queen:   { position: '4_8', img: '&#9819;', type: 'b_queen',  moved: false },
-      b_rook1:   { position: '1_8', img: '&#9820;', type: 'b_rook',   moved: false },
-      b_rook2:   { position: '8_8', img: '&#9820;', type: 'b_rook',   moved: false },
-      b_bishop1: { position: '3_8', img: '&#9821;', type: 'b_bishop', moved: false },
-      b_bishop2: { position: '6_8', img: '&#9821;', type: 'b_bishop', moved: false },
-      b_knight1: { position: '2_8', img: '&#9822;', type: 'b_knight', moved: false },
-      b_knight2: { position: '7_8', img: '&#9822;', type: 'b_knight', moved: false },
-      b_pawn1:   { position: '1_7', img: '&#9823;', type: 'b_pawn',   moved: false },
-      b_pawn2:   { position: '2_7', img: '&#9823;', type: 'b_pawn',   moved: false },
-      b_pawn3:   { position: '3_7', img: '&#9823;', type: 'b_pawn',   moved: false },
-      b_pawn4:   { position: '4_7', img: '&#9823;', type: 'b_pawn',   moved: false },
-      b_pawn5:   { position: '5_7', img: '&#9823;', type: 'b_pawn',   moved: false },
-      b_pawn6:   { position: '6_7', img: '&#9823;', type: 'b_pawn',   moved: false },
-      b_pawn7:   { position: '7_7', img: '&#9823;', type: 'b_pawn',   moved: false },
-      b_pawn8:   { position: '8_7', img: '&#9823;', type: 'b_pawn',   moved: false }
-    }
+    isPromoting: false,
+    enPassantTarget: null, // { cell: 'col_row', pawnCell: 'col_row', col: number, color: 'w'|'b' }
+    pieces: {}
   },
 
   methods: {
+    getInitialPieces: function () {
+      return {
+        w_king:    { position: '5_1', img: '&#9812;', type: 'w_king',   moved: false, captured: false },
+        w_queen:   { position: '4_1', img: '&#9813;', type: 'w_queen',  moved: false, captured: false },
+        w_rook1:   { position: '1_1', img: '&#9814;', type: 'w_rook',   moved: false, captured: false },
+        w_rook2:   { position: '8_1', img: '&#9814;', type: 'w_rook',   moved: false, captured: false },
+        w_bishop1: { position: '3_1', img: '&#9815;', type: 'w_bishop', moved: false, captured: false },
+        w_bishop2: { position: '6_1', img: '&#9815;', type: 'w_bishop', moved: false, captured: false },
+        w_knight1: { position: '2_1', img: '&#9816;', type: 'w_knight', moved: false, captured: false },
+        w_knight2: { position: '7_1', img: '&#9816;', type: 'w_knight', moved: false, captured: false },
+        w_pawn1:   { position: '1_2', img: '&#9817;', type: 'w_pawn',   moved: false, captured: false },
+        w_pawn2:   { position: '2_2', img: '&#9817;', type: 'w_pawn',   moved: false, captured: false },
+        w_pawn3:   { position: '3_2', img: '&#9817;', type: 'w_pawn',   moved: false, captured: false },
+        w_pawn4:   { position: '4_2', img: '&#9817;', type: 'w_pawn',   moved: false, captured: false },
+        w_pawn5:   { position: '5_2', img: '&#9817;', type: 'w_pawn',   moved: false, captured: false },
+        w_pawn6:   { position: '6_2', img: '&#9817;', type: 'w_pawn',   moved: false, captured: false },
+        w_pawn7:   { position: '7_2', img: '&#9817;', type: 'w_pawn',   moved: false, captured: false },
+        w_pawn8:   { position: '8_2', img: '&#9817;', type: 'w_pawn',   moved: false, captured: false },
+
+        b_king:    { position: '5_8', img: '&#9818;', type: 'b_king',   moved: false, captured: false },
+        b_queen:   { position: '4_8', img: '&#9819;', type: 'b_queen',  moved: false, captured: false },
+        b_rook1:   { position: '1_8', img: '&#9820;', type: 'b_rook',   moved: false, captured: false },
+        b_rook2:   { position: '8_8', img: '&#9820;', type: 'b_rook',   moved: false, captured: false },
+        b_bishop1: { position: '3_8', img: '&#9821;', type: 'b_bishop', moved: false, captured: false },
+        b_bishop2: { position: '6_8', img: '&#9821;', type: 'b_bishop', moved: false, captured: false },
+        b_knight1: { position: '2_8', img: '&#9822;', type: 'b_knight', moved: false, captured: false },
+        b_knight2: { position: '7_8', img: '&#9822;', type: 'b_knight', moved: false, captured: false },
+        b_pawn1:   { position: '1_7', img: '&#9823;', type: 'b_pawn',   moved: false, captured: false },
+        b_pawn2:   { position: '2_7', img: '&#9823;', type: 'b_pawn',   moved: false, captured: false },
+        b_pawn3:   { position: '3_7', img: '&#9823;', type: 'b_pawn',   moved: false, captured: false },
+        b_pawn4:   { position: '4_7', img: '&#9823;', type: 'b_pawn',   moved: false, captured: false },
+        b_pawn5:   { position: '5_7', img: '&#9823;', type: 'b_pawn',   moved: false, captured: false },
+        b_pawn6:   { position: '6_7', img: '&#9823;', type: 'b_pawn',   moved: false, captured: false },
+        b_pawn7:   { position: '7_7', img: '&#9823;', type: 'b_pawn',   moved: false, captured: false },
+        b_pawn8:   { position: '8_7', img: '&#9823;', type: 'b_pawn',   moved: false, captured: false }
+      };
+    },
+
     gamesetup: function () {
       $('.gamecell').attr('chess', 'null').html('&nbsp;');
       for (let gamepiece in main.variables.pieces) {
-        $('#' + main.variables.pieces[gamepiece].position).html(main.variables.pieces[gamepiece].img);
-        $('#' + main.variables.pieces[gamepiece].position).attr('chess', gamepiece);
+        let p = main.variables.pieces[gamepiece];
+        if (!p.captured && p.position) {
+          $('#' + p.position).html(p.img);
+          $('#' + p.position).attr('chess', gamepiece);
+        }
       }
     },
 
-    // ---------- small helpers ----------
-    pieceColor: function (key) { return key.charAt(0); },
-    pieceTypeOf: function (key) { return main.variables.pieces[key].type.split('_')[1]; },
-    inBounds: function (col, row) { return col >= 1 && col <= 8 && row >= 1 && row <= 8; },
-    cellId: function (col, row) { return col + '_' + row; },
+    // ---------- helper functions ----------
+    pieceColor: function (key) {
+      return key ? key.charAt(0) : null;
+    },
+
+    pieceTypeOf: function (key) {
+      if (!key || !main.variables.pieces[key]) return null;
+      return main.variables.pieces[key].type.split('_')[1];
+    },
+
+    inBounds: function (col, row) {
+      return col >= 1 && col <= 8 && row >= 1 && row <= 8;
+    },
+
+    cellId: function (col, row) {
+      return col + '_' + row;
+    },
+
     parseCell: function (id) {
       let p = id.split('_');
       return { col: parseInt(p[0], 10), row: parseInt(p[1], 10) };
@@ -82,8 +100,7 @@ let main = {
       return null;
     },
 
-    // Attack squares for a piece sitting at fromCellId, purely board-driven
-    // (used for check detection, including on simulated boards).
+    // Attack squares for a piece sitting at fromCellId on the specified board
     getAttackSquaresFrom: function (pieceKey, fromCellId, board) {
       let color = main.methods.pieceColor(pieceKey);
       let type = main.methods.pieceTypeOf(pieceKey);
@@ -118,7 +135,7 @@ let main = {
           while (main.methods.inBounds(c, r)) {
             let id = main.methods.cellId(c, r);
             attacks.push(id);
-            if (board[id]) break; // blocked - this is the last square attacked in this direction
+            if (board[id]) break; // ray blocked by piece
             c += dc; r += dr;
           }
         });
@@ -137,10 +154,11 @@ let main = {
       return false;
     },
 
-    // Pseudo-legal moves for a piece on the REAL (current) board, ignoring
-    // whether the move would leave the mover's own king in check.
+    // Pseudo-legal moves for a piece on the board
     getPseudoMoves: function (pieceKey, board) {
       let obj = main.variables.pieces[pieceKey];
+      if (!obj || obj.captured || !obj.position) return [];
+
       let color = main.methods.pieceColor(pieceKey);
       let type = main.methods.pieceTypeOf(pieceKey);
       let { col, row } = main.methods.parseCell(obj.position);
@@ -150,26 +168,47 @@ let main = {
         let dir = color === 'w' ? 1 : -1;
         let startRow = color === 'w' ? 2 : 7;
 
+        // Forward 1 square
         let oneStep = main.methods.cellId(col, row + dir);
         if (main.methods.inBounds(col, row + dir) && !board[oneStep]) {
           moves.push(oneStep);
+          // Forward 2 squares from initial rank
           let twoStep = main.methods.cellId(col, row + 2 * dir);
-          if (row === startRow && !board[twoStep]) moves.push(twoStep);
+          if (row === startRow && !board[twoStep]) {
+            moves.push(twoStep);
+          }
         }
+
+        // Standard diagonal captures
         [[col - 1, row + dir], [col + 1, row + dir]].forEach(([c, r]) => {
           if (main.methods.inBounds(c, r)) {
             let id = main.methods.cellId(c, r);
-            if (board[id] && main.methods.pieceColor(board[id]) !== color) moves.push(id);
+            if (board[id] && main.methods.pieceColor(board[id]) !== color) {
+              moves.push(id);
+            }
           }
         });
-        // NOTE: en passant is not implemented.
+
+        // En passant capture
+        if (main.variables.enPassantTarget && main.variables.enPassantTarget.color !== color) {
+          let ep = main.variables.enPassantTarget;
+          let epRow = color === 'w' ? 5 : 4;
+          if (row === epRow && (col - 1 === ep.col || col + 1 === ep.col)) {
+            let epDest = main.methods.cellId(ep.col, row + dir);
+            if (epDest === ep.cell) {
+              moves.push(epDest + '_ep');
+            }
+          }
+        }
       } else if (type === 'knight') {
         let deltas = [[1, 2], [2, 1], [-1, 2], [-2, 1], [1, -2], [2, -1], [-1, -2], [-2, -1]];
         deltas.forEach(([dc, dr]) => {
           let c = col + dc, r = row + dr;
           if (main.methods.inBounds(c, r)) {
             let id = main.methods.cellId(c, r);
-            if (!board[id] || main.methods.pieceColor(board[id]) !== color) moves.push(id);
+            if (!board[id] || main.methods.pieceColor(board[id]) !== color) {
+              moves.push(id);
+            }
           }
         });
       } else if (type === 'king') {
@@ -179,30 +218,40 @@ let main = {
             let c = col + dc, r = row + dr;
             if (main.methods.inBounds(c, r)) {
               let id = main.methods.cellId(c, r);
-              if (!board[id] || main.methods.pieceColor(board[id]) !== color) moves.push(id);
+              if (!board[id] || main.methods.pieceColor(board[id]) !== color) {
+                moves.push(id);
+              }
             }
           }
         }
+
         // Castling
-        if (!obj.moved) {
+        if (!obj.moved && !obj.captured) {
           let oppColor = color === 'w' ? 'b' : 'w';
           let rank = color === 'w' ? 1 : 8;
-          let startCell = main.methods.cellId(5, rank);
-          let notCurrentlyInCheck = !main.methods.isSquareAttacked(startCell, oppColor, board);
+          let kingStart = main.methods.cellId(5, rank);
 
-          if (notCurrentlyInCheck) {
-            let rookKS = main.variables.pieces[color + '_rook2'];
-            if (rookKS && !rookKS.moved) {
-              let f = main.methods.cellId(6, rank), g = main.methods.cellId(7, rank);
+          if (board[kingStart] === pieceKey && !main.methods.isSquareAttacked(kingStart, oppColor, board)) {
+            // Kingside Castle
+            let rookKSKey = color + '_rook2';
+            let rookKS = main.variables.pieces[rookKSKey];
+            if (rookKS && !rookKS.moved && !rookKS.captured && board[main.methods.cellId(8, rank)] === rookKSKey) {
+              let f = main.methods.cellId(6, rank);
+              let g = main.methods.cellId(7, rank);
               if (!board[f] && !board[g] &&
                   !main.methods.isSquareAttacked(f, oppColor, board) &&
                   !main.methods.isSquareAttacked(g, oppColor, board)) {
                 moves.push(g + '_castleKS');
               }
             }
-            let rookQS = main.variables.pieces[color + '_rook1'];
-            if (rookQS && !rookQS.moved) {
-              let d = main.methods.cellId(4, rank), c = main.methods.cellId(3, rank), b = main.methods.cellId(2, rank);
+
+            // Queenside Castle
+            let rookQSKey = color + '_rook1';
+            let rookQS = main.variables.pieces[rookQSKey];
+            if (rookQS && !rookQS.moved && !rookQS.captured && board[main.methods.cellId(1, rank)] === rookQSKey) {
+              let d = main.methods.cellId(4, rank);
+              let c = main.methods.cellId(3, rank);
+              let b = main.methods.cellId(2, rank);
               if (!board[d] && !board[c] && !board[b] &&
                   !main.methods.isSquareAttacked(d, oppColor, board) &&
                   !main.methods.isSquareAttacked(c, oppColor, board)) {
@@ -232,16 +281,34 @@ let main = {
       return moves;
     },
 
-    simulateMove: function (board, pieceKey, targetId) {
+    simulateMove: function (board, pieceKey, moveToken) {
       let newBoard = Object.assign({}, board);
       let obj = main.variables.pieces[pieceKey];
+      let targetId = moveToken;
+
+      if (moveToken.indexOf('_castle') !== -1) {
+        targetId = moveToken.split('_castle')[0];
+        let color = main.methods.pieceColor(pieceKey);
+        let rank = color === 'w' ? 1 : 8;
+        if (moveToken.indexOf('_castleKS') !== -1) {
+          newBoard[main.methods.cellId(8, rank)] = null;
+          newBoard[main.methods.cellId(6, rank)] = color + '_rook2';
+        } else if (moveToken.indexOf('_castleQS') !== -1) {
+          newBoard[main.methods.cellId(1, rank)] = null;
+          newBoard[main.methods.cellId(4, rank)] = color + '_rook1';
+        }
+      } else if (moveToken.indexOf('_ep') !== -1) {
+        targetId = moveToken.split('_ep')[0];
+        if (main.variables.enPassantTarget) {
+          newBoard[main.variables.enPassantTarget.pawnCell] = null;
+        }
+      }
+
       newBoard[obj.position] = null;
       newBoard[targetId] = pieceKey;
       return newBoard;
     },
 
-    // Full legal moves: pseudo-legal, filtered to exclude any move that
-    // would leave the mover's own king in check.
     getLegalMoves: function (pieceKey) {
       let board = main.methods.getBoard();
       let color = main.methods.pieceColor(pieceKey);
@@ -249,11 +316,12 @@ let main = {
       let legal = [];
 
       pseudo.forEach(moveToken => {
-        let targetId = moveToken.indexOf('_castle') !== -1 ? moveToken.split('_castle')[0] : moveToken;
-        let simulated = main.methods.simulateMove(board, pieceKey, targetId);
-        let kingCell = (main.methods.pieceTypeOf(pieceKey) === 'king') ? targetId : main.methods.findKingCell(color, simulated);
+        let simulated = main.methods.simulateMove(board, pieceKey, moveToken);
+        let kingCell = main.methods.findKingCell(color, simulated);
         let oppColor = color === 'w' ? 'b' : 'w';
-        if (!main.methods.isSquareAttacked(kingCell, oppColor, simulated)) legal.push(moveToken);
+        if (kingCell && !main.methods.isSquareAttacked(kingCell, oppColor, simulated)) {
+          legal.push(moveToken);
+        }
       });
       return legal;
     },
@@ -261,6 +329,7 @@ let main = {
     isInCheck: function (color) {
       let board = main.methods.getBoard();
       let kingCell = main.methods.findKingCell(color, board);
+      if (!kingCell) return false;
       let oppColor = color === 'w' ? 'b' : 'w';
       return main.methods.isSquareAttacked(kingCell, oppColor, board);
     },
@@ -296,34 +365,106 @@ let main = {
       rookObj.moved = true;
     },
 
+    performEnPassant: function (selectedKey, targetCellId) {
+      let pieceObj = main.variables.pieces[selectedKey];
+      let ep = main.variables.enPassantTarget;
+      if (!ep) return;
+
+      let capturedPawnCell = ep.pawnCell;
+      let capturedPieceName = $('#' + capturedPawnCell).attr('chess');
+      let capturedPieceObj = main.variables.pieces[capturedPieceName];
+
+      // Remove captured enemy pawn from board
+      $('#' + capturedPawnCell).html('&nbsp;').attr('chess', 'null');
+      if (capturedPieceObj) {
+        capturedPieceObj.captured = true;
+        capturedPieceObj.moved = true;
+        capturedPieceObj.position = '';
+        if (capturedPieceName.startsWith('b_')) {
+          $('#captured-black .captured-pieces-list').append('<span>' + capturedPieceObj.img + '</span>');
+        } else if (capturedPieceName.startsWith('w_')) {
+          $('#captured-white .captured-pieces-list').append('<span>' + capturedPieceObj.img + '</span>');
+        }
+      }
+
+      // Move attacking pawn
+      $('#' + targetCellId).html(pieceObj.img).attr('chess', selectedKey);
+      $('#' + pieceObj.position).html('&nbsp;').attr('chess', 'null');
+
+      pieceObj.position = targetCellId;
+      pieceObj.moved = true;
+
+      main.methods.endturn(null);
+    },
+
     selectPiece: function (cellId) {
       let key = $('#' + cellId).attr('chess');
+      if (!key || key === 'null') return;
+
       main.variables.selectedpiece = cellId;
-      $('#' + cellId).addClass('yellow');
-      let legal = main.methods.getLegalMoves(key);
-      main.variables.highlighted = legal;
-      legal.forEach(m => {
-        let target = m.indexOf('_castle') !== -1 ? m.split('_castle')[0] : m;
-        $('#' + target).addClass('green');
-      });
+      main.methods.updateVisualHighlights();
     },
 
     clearSelection: function () {
-      $('.gamecell').removeClass('green yellow red');
       main.variables.selectedpiece = '';
       main.variables.highlighted = [];
+      main.methods.updateVisualHighlights();
+    },
+
+    updateVisualHighlights: function () {
+      $('.gamecell').removeClass('green yellow');
+
+      if (main.variables.selectedpiece) {
+        $('#' + main.variables.selectedpiece).addClass('yellow');
+        let key = $('#' + main.variables.selectedpiece).attr('chess');
+        let legal = main.methods.getLegalMoves(key);
+        main.variables.highlighted = legal;
+        legal.forEach(m => {
+          let target = m.indexOf('_') !== -1 ? m.split('_').slice(0, 2).join('_') : m;
+          $('#' + target).addClass('green');
+        });
+      }
+
+      // Highlight king in check if applicable
+      $('.gamecell').removeClass('red');
+      let color = main.variables.turn;
+      if (main.methods.isInCheck(color)) {
+        let kingCell = main.methods.findKingCell(color, main.methods.getBoard());
+        if (kingCell) $('#' + kingCell).addClass('red');
+      }
     },
 
     flashInvalid: function (cellId) {
       $('#' + cellId).addClass('red');
-      setTimeout(() => $('#' + cellId).removeClass('red'), 300);
+      setTimeout(() => {
+        let color = main.variables.turn;
+        let kingCell = main.methods.findKingCell(color, main.methods.getBoard());
+        if (!main.methods.isInCheck(color) || cellId !== kingCell) {
+          $('#' + cellId).removeClass('red');
+        }
+      }, 300);
     },
 
     // ---------- move execution ----------
     move: function (target) {
       let selectedpiece = $('#' + main.variables.selectedpiece).attr('chess');
       let pieceObj = main.variables.pieces[selectedpiece];
+      let fromCell = main.variables.selectedpiece;
+      let fromPos = main.methods.parseCell(fromCell);
+      let toPos = main.methods.parseCell(target.id);
       let targetRank = target.id.split('_')[1];
+
+      // Track en passant eligibility
+      let nextEnPassant = null;
+      if (pieceObj.type.endsWith('_pawn') && Math.abs(toPos.row - fromPos.row) === 2) {
+        let epRow = pieceObj.type.startsWith('w_') ? 3 : 6;
+        nextEnPassant = {
+          cell: main.methods.cellId(fromPos.col, epRow),
+          pawnCell: target.id,
+          col: fromPos.col,
+          color: main.methods.pieceColor(selectedpiece)
+        };
+      }
 
       $('#' + target.id).html(pieceObj.img);
       $('#' + target.id).attr('chess', selectedpiece);
@@ -339,38 +480,40 @@ let main = {
 
       if (isPawnPromotion) {
         main.methods.handlePromotion(pieceObj, target.id, function () {
-          main.methods.endturn();
+          main.methods.endturn(nextEnPassant);
         });
       } else {
-        main.methods.endturn();
+        main.methods.endturn(nextEnPassant);
       }
     },
 
     capture: function (target) {
-      let selectedpiece = {
-        name: $('#' + main.variables.selectedpiece).attr('chess'),
-        id: main.variables.selectedpiece
-      };
-
+      let selectedKey = $('#' + main.variables.selectedpiece).attr('chess');
       let capturedPieceName = target.name;
       let capturedPieceObj = main.variables.pieces[capturedPieceName];
-      let pieceObj = main.variables.pieces[selectedpiece.name];
+      let pieceObj = main.variables.pieces[selectedKey];
+      let fromCell = main.variables.selectedpiece;
       let targetRank = target.id.split('_')[1];
 
       $('#' + target.id).html(pieceObj.img);
-      $('#' + target.id).attr('chess', selectedpiece.name);
+      $('#' + target.id).attr('chess', selectedKey);
 
-      $('#' + selectedpiece.id).html('&nbsp;');
-      $('#' + selectedpiece.id).attr('chess', 'null');
+      $('#' + fromCell).html('&nbsp;');
+      $('#' + fromCell).attr('chess', 'null');
 
       pieceObj.position = target.id;
       pieceObj.moved = true;
-      capturedPieceObj.captured = true;
 
-      if (capturedPieceName.startsWith('b_')) {
-        $('#captured-black .captured-pieces-list').append('<span>' + capturedPieceObj.img + '</span>');
-      } else if (capturedPieceName.startsWith('w_')) {
-        $('#captured-white .captured-pieces-list').append('<span>' + capturedPieceObj.img + '</span>');
+      if (capturedPieceObj) {
+        capturedPieceObj.captured = true;
+        capturedPieceObj.moved = true;
+        capturedPieceObj.position = '';
+
+        if (capturedPieceName.startsWith('b_')) {
+          $('#captured-black .captured-pieces-list').append('<span>' + capturedPieceObj.img + '</span>');
+        } else if (capturedPieceName.startsWith('w_')) {
+          $('#captured-white .captured-pieces-list').append('<span>' + capturedPieceObj.img + '</span>');
+        }
       }
 
       let isPawnPromotion = (pieceObj.type === 'w_pawn' && targetRank === '8') ||
@@ -378,30 +521,31 @@ let main = {
 
       if (isPawnPromotion) {
         main.methods.handlePromotion(pieceObj, target.id, function () {
-          main.methods.endturn();
+          main.methods.endturn(null);
         });
       } else {
-        main.methods.endturn();
+        main.methods.endturn(null);
       }
     },
 
     handlePromotion: function (pieceObj, targetCell, callback) {
+      main.variables.isPromoting = true;
       let isWhite = pieceObj.type.startsWith('w_');
       let optionsHtml = '';
 
       if (isWhite) {
         optionsHtml = `
-          <div class="promo-choice" data-type="w_queen" data-img="&#9813;">&#9813;</div>
-          <div class="promo-choice" data-type="w_rook" data-img="&#9814;">&#9814;</div>
-          <div class="promo-choice" data-type="w_bishop" data-img="&#9815;">&#9815;</div>
-          <div class="promo-choice" data-type="w_knight" data-img="&#9816;">&#9816;</div>
+          <div class="promo-choice" data-type="w_queen">&#9813;</div>
+          <div class="promo-choice" data-type="w_rook">&#9814;</div>
+          <div class="promo-choice" data-type="w_bishop">&#9815;</div>
+          <div class="promo-choice" data-type="w_knight">&#9816;</div>
         `;
       } else {
         optionsHtml = `
-          <div class="promo-choice" data-type="b_queen" data-img="&#9819;">&#9819;</div>
-          <div class="promo-choice" data-type="b_rook" data-img="&#9820;">&#9820;</div>
-          <div class="promo-choice" data-type="b_bishop" data-img="&#9821;">&#9821;</div>
-          <div class="promo-choice" data-type="b_knight" data-img="&#9822;">&#9822;</div>
+          <div class="promo-choice" data-type="b_queen">&#9819;</div>
+          <div class="promo-choice" data-type="b_rook">&#9820;</div>
+          <div class="promo-choice" data-type="b_bishop">&#9821;</div>
+          <div class="promo-choice" data-type="b_knight">&#9822;</div>
         `;
       }
 
@@ -410,22 +554,22 @@ let main = {
 
       $('.promo-choice').off('click').on('click', function () {
         let chosenType = $(this).data('type');
-        let chosenImg = $(this).data('img');
+        let chosenImg = $(this).html();
 
         pieceObj.type = chosenType;
         pieceObj.img = chosenImg;
 
         $('#' + targetCell).html(chosenImg);
-
         $('#promotion-modal').css('display', 'none');
+        main.variables.isPromoting = false;
         if (callback) callback();
       });
     },
 
-    endturn: function () {
-      $('.gamecell').removeClass('green yellow red');
+    endturn: function (nextEnPassant) {
       main.variables.selectedpiece = '';
       main.variables.highlighted = [];
+      main.variables.enPassantTarget = nextEnPassant || null;
 
       main.variables.turn = main.variables.turn === 'w' ? 'b' : 'w';
       let color = main.variables.turn;
@@ -433,53 +577,82 @@ let main = {
       let inCheck = main.methods.isInCheck(color);
       let hasMoves = main.methods.hasAnyLegalMoves(color);
 
+      main.methods.updateVisualHighlights();
+
       if (inCheck && !hasMoves) {
         main.variables.gameOver = true;
         let winner = color === 'w' ? 'Black' : 'White';
-        $('#turn').text('Checkmate! ' + winner + ' wins!');
+        $('#turn').addClass('turnhighlight').text('Checkmate! ' + winner + ' wins!');
       } else if (!inCheck && !hasMoves) {
         main.variables.gameOver = true;
-        $('#turn').text("Stalemate! It's a draw.");
+        $('#turn').addClass('turnhighlight').text("Stalemate! It's a draw.");
       } else if (inCheck) {
-        $('#turn').text((color === 'w' ? 'White' : 'Black') + "'s turn \u2014 Check!");
+        $('#turn').removeClass('turnhighlight').text((color === 'w' ? "White" : "Black") + "'s turn \u2014 Check!");
       } else {
-        $('#turn').text(color === 'w' ? "It's Whites Turn!" : "It's Blacks Turn!");
+        $('#turn').removeClass('turnhighlight').text(color === 'w' ? "It's White's Turn!" : "It's Black's Turn!");
       }
+    },
+
+    resetGame: function () {
+      main.variables.turn = 'w';
+      main.variables.selectedpiece = '';
+      main.variables.highlighted = [];
+      main.variables.gameOver = false;
+      main.variables.isPromoting = false;
+      main.variables.enPassantTarget = null;
+      main.variables.pieces = main.methods.getInitialPieces();
+
+      $('#captured-black .captured-pieces-list').empty();
+      $('#captured-white .captured-pieces-list').empty();
+      $('#promotion-modal').css('display', 'none');
+      $('.gamecell').removeClass('green yellow red');
+      $('#turn').removeClass('turnhighlight').text("It's White's Turn!");
+
+      main.methods.gamesetup();
     }
   }
 };
 
+// Initialize pieces at startup
+main.variables.pieces = main.methods.getInitialPieces();
+
 $(document).ready(function () {
   main.methods.gamesetup();
 
-  $('.gamecell').click(function () {
-    if (main.variables.gameOver) return;
+  $(document).on('click', '.gamecell', function () {
+    if (main.variables.gameOver || main.variables.isPromoting) return;
 
     let cellId = $(this).attr('id');
     let chessPiece = $(this).attr('chess');
 
     if (main.variables.selectedpiece === '') {
-      if (chessPiece !== 'null' && main.methods.pieceColor(chessPiece) === main.variables.turn) {
+      if (chessPiece && chessPiece !== 'null' && main.methods.pieceColor(chessPiece) === main.variables.turn) {
         main.methods.selectPiece(cellId);
       }
     } else {
       if (main.variables.selectedpiece === cellId) {
         main.methods.clearSelection();
-      } else if (chessPiece !== 'null' && main.methods.pieceColor(chessPiece) === main.variables.turn) {
-        // Switch selection to a different piece of the same color.
+      } else if (chessPiece && chessPiece !== 'null' && main.methods.pieceColor(chessPiece) === main.variables.turn) {
+        // Switch selection to another piece of the current player's color
         main.methods.clearSelection();
         main.methods.selectPiece(cellId);
       } else {
-        let match = main.variables.highlighted.find(h => h === cellId || h.indexOf(cellId + '_castle') === 0);
+        let match = main.variables.highlighted.find(h => {
+          let baseTarget = h.indexOf('_') !== -1 ? h.split('_').slice(0, 2).join('_') : h;
+          return baseTarget === cellId;
+        });
+
         if (match) {
           let selectedKey = $('#' + main.variables.selectedpiece).attr('chess');
           if (match.indexOf('_castleKS') !== -1) {
             main.methods.performCastle(selectedKey, 'KS');
-            main.methods.endturn();
+            main.methods.endturn(null);
           } else if (match.indexOf('_castleQS') !== -1) {
             main.methods.performCastle(selectedKey, 'QS');
-            main.methods.endturn();
-          } else if (chessPiece === 'null') {
+            main.methods.endturn(null);
+          } else if (match.indexOf('_ep') !== -1) {
+            main.methods.performEnPassant(selectedKey, cellId);
+          } else if (!chessPiece || chessPiece === 'null') {
             main.methods.move({ id: cellId });
           } else {
             main.methods.capture({ id: cellId, name: chessPiece });
@@ -492,6 +665,10 @@ $(document).ready(function () {
   });
 
   $('#reset-btn').click(function () {
-    location.reload();
+    main.methods.resetGame();
   });
 });
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = main;
+}
