@@ -6,7 +6,7 @@ const AudioManager = {
   enabled: true,
 
   init: function () {
-    let saved = localStorage.getItem('chess_sound');
+    let saved = (typeof localStorage !== 'undefined') ? localStorage.getItem('chess_sound') : null;
     this.enabled = saved !== null ? saved === 'true' : true;
     this.updateToggleUI();
   },
@@ -45,49 +45,45 @@ const AudioManager = {
       osc.start(ctx.currentTime + startTimeOffset);
       osc.stop(ctx.currentTime + startTimeOffset + duration);
     } catch (e) {
-      // Audio context might be restricted before user gesture
+      // Audio context might be restricted before user interaction
     }
   },
 
   playMove: function () {
-    // Soft subtle wooden click
     this.playTone(320, 'triangle', 0.08, 0.25);
   },
 
   playCapture: function () {
-    // Stronger impact click
     this.playTone(180, 'sine', 0.12, 0.4);
     this.playTone(120, 'triangle', 0.15, 0.35, 0.02);
   },
 
   playCheck: function () {
-    // Alert chirp
     this.playTone(550, 'sine', 0.1, 0.3);
     this.playTone(880, 'sine', 0.15, 0.35, 0.08);
   },
 
   playCastle: function () {
-    // Two-step slide tone
     this.playTone(300, 'triangle', 0.09, 0.25);
     this.playTone(420, 'triangle', 0.12, 0.3, 0.08);
   },
 
   playGameOver: function () {
-    // 3-note descending fanfare
-    this.playTone(523.25, 'sine', 0.18, 0.3, 0);      // C5
-    this.playTone(440.00, 'sine', 0.18, 0.3, 0.15);   // A4
-    this.playTone(349.23, 'sine', 0.35, 0.35, 0.30);  // F4
+    this.playTone(523.25, 'sine', 0.18, 0.3, 0);
+    this.playTone(440.00, 'sine', 0.18, 0.3, 0.15);
+    this.playTone(349.23, 'sine', 0.35, 0.35, 0.30);
   },
 
   playTimeout: function () {
-    // Buzzer alarm
     this.playTone(220, 'sawtooth', 0.2, 0.35, 0);
     this.playTone(180, 'sawtooth', 0.3, 0.4, 0.2);
   },
 
   toggleSound: function () {
     this.enabled = !this.enabled;
-    localStorage.setItem('chess_sound', this.enabled);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('chess_sound', this.enabled);
+    }
     this.updateToggleUI();
     if (this.enabled) {
       this.playMove();
@@ -109,16 +105,18 @@ const ThemeManager = {
   themes: ['classic', 'wood', 'neon', 'slate'],
 
   init: function () {
-    let saved = localStorage.getItem('chess_theme') || 'classic';
+    let saved = (typeof localStorage !== 'undefined') ? localStorage.getItem('chess_theme') || 'classic' : 'classic';
     this.apply(saved);
   },
 
   apply: function (theme) {
     if (!this.themes.includes(theme)) theme = 'classic';
     this.current = theme;
-    if (typeof document !== 'undefined') {
+    if (typeof document !== 'undefined' && document.body) {
       document.body.className = `theme-${theme}`;
-      localStorage.setItem('chess_theme', theme);
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('chess_theme', theme);
+      }
       if (typeof $ !== 'undefined') {
         $('#theme-select').val(theme);
       }
@@ -127,7 +125,7 @@ const ThemeManager = {
 };
 
 // ==========================================================
-// CHESS CLOCK MANAGER (Drift-free high-precision timestamps)
+// CHESS CLOCK MANAGER (Drift-free timestamp timing)
 // ==========================================================
 const ClockManager = {
   state: {
@@ -136,7 +134,7 @@ const ClockManager = {
     whiteMs: 0,
     blackMs: 0,
     incrementMs: 0,
-    activeColor: null, // 'w' | 'b' | null
+    activeColor: null,
     running: false,
     lastTimestamp: null,
     rafId: null
@@ -193,7 +191,6 @@ const ClockManager = {
   onMoveMade: function (playerWhoMoved, nextPlayer) {
     if (!this.state.isTimed || main.variables.gameOver) return;
 
-    // Apply increment to player who just completed their move
     if (this.state.running && this.state.incrementMs > 0) {
       if (playerWhoMoved === 'w') {
         this.state.whiteMs += this.state.incrementMs;
@@ -202,7 +199,6 @@ const ClockManager = {
       }
     }
 
-    // Start clock if first move
     this.state.activeColor = nextPlayer;
     this.state.running = true;
     this.state.lastTimestamp = (typeof performance !== 'undefined' ? performance.now() : Date.now());
@@ -212,10 +208,8 @@ const ClockManager = {
   },
 
   startLoop: function () {
-    if (this.state.rafId) {
-      if (typeof cancelAnimationFrame !== 'undefined') {
-        cancelAnimationFrame(this.state.rafId);
-      }
+    if (this.state.rafId && typeof cancelAnimationFrame !== 'undefined') {
+      cancelAnimationFrame(this.state.rafId);
     }
 
     const loop = (now) => {
@@ -266,7 +260,7 @@ const ClockManager = {
 
   stop: function () {
     this.state.running = false;
-    if (this.state.rafId && (typeof cancelAnimationFrame !== 'undefined')) {
+    if (this.state.rafId && typeof cancelAnimationFrame !== 'undefined') {
       cancelAnimationFrame(this.state.rafId);
       this.state.rafId = null;
     }
@@ -301,14 +295,12 @@ const ClockManager = {
         if (this.state.activeColor === 'b') $('#clock-black').addClass('active');
       }
 
-      // Time warnings for White
       if (this.state.whiteMs <= 10000 && this.state.whiteMs > 0) {
         $('#clock-white').addClass('critical');
       } else if (this.state.whiteMs <= 30000 && this.state.whiteMs > 0) {
         $('#clock-white').addClass('warning');
       }
 
-      // Time warnings for Black
       if (this.state.blackMs <= 10000 && this.state.blackMs > 0) {
         $('#clock-black').addClass('critical');
       } else if (this.state.blackMs <= 30000 && this.state.blackMs > 0) {
@@ -328,13 +320,13 @@ const DragManager = {
   startX: 0,
   startY: 0,
   thresholdMet: false,
+  justDropped: false,
   ghostEl: null,
 
   init: function () {
     if (typeof document === 'undefined') return;
     this.ghostEl = document.getElementById('drag-ghost');
 
-    // Attach Pointer Event Listeners
     $(document).on('pointerdown', '.gamecell', function (e) {
       DragManager.handlePointerDown(e, this);
     });
@@ -363,9 +355,6 @@ const DragManager = {
     this.startX = e.clientX;
     this.startY = e.clientY;
     this.thresholdMet = false;
-
-    // Highlight source square & targets
-    main.methods.selectPiece(cellId);
   },
 
   handlePointerMove: function (e) {
@@ -375,8 +364,9 @@ const DragManager = {
     let dy = e.clientY - this.startY;
 
     if (!this.thresholdMet) {
-      if (Math.hypot(dx, dy) > 5) {
+      if (Math.hypot(dx, dy) > 6) {
         this.thresholdMet = true;
+        main.methods.selectPiece(this.fromCellId);
         let pieceObj = main.variables.pieces[this.pieceKey];
         if (pieceObj && this.ghostEl) {
           this.ghostEl.innerHTML = pieceObj.img;
@@ -410,8 +400,11 @@ const DragManager = {
     this.fromCellId = null;
 
     if (wasDragging) {
-      // Find element under pointer
-      let targetEl = document.elementFromPoint(e.clientX, e.clientY);
+      this.justDropped = true;
+      setTimeout(() => { DragManager.justDropped = false; }, 80);
+
+      let targetEl = (typeof document !== 'undefined' && document.elementFromPoint) ?
+                     document.elementFromPoint(e.clientX, e.clientY) : null;
       let cellEl = targetEl ? $(targetEl).closest('.gamecell') : null;
 
       if (cellEl && cellEl.length > 0) {
@@ -444,7 +437,6 @@ const DragManager = {
         }
       }
 
-      // Illegal drop - cancel selection and flash
       main.methods.clearSelection();
     }
   }
@@ -519,40 +511,21 @@ let main = {
       let colOrder = isWhite ? [1, 2, 3, 4, 5, 6, 7, 8] : [8, 7, 6, 5, 4, 3, 2, 1];
       let colLabels = isWhite ? ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] : ['h', 'g', 'f', 'e', 'd', 'c', 'b', 'a'];
 
-      let html = '';
+      let html = '<div class="board-grid">';
       rowOrder.forEach(r => {
-        html += `<div class='cellprefix'>${r}</div>`;
+        html += `<div class="rank-label">${r}</div>`;
         colOrder.forEach(c => {
           let isGrey = (c + r) % 2 === 0;
           let cellCls = 'gamecell' + (isGrey ? ' grey' : '');
-          html += `<div class='${cellCls}' id='${c}_${r}' chess='null'>&nbsp;</div>`;
+          html += `<div class="${cellCls}" id="${c}_${r}" chess="null">&nbsp;</div>`;
         });
-        html += '<br>';
       });
 
-      // Bottom file labels
-      html += `<div class='cellprefix'></div>`;
+      html += '<div class="corner-label"></div>';
       colLabels.forEach(l => {
-        html += `<div class='cellprefix'>${l}</div>`;
+        html += `<div class="file-label">${l}</div>`;
       });
-      html += '<br>';
-
-      // Controls container
-      html += `
-        <div id="controls">
-          <div id='turn'>It's White's Turn!</div>
-          <div id="btn-group">
-            <button id="undo-btn" class="action-btn" title="Undo Move">↺ Undo</button>
-            <button id="redo-btn" class="action-btn" title="Redo Move">↻ Redo</button>
-            <button id="flip-btn" class="action-btn" title="Flip Board Orientation">⇄ Flip</button>
-            <button id="pgn-btn" class="action-btn" title="Copy PGN Notation">📋 Copy PGN</button>
-            <button id="reset-btn" class="action-btn" title="Reset Match">🔄 Reset</button>
-          </div>
-          <div id="autoflip-container">
-            <label><input type="checkbox" id="autoflip-check" ${main.variables.autoFlip ? 'checked' : ''}> Auto Flip on Turn</label>
-          </div>
-        </div>
-      `;
+      html += '</div>';
 
       $('#game').html(html);
     },
@@ -1061,13 +1034,11 @@ let main = {
       main.variables.highlighted = [];
       main.variables.isPromoting = false;
 
-      // Restore clock times
       if (snap.clockWhiteMs !== undefined) ClockManager.state.whiteMs = snap.clockWhiteMs;
       if (snap.clockBlackMs !== undefined) ClockManager.state.blackMs = snap.clockBlackMs;
       ClockManager.state.activeColor = snap.gameOver ? null : snap.turn;
       ClockManager.updateDisplay();
 
-      // Update DOM
       main.methods.gamesetup();
       $('#captured-black .captured-pieces-list').html(snap.capturedBlackHtml || '');
       $('#captured-white .captured-pieces-list').html(snap.capturedWhiteHtml || '');
@@ -1311,13 +1282,11 @@ let main = {
     updateVisualHighlights: function () {
       $('.gamecell').removeClass('green yellow last-move-from last-move-to');
 
-      // Highlight previous move squares
       if (main.variables.lastMove) {
         $('#' + main.variables.lastMove.from).addClass('last-move-from');
         $('#' + main.variables.lastMove.to).addClass('last-move-to');
       }
 
-      // Highlight selected square and legal targets
       if (main.variables.selectedpiece) {
         $('#' + main.variables.selectedpiece).addClass('yellow');
         let key = $('#' + main.variables.selectedpiece).attr('chess');
@@ -1329,7 +1298,6 @@ let main = {
         });
       }
 
-      // Highlight king in check if applicable
       $('.gamecell').removeClass('red');
       let color = main.variables.turn;
       if (main.methods.isInCheck(color)) {
@@ -1603,7 +1571,6 @@ let main = {
         ClockManager.onMoveMade(previousColor, color);
       }
 
-      // Auto Flip if enabled
       if (main.variables.autoFlip && !main.variables.gameOver) {
         if (main.variables.orientation !== color) {
           main.methods.flipBoard();
@@ -1667,9 +1634,10 @@ if (typeof $ !== 'undefined') {
     main.methods.updateNavButtons();
     main.methods.updateMoveHistoryUI();
 
-    // Click handler for click-to-move
+    // Click handler for Click-to-Move
     $(document).on('click', '.gamecell', function (e) {
       if (main.variables.gameOver || main.variables.isPromoting) return;
+      if (DragManager.justDropped) return; // Ignore synthetic click immediately following a drop
 
       let cellId = $(this).attr('id');
       let chessPiece = $(this).attr('chess');
@@ -1710,7 +1678,7 @@ if (typeof $ !== 'undefined') {
       }
     });
 
-    // Action button handlers
+    // Action buttons
     $(document).on('click', '#undo-btn', function () {
       main.methods.undo();
     });

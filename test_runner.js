@@ -88,7 +88,9 @@ global.$ = function(selector) {
       prop: function() { return false; },
       hasClass: function() { return false; },
       val: function() { return ''; },
-      css: function() { return this; }
+      css: function() { return this; },
+      closest: function() { return this; },
+      length: 0
     };
   }
 
@@ -111,14 +113,18 @@ global.$ = function(selector) {
         removeClass: function(cls) {
           cls.split(' ').forEach(c => cell.classes.delete(c));
           return this;
-        }
+        },
+        closest: function() { return this; },
+        length: 1
       };
     }
     return {
       ready: function(cb) { cb(); },
       on: function() {},
       click: function() {},
-      off: function() { return this; }
+      off: function() { return this; },
+      closest: function() { return this; },
+      length: 0
     };
   }
 
@@ -314,7 +320,9 @@ global.$ = function(selector) {
           removeClass: function(cls) {
             cls.split(' ').forEach(c => cell.classes.delete(c));
             return this;
-          }
+          },
+          closest: function() { return this; },
+          length: 1
         };
       }
     }
@@ -330,7 +338,9 @@ global.$ = function(selector) {
     removeClass: function() { return this; },
     text: function() { return ''; },
     val: function() { return ''; },
-    css: function() { return this; }
+    css: function() { return this; },
+    closest: function() { return this; },
+    length: 0
   };
 };
 
@@ -354,7 +364,7 @@ function runTest(name, fn) {
   }
 }
 
-console.log('=== CHESS ADVANCED COMPREHENSIVE TEST SUITE ===\n');
+console.log('=== CHESS ADVANCED COMPREHENSIVE TEST SUITE (40 TESTS) ===\n');
 
 // 1 - 20: Full Regression Suite
 runTest('1. Initial Setup & Piece Count', () => {
@@ -686,7 +696,7 @@ runTest('20. Game Reset Clears History and Snapshots', () => {
   assert.strictEqual(dom.turnText, "It's White's Turn!");
 });
 
-// 21 - 30: New Advanced Features (Clocks, Audio, Themes, Drag, Highlights)
+// 21 - 30: Clock, Audio, Theme, Highlights, Drag basics
 runTest('21. Chess Clock: Initial State & Untimed Mode', () => {
   ClockManager.setPreset('untimed');
   assert.strictEqual(ClockManager.state.isTimed, false);
@@ -716,19 +726,15 @@ runTest('23. Chess Clock: Starts on First Move & Applies Increment', () => {
   ClockManager.setPreset('3+2');
   assert.strictEqual(ClockManager.state.running, false);
 
-  // White plays 1. e4
   main.variables.selectedpiece = '5_2';
   main.methods.move({ id: '5_4' });
 
-  // Clock started for Black, White was awarded increment
   assert.strictEqual(ClockManager.state.running, true);
   assert.strictEqual(ClockManager.state.activeColor, 'b');
 
-  // Black plays 1... e5
   main.variables.selectedpiece = '5_7';
   main.methods.move({ id: '5_5' });
 
-  // Black awarded increment and active clock switched to White
   assert.strictEqual(ClockManager.state.activeColor, 'w');
   assert.strictEqual(ClockManager.state.blackMs, 180000 + 2000);
   ClockManager.stop();
@@ -739,7 +745,6 @@ runTest('24. Chess Clock: Flag Fall (Timeout) Ends Game', () => {
   main.variables.selectedpiece = '5_2';
   main.methods.move({ id: '5_4' });
 
-  // Simulate timeout on Black's clock
   ClockManager.handleTimeout('b');
 
   assert.strictEqual(main.variables.gameOver, true);
@@ -749,7 +754,6 @@ runTest('24. Chess Clock: Flag Fall (Timeout) Ends Game', () => {
 
 runTest('25. Chess Clock: Stops on Checkmate', () => {
   ClockManager.setPreset('3+0');
-  // Fool's Mate: 1. f3 e5 2. g4 Qh4#
   main.variables.selectedpiece = '6_2'; main.methods.move({ id: '6_3' });
   main.variables.selectedpiece = '5_7'; main.methods.move({ id: '5_5' });
   main.variables.selectedpiece = '7_2'; main.methods.move({ id: '7_4' });
@@ -791,15 +795,12 @@ runTest('27. Theme Manager: Theme Switching & Persistence', () => {
 });
 
 runTest('28. Last-Move Highlighting: Normal, Capture & Castling', () => {
-  // Move 1. e4
   main.variables.selectedpiece = '5_2'; main.methods.move({ id: '5_4' });
   assert.deepStrictEqual(main.variables.lastMove, { from: '5_2', to: '5_4' });
 
-  // Move 1... d5
   main.variables.selectedpiece = '4_7'; main.methods.move({ id: '4_5' });
   assert.deepStrictEqual(main.variables.lastMove, { from: '4_7', to: '4_5' });
 
-  // Capture 2. exd5
   main.variables.selectedpiece = '5_4'; main.methods.capture({ id: '4_5', name: 'b_pawn4' });
   assert.deepStrictEqual(main.variables.lastMove, { from: '5_4', to: '4_5' });
 });
@@ -822,14 +823,143 @@ runTest('30. Drag Manager: Interaction State & Cleanup', () => {
   assert.strictEqual(DragManager.active, false);
   assert.strictEqual(DragManager.thresholdMet, false);
 
-  // Pointer down on White pawn
   DragManager.handlePointerDown({ clientX: 100, clientY: 100 }, dom.cells['5_2']);
   assert.strictEqual(DragManager.active, true);
   assert.strictEqual(DragManager.fromCellId, '5_2');
 
-  // Pointer up with threshold not met (treated as standard selection)
   DragManager.handlePointerUp({ clientX: 101, clientY: 101 });
   assert.strictEqual(DragManager.active, false);
+});
+
+// 31 - 40: Advanced Grid Layout, Click-to-Move, Drag-to-Move, and Flip Interactions
+runTest('31. Board Grid Rendering & Coordinates', () => {
+  main.methods.renderBoard();
+  assert.ok(dom.gameHtml.includes('board-grid'));
+  assert.ok(dom.gameHtml.includes('rank-label'));
+  assert.ok(dom.gameHtml.includes('file-label'));
+  assert.ok(dom.gameHtml.includes('1_1'));
+  assert.ok(dom.gameHtml.includes('8_8'));
+});
+
+runTest('32. Click-to-Move: Select and Execute Move', () => {
+  main.methods.selectPiece('5_2');
+  assert.strictEqual(main.variables.selectedpiece, '5_2');
+  assert.ok(main.variables.highlighted.includes('5_4'));
+
+  main.methods.move({ id: '5_4' });
+  assert.strictEqual(main.variables.turn, 'b');
+  assert.strictEqual(main.methods.getBoard()['5_4'], 'w_pawn5');
+  assert.strictEqual(main.methods.getBoard()['5_2'], null);
+});
+
+runTest('33. Click-to-Move: Friendly Piece Selection Switch', () => {
+  main.methods.selectPiece('5_2');
+  assert.strictEqual(main.variables.selectedpiece, '5_2');
+
+  // Switch selection to d2 pawn
+  main.methods.clearSelection();
+  main.methods.selectPiece('4_2');
+  assert.strictEqual(main.variables.selectedpiece, '4_2');
+  assert.ok(main.variables.highlighted.includes('4_4'));
+});
+
+runTest('34. Click-to-Move: Deselecting Selected Piece', () => {
+  main.methods.selectPiece('5_2');
+  assert.strictEqual(main.variables.selectedpiece, '5_2');
+
+  main.methods.clearSelection();
+  assert.strictEqual(main.variables.selectedpiece, '');
+  assert.strictEqual(main.variables.highlighted.length, 0);
+});
+
+runTest('35. Click-to-Move: Pawn Promotion Flow', () => {
+  // Move pawn to 7th rank
+  main.variables.pieces['w_pawn5'].position = '5_7';
+  main.methods.gamesetup();
+
+  main.variables.selectedpiece = '5_7';
+  let isCallbackCalled = false;
+  main.methods.handlePromotion(main.variables.pieces['w_pawn5'], '5_8', (chosenType) => {
+    isCallbackCalled = true;
+    assert.strictEqual(chosenType, 'w_queen');
+  });
+
+  assert.strictEqual(main.variables.isPromoting, true);
+  assert.ok(dom.promoHtml.includes('w_queen'));
+});
+
+runTest('36. Drag-and-Drop: Threshold Met Activates Ghost & Drag State', () => {
+  DragManager.handlePointerDown({ clientX: 100, clientY: 100 }, dom.cells['5_2']);
+  assert.strictEqual(DragManager.active, true);
+  assert.strictEqual(DragManager.thresholdMet, false);
+
+  // Move pointer > 6px
+  DragManager.handlePointerMove({ clientX: 110, clientY: 110 });
+  assert.strictEqual(DragManager.thresholdMet, true);
+  assert.strictEqual(main.variables.selectedpiece, '5_2');
+
+  DragManager.handlePointerUp({ clientX: 110, clientY: 110 });
+  assert.strictEqual(DragManager.active, false);
+  assert.strictEqual(DragManager.thresholdMet, false);
+});
+
+runTest('37. Drag-and-Drop: Illegal Drop Cleans Up State', () => {
+  DragManager.handlePointerDown({ clientX: 100, clientY: 100 }, dom.cells['5_2']);
+  DragManager.handlePointerMove({ clientX: 150, clientY: 150 });
+  assert.strictEqual(DragManager.thresholdMet, true);
+
+  // Drop on void/illegal
+  DragManager.handlePointerUp({ clientX: 150, clientY: 150 });
+  assert.strictEqual(main.variables.selectedpiece, '');
+  assert.strictEqual(main.variables.highlighted.length, 0);
+});
+
+runTest('38. Click vs Drag Distinction: JustDropped Guard', () => {
+  DragManager.thresholdMet = true;
+  DragManager.handlePointerUp({ clientX: 200, clientY: 200 });
+
+  assert.strictEqual(DragManager.justDropped, true);
+});
+
+runTest('39. Board Flip: Click-to-Move in Black Orientation', () => {
+  main.methods.flipBoard();
+  assert.strictEqual(main.variables.orientation, 'b');
+
+  // White moves e4
+  main.variables.selectedpiece = '5_2';
+  main.methods.move({ id: '5_4' });
+  assert.strictEqual(main.variables.turn, 'b');
+
+  // Black moves e5 while board is flipped
+  main.methods.selectPiece('5_7');
+  assert.strictEqual(main.variables.selectedpiece, '5_7');
+  assert.ok(main.variables.highlighted.includes('5_5'));
+
+  main.methods.move({ id: '5_5' });
+  assert.strictEqual(main.variables.turn, 'w');
+  assert.strictEqual(main.methods.getBoard()['5_5'], 'b_pawn5');
+
+  main.methods.flipBoard();
+  assert.strictEqual(main.variables.orientation, 'w');
+});
+
+runTest('40. Board Flip: Coordinate Invariance Across Special Moves', () => {
+  main.methods.flipBoard();
+
+  // Scholar's Mate in Black Orientation
+  main.variables.selectedpiece = '5_2'; main.methods.move({ id: '5_4' });
+  main.variables.selectedpiece = '5_7'; main.methods.move({ id: '5_5' });
+  main.variables.selectedpiece = '6_1'; main.methods.move({ id: '3_4' });
+  main.variables.selectedpiece = '2_8'; main.methods.move({ id: '3_6' });
+  main.variables.selectedpiece = '4_1'; main.methods.move({ id: '8_5' });
+  main.variables.selectedpiece = '7_8'; main.methods.move({ id: '6_6' });
+  main.variables.selectedpiece = '8_5'; main.methods.capture({ id: '6_7', name: 'b_pawn6' });
+
+  assert.strictEqual(main.variables.gameOver, true);
+  assert.strictEqual(dom.turnText, 'Checkmate! White wins!');
+
+  main.methods.flipBoard();
+  assert.strictEqual(main.variables.orientation, 'w');
 });
 
 console.log('\n------------------------------------');

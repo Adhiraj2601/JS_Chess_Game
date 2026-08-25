@@ -8,84 +8,114 @@
 </head>
 <body class="theme-classic">
 
-<!-- Top Toolbar: Theme + Sound -->
-<div id="toolbar">
-  <div class="toolbar-section">
-    <label for="theme-select">🎨</label>
-    <select id="theme-select" title="Select Board Theme">
-      <option value="classic">Classic</option>
-      <option value="wood">Wood</option>
-      <option value="neon">Neon</option>
-      <option value="slate">Slate Dark</option>
-    </select>
-  </div>
-  <div class="toolbar-section toolbar-center">
-    <span id="app-title">♟ JS Chess</span>
-  </div>
-  <div class="toolbar-section">
-    <button id="sound-toggle" class="action-btn" title="Toggle Move Sounds">🔊 Sound</button>
-  </div>
-</div>
+<div id="app-wrapper">
 
-<div id="game-container">
-
-  <!-- Left: White Captures (Black pieces captured by White) -->
-  <div id="captured-black" class="captured-panel">
-    <h3>White Captures</h3>
-    <div class="captured-pieces-list"></div>
-  </div>
-
-  <!-- Center: Clocks + Board + Time Control -->
-  <div id="game-center">
-
-    <div id="clock-black" class="clock-panel">
-      <div class="clock-label">♟ Black</div>
-      <div class="clock-time" id="clock-black-time">--:--</div>
-    </div>
-
-    <div id="game"></div>
-
-    <div id="clock-white" class="clock-panel">
-      <div class="clock-label">♙ White</div>
-      <div class="clock-time" id="clock-white-time">--:--</div>
-    </div>
-
-    <div id="time-control-panel">
-      <span class="tc-label">⏱ Time:</span>
-      <select id="time-preset">
-        <option value="untimed">Untimed</option>
-        <option value="1+0">Bullet 1+0</option>
-        <option value="3+0">Blitz 3+0</option>
-        <option value="3+2">Blitz 3+2</option>
-        <option value="10+0">Rapid 10+0</option>
-        <option value="custom">Custom…</option>
+  <!-- Top Toolbar / Header -->
+  <header id="toolbar">
+    <div class="toolbar-left">
+      <label for="theme-select" class="toolbar-label">🎨 Theme:</label>
+      <select id="theme-select" title="Select Board Theme">
+        <option value="classic">Classic</option>
+        <option value="wood">Wood</option>
+        <option value="neon">Neon</option>
+        <option value="slate">Slate Dark</option>
       </select>
-      <div id="custom-time-inputs">
-        <input type="number" id="custom-mins" min="1" max="180" value="5" title="Minutes per player">
-        <span>min</span>
-        <input type="number" id="custom-inc" min="0" max="60" value="0" title="Increment in seconds">
-        <span>sec</span>
-        <button id="apply-custom-time" class="action-btn">Apply</button>
+    </div>
+
+    <div class="toolbar-center">
+      <h1 id="app-title">♟ JS Chess</h1>
+    </div>
+
+    <div class="toolbar-right">
+      <button id="sound-toggle" class="action-btn" title="Toggle Move Sounds">🔊 Sound</button>
+    </div>
+  </header>
+
+  <!-- Main 3-Column Centered Game Workspace -->
+  <main id="game-workspace">
+
+    <!-- Left Column: White Captures -->
+    <aside id="left-sidebar">
+      <div id="captured-black" class="panel-card captured-panel">
+        <h3 class="panel-title">White Captures</h3>
+        <div class="captured-pieces-list"></div>
       </div>
-    </div>
+    </aside>
 
-  </div>
+    <!-- Center Column: Black Clock -> Board -> Status -> Controls -> White Clock -> Time Control -->
+    <section id="game-center">
 
-  <!-- Right: Black Captures + History -->
-  <div id="right-panel">
-    <div id="captured-white" class="captured-panel">
-      <h3>Black Captures</h3>
-      <div class="captured-pieces-list"></div>
-    </div>
-
-    <div id="history-panel" class="history-panel">
-      <h3>Game History</h3>
-      <div id="move-history-list"></div>
-      <div class="pgn-actions">
-        <button id="export-pgn-btn" class="action-btn">📋 Copy PGN</button>
+      <!-- Black Clock (Top of Board) -->
+      <div id="clock-black" class="clock-panel">
+        <div class="clock-player"><span class="player-icon">♟</span> Black</div>
+        <div class="clock-time" id="clock-black-time">--:--</div>
       </div>
-    </div>
-  </div>
+
+      <!-- Chess Board -->
+      <div id="game"></div>
+
+      <!-- Turn & Game Status Banner -->
+      <div id="turn">It's White's Turn!</div>
+
+      <!-- Action Button Controls -->
+      <div id="btn-group">
+        <button id="undo-btn" class="action-btn" title="Undo Move">↺ Undo</button>
+        <button id="redo-btn" class="action-btn" title="Redo Move">↻ Redo</button>
+        <button id="flip-btn" class="action-btn" title="Flip Board Orientation">⇄ Flip</button>
+        <button id="pgn-btn" class="action-btn" title="Copy PGN Notation">📋 Copy PGN</button>
+        <button id="reset-btn" class="action-btn" title="Reset Match">🔄 Reset</button>
+      </div>
+
+      <!-- Auto Flip Checkbox -->
+      <div id="autoflip-container">
+        <label><input type="checkbox" id="autoflip-check"> Auto Flip on Turn</label>
+      </div>
+
+      <!-- White Clock (Bottom of Controls) -->
+      <div id="clock-white" class="clock-panel">
+        <div class="clock-player"><span class="player-icon">♙</span> White</div>
+        <div class="clock-time" id="clock-white-time">--:--</div>
+      </div>
+
+      <!-- Time Control Selector -->
+      <div id="time-control-panel">
+        <span class="tc-label">⏱ Time:</span>
+        <select id="time-preset">
+          <option value="untimed">Untimed</option>
+          <option value="1+0">Bullet 1+0</option>
+          <option value="3+0">Blitz 3+0</option>
+          <option value="3+2">Blitz 3+2</option>
+          <option value="10+0">Rapid 10+0</option>
+          <option value="custom">Custom…</option>
+        </select>
+        <div id="custom-time-inputs">
+          <input type="number" id="custom-mins" min="1" max="180" value="5" title="Minutes per player">
+          <span>m</span>
+          <input type="number" id="custom-inc" min="0" max="60" value="0" title="Increment in seconds">
+          <span>s</span>
+          <button id="apply-custom-time" class="action-btn">Apply</button>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Right Column: Black Captures + Game History -->
+    <aside id="right-sidebar">
+      <div id="captured-white" class="panel-card captured-panel">
+        <h3 class="panel-title">Black Captures</h3>
+        <div class="captured-pieces-list"></div>
+      </div>
+
+      <div id="history-panel" class="panel-card history-panel">
+        <h3 class="panel-title">Game History</h3>
+        <div id="move-history-list"></div>
+        <div class="pgn-actions">
+          <button id="export-pgn-btn" class="action-btn">📋 Copy PGN</button>
+        </div>
+      </div>
+    </aside>
+
+  </main>
 
 </div>
 
@@ -97,7 +127,7 @@
   </div>
 </div>
 
-<!-- Drag Ghost Element (follows cursor during drag) -->
+<!-- Drag Ghost Element -->
 <div id="drag-ghost" aria-hidden="true"></div>
 
 <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js'></script>

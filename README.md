@@ -8,11 +8,11 @@
   <img src="https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white" />
   <img src="https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white" />
   <img src="https://img.shields.io/badge/jQuery-0769AD?style=for-the-badge&logo=jquery&logoColor=white" />
-  <img src="https://img.shields.io/badge/Tests-30%20Passed-brightgreen?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Tests-40%20Passed-brightgreen?style=for-the-badge" />
 </p>
 
 <p align="center">
-A modern, fully playable browser-based Chess game built with HTML5, CSS3, JavaScript (ES6+), and jQuery, featuring complete FIDE chess rules, SAN move notation, PGN export, Undo/Redo, Threefold Repetition, 50-Move draw rule, Chess Clocks, Web Audio sound effects, Drag-and-Drop, Themes, and Responsive Mobile Design.
+A modern, fully playable browser-based Chess game built with HTML5, CSS3, JavaScript (ES6+), and jQuery, featuring complete FIDE chess rules, SAN move notation, PGN export, Undo/Redo, Threefold Repetition, 50-Move draw rule, Chess Clocks, Web Audio sound effects, unified Click-to-Move and Drag-and-Drop interaction, Theme Selector, and a tightly centered, responsive workspace layout.
 </p>
 
 ---
@@ -25,45 +25,49 @@ A modern, fully playable browser-based Chess game built with HTML5, CSS3, JavaSc
 
 ## 📖 Overview
 
-This project is an advanced, production-quality implementation of Chess that runs entirely in the client-side browser without requiring any backend.
+This project is an advanced, production-quality implementation of Chess designed around the chessboard as the central focal point.
 
-The engine accurately computes legal moves, manages turns, enforces King safety, supports all special moves (Castling, En Passant, Pawn Promotion), records moves in Standard Algebraic Notation (SAN), allows infinite Undo/Redo via immutable state snapshots, detects Threefold Repetition and the 50-Move Draw rule, provides drift-free high-precision Chess Clocks with increments, plays zero-dependency Web Audio sound effects, supports seamless Drag-and-Drop and Click-to-Move, offers 4 customizable board themes, and is fully responsive on mobile, tablet, and desktop devices.
+The interface eliminates excessive whitespace by organizing all gameplay elements into a balanced 3-column CSS Grid:
+- **Left Column**: White Captures
+- **Center Column**: Black Clock, Board, Turn Status Banner, Control Buttons, Auto-Flip option, and White Clock sharing the exact same width
+- **Right Column**: Black Captures and Live Game History
+
+Players can seamlessly use both **Click-to-Move** and **Drag-and-Drop** piece interactions interchangeably in both standard and 180° flipped board orientations.
 
 ---
 
 ## ✨ Features
 
+- **🎯 Centered 3-Column Workspace Layout**:
+  - Balanced `max-width: 1140px` workspace container eliminating wasted side margins.
+  - Black and White clocks, status banner, and control buttons precisely match the chessboard width.
+  - Symmetrical side panels for captured pieces and game history.
+- **🖐️ Unified Click-to-Move & Drag-and-Drop**:
+  - **Click-to-Move**: Single-click selection, legal target indicators, friendly piece switching, and deselect on click.
+  - **Drag-and-Drop**: Pointer Events (`pointerdown`, `pointermove`, `pointerup`) with a smooth floating ghost, drop target detection, and touch-action optimization.
+  - **Interchangeable Input**: Use Click or Drag at any moment without configuration or interference.
+  - **180° Board Flip Compatibility**: Flawless coordinate resolution regardless of orientation.
 - **⏱️ Chess Clocks & Time Controls**:
-  - Drift-free timestamp-based timer countdown with `requestAnimationFrame`.
+  - High-precision timestamp timing with `requestAnimationFrame` UI updates.
   - Presets: **Bullet (1+0)**, **Blitz (3+0)**, **Blitz (3+2 with increment)**, **Rapid (10+0)**, and **Custom** (configurable minutes & increment).
-  - Active player visual indicator, low-time warning (<30s) and critical (<10s) pulsing state.
-  - Automatic Flag Fall (Timeout) detection with instant game-over announcement.
-  - Clock stops automatically on checkmate, stalemate, and draws.
-- **🔊 Web Audio API Sound Effects**:
-  - Zero-dependency generated tones for standard moves, captures, check alerts, castling, game-over fanfare, and timeout buzzer.
+  - Active turn highlighting, warning states (<30s), critical countdown pulsing (<10s), and automatic timeout flag fall.
+- **🔊 Web Audio API Procedural Sound Effects**:
+  - Synthesized tones for standard moves, captures, check alerts, castling, victory fanfare, and timeout alarm.
   - Single shared `AudioContext` with mute toggle and `localStorage` persistence.
-- **🖐️ Drag-and-Drop & Click-to-Move**:
-  - Unified Pointer Events (`pointerdown`, `pointermove`, `pointerup`) supporting mouse, touch, and stylus.
-  - Floating drag ghost element with smooth snapping and illegal move cancellation.
-  - Touch-action optimization preventing unwanted mobile scrolling.
-  - Fully compatible with 180° board flipping.
 - **🎨 Theme Selector**:
-  - 4 themes styled via CSS variables: **Classic**, **Wood**, **Neon Cyberpunk**, and **Slate Dark**.
-  - Dynamic palette updates for squares, highlights, panels, clocks, and text with `localStorage` persistence.
+  - 4 customizable themes styled via CSS variables: **Classic**, **Wood**, **Neon Cyberpunk**, and **Slate Dark**.
 - **📍 Last-Move Highlighting**:
-  - Subtle translucent highlights for source (`.last-move-from`) and destination (`.last-move-to`) squares.
-  - Works across normal moves, captures, castling, en passant, promotion, undo, redo, and board flips.
-- **📱 Responsive Mobile & Tablet Design**:
-  - Adaptive viewport sizing, touch-friendly button targets (min 44px), and vertical stacking on mobile.
-- **♟️ Full FIDE Chess Engine & Rules**:
-  - Legal move generation, pin protection, checkmate, stalemate, castling, en passant, and pawn promotion modal.
-- **📜 Move History & SAN / PGN**:
-  - Live move sidebar in Standard Algebraic Notation with file/rank disambiguation (e.g. `Ndf3`, `Bxc6`).
-  - One-click PGN export to clipboard with standard headers.
-- **↺ State Snapshot Undo & Redo**:
-  - Full state restoration (board, turn, en passant, clocks, captured pieces, and move history).
+  - Translucent highlights for source (`.last-move-from`) and target (`.last-move-to`) squares preserved across all moves, undo, redo, and flips.
+- **📱 Responsive Mobile & Tablet Layout**:
+  - Adaptive CSS Grid / Flexbox breakpoints with smooth scaling down to mobile viewports.
+- **♟️ Complete FIDE Chess Engine & Rules**:
+  - Full movement calculation, pin protection, checkmate, stalemate, castling (`O-O`, `O-O-O`), en passant, and pawn promotion modal.
+- **📜 Move History, SAN & PGN Export**:
+  - Live move list in Standard Algebraic Notation with disambiguation (`Ndf3`, `Bxc6`) and one-click PGN clipboard copy.
+- **↺ Full State Undo & Redo**:
+  - Immutable snapshots restoring board, turn, en passant, clocks, captured pieces, and move history.
 - **⚖️ Draw Detection**:
-  - Threefold Repetition (FEN hashing) & 50-Move Rule (100 halfmoves).
+  - Threefold Repetition (FEN position hashing) and 50-Move Rule (100 halfmoves).
 
 ---
 
@@ -71,12 +75,12 @@ The engine accurately computes legal moves, manages turns, enforces King safety,
 
 | Technology | Purpose |
 |------------|---------|
-| **HTML5** | Semantic layout, Board structure, Clocks & Toolbar |
-| **CSS3** | CSS Variables, Theme palettes, Grid/Flex layout, Animations, Media Queries |
-| **JavaScript (ES6+)** | Core Chess Engine, ClockManager, AudioManager, DragManager, ThemeManager |
+| **HTML5** | Semantic structure, Centered Workspace, Clocks & Toolbar |
+| **CSS3** | CSS Variables, 3-Column Grid, Theme palettes, Animations, Media Queries |
+| **JavaScript (ES6+)** | Core Chess Engine, ClockManager, AudioManager, ThemeManager, DragManager |
 | **Web Audio API** | Procedural tone synthesis for movement and game events |
 | **jQuery** | Lightweight DOM event delegation & manipulation |
-| **Node.js** | Automated headless test suite runner |
+| **Node.js** | Automated headless test suite runner (40 tests) |
 
 ---
 
@@ -85,10 +89,10 @@ The engine accurately computes legal moves, manages turns, enforces King safety,
 ```text
 JS_Chess_Game/
 │
-├── index.html         # Main UI layout (Toolbar, Clocks, Board, Captures, History)
-├── style.css          # Theme stylesheets, CSS variables, Clocks, Ghost, Media Queries
+├── index.html         # Main UI layout (Toolbar, 3-Column Workspace, Clocks, Board, Captures, History)
+├── style.css          # Theme stylesheets, CSS variables, Workspace Grid, Board Grid, Media Queries
 ├── script.js          # Core Engine, ClockManager, AudioManager, ThemeManager, DragManager
-├── test_runner.js     # 30-case automated test suite (Node.js)
+├── test_runner.js     # 40-case automated test suite (Node.js)
 └── README.md          # Comprehensive documentation
 ```
 
@@ -96,7 +100,7 @@ JS_Chess_Game/
 
 ## 🧪 Automated Testing
 
-The repository contains an automated test suite verifying all 30 core engine features, clocks, audio, themes, drag-and-drop, history, undo/redo, draw detection, and board orientation.
+The repository contains an automated test suite verifying all 40 core engine features, layout coordinates, clocks, audio, themes, click-to-move, drag-and-drop, history, undo/redo, draw detection, and board orientation.
 
 ### Running the Test Suite:
 
@@ -135,6 +139,16 @@ node test_runner.js
 28. `Last-Move Highlighting: Normal, Capture & Castling`
 29. `Last-Move Highlighting Preserved Across Undo and Redo`
 30. `Drag Manager: Interaction State & Cleanup`
+31. `Board Grid Rendering & Coordinates`
+32. `Click-to-Move: Select and Execute Move`
+33. `Click-to-Move: Friendly Piece Selection Switch`
+34. `Click-to-Move: Deselecting Selected Piece`
+35. `Click-to-Move: Pawn Promotion Flow`
+36. `Drag-and-Drop: Threshold Met Activates Ghost & Drag State`
+37. `Drag-and-Drop: Illegal Drop Cleans Up State`
+38. `Click vs Drag Distinction: JustDropped Guard`
+39. `Board Flip: Click-to-Move in Black Orientation`
+40. `Board Flip: Coordinate Invariance Across Special Moves`
 
 ---
 
@@ -147,7 +161,7 @@ node test_runner.js
    ```
 
 2. **Open in Browser**:
-   Simply open `index.html` in your browser.
+   Open `index.html` in your browser.
 
 ---
 
