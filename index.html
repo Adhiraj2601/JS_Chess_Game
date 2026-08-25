@@ -10,7 +10,7 @@
 
 <div id="app-wrapper">
 
-  <!-- Top Toolbar / Header -->
+  <!-- Top Toolbar / Header (Compact) -->
   <header id="toolbar">
     <div class="toolbar-left">
       <label for="theme-select" class="toolbar-label">🎨 Theme:</label>
@@ -27,6 +27,24 @@
     </div>
 
     <div class="toolbar-right">
+      <div id="time-control-panel">
+        <span class="tc-label">⏱</span>
+        <select id="time-preset" title="Time Control Preset">
+          <option value="untimed">Untimed</option>
+          <option value="1+0">Bullet 1+0</option>
+          <option value="3+0">Blitz 3+0</option>
+          <option value="3+2">Blitz 3+2</option>
+          <option value="10+0">Rapid 10+0</option>
+          <option value="custom">Custom…</option>
+        </select>
+        <div id="custom-time-inputs">
+          <input type="number" id="custom-mins" min="1" max="180" value="5" title="Minutes per player">
+          <span>m</span>
+          <input type="number" id="custom-inc" min="0" max="60" value="0" title="Increment in seconds">
+          <span>s</span>
+          <button id="apply-custom-time" class="action-btn">Set</button>
+        </div>
+      </div>
       <button id="sound-toggle" class="action-btn" title="Toggle Move Sounds">🔊 Sound</button>
     </div>
   </header>
@@ -42,7 +60,7 @@
       </div>
     </aside>
 
-    <!-- Center Column: Black Clock -> Board -> Status -> Controls -> White Clock -> Time Control -->
+    <!-- Center Column: Black Clock -> Board -> Status -> Controls -> Auto Flip -> White Clock -->
     <section id="game-center">
 
       <!-- Black Clock (Top of Board) -->
@@ -75,26 +93,6 @@
       <div id="clock-white" class="clock-panel">
         <div class="clock-player"><span class="player-icon">♙</span> White</div>
         <div class="clock-time" id="clock-white-time">--:--</div>
-      </div>
-
-      <!-- Time Control Selector -->
-      <div id="time-control-panel">
-        <span class="tc-label">⏱ Time:</span>
-        <select id="time-preset">
-          <option value="untimed">Untimed</option>
-          <option value="1+0">Bullet 1+0</option>
-          <option value="3+0">Blitz 3+0</option>
-          <option value="3+2">Blitz 3+2</option>
-          <option value="10+0">Rapid 10+0</option>
-          <option value="custom">Custom…</option>
-        </select>
-        <div id="custom-time-inputs">
-          <input type="number" id="custom-mins" min="1" max="180" value="5" title="Minutes per player">
-          <span>m</span>
-          <input type="number" id="custom-inc" min="0" max="60" value="0" title="Increment in seconds">
-          <span>s</span>
-          <button id="apply-custom-time" class="action-btn">Apply</button>
-        </div>
       </div>
 
     </section>
