@@ -1,3 +1,458 @@
+// ==========================================================
+// AUDIO MANAGER (Web Audio API - Zero External Dependencies)
+// ==========================================================
+const AudioManager = {
+  ctx: null,
+  enabled: true,
+
+  init: function () {
+    let saved = localStorage.getItem('chess_sound');
+    this.enabled = saved !== null ? saved === 'true' : true;
+    this.updateToggleUI();
+  },
+
+  _getAudioContext: function () {
+    if (!this.ctx && (typeof window !== 'undefined')) {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) {
+        this.ctx = new AudioCtx();
+      }
+    }
+    if (this.ctx && this.ctx.state === 'suspended') {
+      this.ctx.resume();
+    }
+    return this.ctx;
+  },
+
+  playTone: function (freq, type, duration, gainLevel, startTimeOffset = 0) {
+    if (!this.enabled) return;
+    try {
+      const ctx = this._getAudioContext();
+      if (!ctx) return;
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + startTimeOffset);
+
+      gain.gain.setValueAtTime(gainLevel, ctx.currentTime + startTimeOffset);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + startTimeOffset + duration);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(ctx.currentTime + startTimeOffset);
+      osc.stop(ctx.currentTime + startTimeOffset + duration);
+    } catch (e) {
+      // Audio context might be restricted before user gesture
+    }
+  },
+
+  playMove: function () {
+    // Soft subtle wooden click
+    this.playTone(320, 'triangle', 0.08, 0.25);
+  },
+
+  playCapture: function () {
+    // Stronger impact click
+    this.playTone(180, 'sine', 0.12, 0.4);
+    this.playTone(120, 'triangle', 0.15, 0.35, 0.02);
+  },
+
+  playCheck: function () {
+    // Alert chirp
+    this.playTone(550, 'sine', 0.1, 0.3);
+    this.playTone(880, 'sine', 0.15, 0.35, 0.08);
+  },
+
+  playCastle: function () {
+    // Two-step slide tone
+    this.playTone(300, 'triangle', 0.09, 0.25);
+    this.playTone(420, 'triangle', 0.12, 0.3, 0.08);
+  },
+
+  playGameOver: function () {
+    // 3-note descending fanfare
+    this.playTone(523.25, 'sine', 0.18, 0.3, 0);      // C5
+    this.playTone(440.00, 'sine', 0.18, 0.3, 0.15);   // A4
+    this.playTone(349.23, 'sine', 0.35, 0.35, 0.30);  // F4
+  },
+
+  playTimeout: function () {
+    // Buzzer alarm
+    this.playTone(220, 'sawtooth', 0.2, 0.35, 0);
+    this.playTone(180, 'sawtooth', 0.3, 0.4, 0.2);
+  },
+
+  toggleSound: function () {
+    this.enabled = !this.enabled;
+    localStorage.setItem('chess_sound', this.enabled);
+    this.updateToggleUI();
+    if (this.enabled) {
+      this.playMove();
+    }
+  },
+
+  updateToggleUI: function () {
+    if (typeof $ !== 'undefined') {
+      $('#sound-toggle').text(this.enabled ? '🔊 Sound' : '🔇 Muted');
+    }
+  }
+};
+
+// ==========================================================
+// THEME MANAGER
+// ==========================================================
+const ThemeManager = {
+  current: 'classic',
+  themes: ['classic', 'wood', 'neon', 'slate'],
+
+  init: function () {
+    let saved = localStorage.getItem('chess_theme') || 'classic';
+    this.apply(saved);
+  },
+
+  apply: function (theme) {
+    if (!this.themes.includes(theme)) theme = 'classic';
+    this.current = theme;
+    if (typeof document !== 'undefined') {
+      document.body.className = `theme-${theme}`;
+      localStorage.setItem('chess_theme', theme);
+      if (typeof $ !== 'undefined') {
+        $('#theme-select').val(theme);
+      }
+    }
+  }
+};
+
+// ==========================================================
+// CHESS CLOCK MANAGER (Drift-free high-precision timestamps)
+// ==========================================================
+const ClockManager = {
+  state: {
+    isTimed: false,
+    preset: 'untimed',
+    whiteMs: 0,
+    blackMs: 0,
+    incrementMs: 0,
+    activeColor: null, // 'w' | 'b' | null
+    running: false,
+    lastTimestamp: null,
+    rafId: null
+  },
+
+  init: function () {
+    this.setPreset('untimed');
+  },
+
+  setPreset: function (preset, customMins = 5, customInc = 0) {
+    this.stop();
+    this.state.preset = preset;
+
+    if (preset === 'untimed') {
+      this.state.isTimed = false;
+      this.state.whiteMs = 0;
+      this.state.blackMs = 0;
+      this.state.incrementMs = 0;
+    } else if (preset === '1+0') {
+      this.state.isTimed = true;
+      this.state.whiteMs = 1 * 60 * 1000;
+      this.state.blackMs = 1 * 60 * 1000;
+      this.state.incrementMs = 0;
+    } else if (preset === '3+0') {
+      this.state.isTimed = true;
+      this.state.whiteMs = 3 * 60 * 1000;
+      this.state.blackMs = 3 * 60 * 1000;
+      this.state.incrementMs = 0;
+    } else if (preset === '3+2') {
+      this.state.isTimed = true;
+      this.state.whiteMs = 3 * 60 * 1000;
+      this.state.blackMs = 3 * 60 * 1000;
+      this.state.incrementMs = 2 * 1000;
+    } else if (preset === '10+0') {
+      this.state.isTimed = true;
+      this.state.whiteMs = 10 * 60 * 1000;
+      this.state.blackMs = 10 * 60 * 1000;
+      this.state.incrementMs = 0;
+    } else if (preset === 'custom') {
+      this.state.isTimed = true;
+      let mins = Math.max(1, Math.min(180, parseInt(customMins, 10) || 5));
+      let inc = Math.max(0, Math.min(60, parseInt(customInc, 10) || 0));
+      this.state.whiteMs = mins * 60 * 1000;
+      this.state.blackMs = mins * 60 * 1000;
+      this.state.incrementMs = inc * 1000;
+    }
+
+    this.state.activeColor = null;
+    this.state.running = false;
+    this.state.lastTimestamp = null;
+    this.updateDisplay();
+  },
+
+  onMoveMade: function (playerWhoMoved, nextPlayer) {
+    if (!this.state.isTimed || main.variables.gameOver) return;
+
+    // Apply increment to player who just completed their move
+    if (this.state.running && this.state.incrementMs > 0) {
+      if (playerWhoMoved === 'w') {
+        this.state.whiteMs += this.state.incrementMs;
+      } else if (playerWhoMoved === 'b') {
+        this.state.blackMs += this.state.incrementMs;
+      }
+    }
+
+    // Start clock if first move
+    this.state.activeColor = nextPlayer;
+    this.state.running = true;
+    this.state.lastTimestamp = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+
+    this.startLoop();
+    this.updateDisplay();
+  },
+
+  startLoop: function () {
+    if (this.state.rafId) {
+      if (typeof cancelAnimationFrame !== 'undefined') {
+        cancelAnimationFrame(this.state.rafId);
+      }
+    }
+
+    const loop = (now) => {
+      if (!this.state.running || !this.state.activeColor) return;
+
+      const currentTimestamp = now || (typeof performance !== 'undefined' ? performance.now() : Date.now());
+      if (this.state.lastTimestamp !== null) {
+        const elapsed = currentTimestamp - this.state.lastTimestamp;
+        if (this.state.activeColor === 'w') {
+          this.state.whiteMs = Math.max(0, this.state.whiteMs - elapsed);
+          if (this.state.whiteMs <= 0) {
+            this.handleTimeout('w');
+            return;
+          }
+        } else if (this.state.activeColor === 'b') {
+          this.state.blackMs = Math.max(0, this.state.blackMs - elapsed);
+          if (this.state.blackMs <= 0) {
+            this.handleTimeout('b');
+            return;
+          }
+        }
+      }
+
+      this.state.lastTimestamp = currentTimestamp;
+      this.updateDisplay();
+
+      if (typeof requestAnimationFrame !== 'undefined') {
+        this.state.rafId = requestAnimationFrame(loop);
+      }
+    };
+
+    if (typeof requestAnimationFrame !== 'undefined') {
+      this.state.rafId = requestAnimationFrame(loop);
+    }
+  },
+
+  handleTimeout: function (timedOutColor) {
+    this.stop();
+    this.updateDisplay();
+
+    main.variables.gameOver = true;
+    const winner = timedOutColor === 'w' ? 'Black' : 'White';
+    $('#turn').addClass('turnhighlight').text(`TIME OUT — ${winner.toUpperCase()} WINS!`);
+
+    AudioManager.playTimeout();
+    main.methods.updateNavButtons();
+  },
+
+  stop: function () {
+    this.state.running = false;
+    if (this.state.rafId && (typeof cancelAnimationFrame !== 'undefined')) {
+      cancelAnimationFrame(this.state.rafId);
+      this.state.rafId = null;
+    }
+  },
+
+  reset: function () {
+    this.setPreset(this.state.preset);
+  },
+
+  formatTime: function (ms) {
+    if (!this.state.isTimed) return '--:--';
+    let totalSeconds = Math.ceil(ms / 1000);
+    let minutes = Math.floor(totalSeconds / 60);
+    let seconds = totalSeconds % 60;
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  },
+
+  updateDisplay: function () {
+    if (typeof $ === 'undefined') return;
+
+    const wText = this.formatTime(this.state.whiteMs);
+    const bText = this.formatTime(this.state.blackMs);
+
+    $('#clock-white-time').text(wText);
+    $('#clock-black-time').text(bText);
+
+    $('#clock-white, #clock-black').removeClass('active warning critical');
+
+    if (this.state.isTimed) {
+      if (this.state.running) {
+        if (this.state.activeColor === 'w') $('#clock-white').addClass('active');
+        if (this.state.activeColor === 'b') $('#clock-black').addClass('active');
+      }
+
+      // Time warnings for White
+      if (this.state.whiteMs <= 10000 && this.state.whiteMs > 0) {
+        $('#clock-white').addClass('critical');
+      } else if (this.state.whiteMs <= 30000 && this.state.whiteMs > 0) {
+        $('#clock-white').addClass('warning');
+      }
+
+      // Time warnings for Black
+      if (this.state.blackMs <= 10000 && this.state.blackMs > 0) {
+        $('#clock-black').addClass('critical');
+      } else if (this.state.blackMs <= 30000 && this.state.blackMs > 0) {
+        $('#clock-black').addClass('warning');
+      }
+    }
+  }
+};
+
+// ==========================================================
+// DRAG AND DROP MANAGER (Pointer Events - Mouse, Touch, Stylus)
+// ==========================================================
+const DragManager = {
+  active: false,
+  pieceKey: null,
+  fromCellId: null,
+  startX: 0,
+  startY: 0,
+  thresholdMet: false,
+  ghostEl: null,
+
+  init: function () {
+    if (typeof document === 'undefined') return;
+    this.ghostEl = document.getElementById('drag-ghost');
+
+    // Attach Pointer Event Listeners
+    $(document).on('pointerdown', '.gamecell', function (e) {
+      DragManager.handlePointerDown(e, this);
+    });
+
+    $(document).on('pointermove', function (e) {
+      DragManager.handlePointerMove(e);
+    });
+
+    $(document).on('pointerup pointercancel', function (e) {
+      DragManager.handlePointerUp(e);
+    });
+  },
+
+  handlePointerDown: function (e, cellEl) {
+    if (main.variables.gameOver || main.variables.isPromoting) return;
+
+    let cellId = $(cellEl).attr('id');
+    let chessPiece = $(cellEl).attr('chess');
+
+    if (!chessPiece || chessPiece === 'null') return;
+    if (main.methods.pieceColor(chessPiece) !== main.variables.turn) return;
+
+    this.active = true;
+    this.pieceKey = chessPiece;
+    this.fromCellId = cellId;
+    this.startX = e.clientX;
+    this.startY = e.clientY;
+    this.thresholdMet = false;
+
+    // Highlight source square & targets
+    main.methods.selectPiece(cellId);
+  },
+
+  handlePointerMove: function (e) {
+    if (!this.active) return;
+
+    let dx = e.clientX - this.startX;
+    let dy = e.clientY - this.startY;
+
+    if (!this.thresholdMet) {
+      if (Math.hypot(dx, dy) > 5) {
+        this.thresholdMet = true;
+        let pieceObj = main.variables.pieces[this.pieceKey];
+        if (pieceObj && this.ghostEl) {
+          this.ghostEl.innerHTML = pieceObj.img;
+          this.ghostEl.style.display = 'block';
+          $('#' + this.fromCellId).addClass('dragging-source');
+        }
+      }
+    }
+
+    if (this.thresholdMet && this.ghostEl) {
+      this.ghostEl.style.left = e.clientX + 'px';
+      this.ghostEl.style.top = e.clientY + 'px';
+    }
+  },
+
+  handlePointerUp: function (e) {
+    if (!this.active) return;
+
+    let wasDragging = this.thresholdMet;
+    let fromId = this.fromCellId;
+
+    if (this.ghostEl) {
+      this.ghostEl.style.display = 'none';
+      this.ghostEl.innerHTML = '';
+    }
+    $('.gamecell').removeClass('dragging-source');
+
+    this.active = false;
+    this.thresholdMet = false;
+    this.pieceKey = null;
+    this.fromCellId = null;
+
+    if (wasDragging) {
+      // Find element under pointer
+      let targetEl = document.elementFromPoint(e.clientX, e.clientY);
+      let cellEl = targetEl ? $(targetEl).closest('.gamecell') : null;
+
+      if (cellEl && cellEl.length > 0) {
+        let toCellId = cellEl.attr('id');
+        let targetChess = cellEl.attr('chess');
+
+        if (toCellId === fromId) {
+          return;
+        }
+
+        let match = main.variables.highlighted.find(h => {
+          let baseTarget = h.indexOf('_') !== -1 ? h.split('_').slice(0, 2).join('_') : h;
+          return baseTarget === toCellId;
+        });
+
+        if (match) {
+          let selectedKey = $('#' + fromId).attr('chess');
+          if (match.indexOf('_castleKS') !== -1) {
+            main.methods.performCastle(selectedKey, 'KS');
+          } else if (match.indexOf('_castleQS') !== -1) {
+            main.methods.performCastle(selectedKey, 'QS');
+          } else if (match.indexOf('_ep') !== -1) {
+            main.methods.performEnPassant(selectedKey, toCellId);
+          } else if (!targetChess || targetChess === 'null') {
+            main.methods.move({ id: toCellId });
+          } else {
+            main.methods.capture({ id: toCellId, name: targetChess });
+          }
+          return;
+        }
+      }
+
+      // Illegal drop - cancel selection and flash
+      main.methods.clearSelection();
+    }
+  }
+};
+
+// ==========================================================
+// MAIN CHESS GAME OBJECT
+// ==========================================================
 let main = {
   variables: {
     turn: 'w',
@@ -5,17 +460,17 @@ let main = {
     highlighted: [],
     gameOver: false,
     isPromoting: false,
-    enPassantTarget: null, // { cell: 'col_row', pawnCell: 'col_row', col: number, color: 'w'|'b' }
-    orientation: 'w',      // 'w' or 'b'
+    enPassantTarget: null,
+    orientation: 'w',
     autoFlip: false,
     halfmoveClock: 0,
     fullmoveNumber: 1,
     positionCounts: {},
     positionHistory: [],
-    moveHistory: [],       // array of { moveNumber, color, san, from, to, pieceKey, pieceType, capturedKey, promotion, isCastling, isEnPassant }
-    historyStack: [],      // stack of previous GameStateSnapshots for Undo
-    redoStack: [],         // stack of undone GameStateSnapshots for Redo
-    lastMove: null,        // { from: 'col_row', to: 'col_row' }
+    moveHistory: [],
+    historyStack: [],
+    redoStack: [],
+    lastMove: null,
     pieces: {}
   },
 
@@ -58,7 +513,6 @@ let main = {
       };
     },
 
-    // Render board cells and coordinate labels based on orientation
     renderBoard: function () {
       let isWhite = main.variables.orientation === 'w';
       let rowOrder = isWhite ? [8, 7, 6, 5, 4, 3, 2, 1] : [1, 2, 3, 4, 5, 6, 7, 8];
@@ -114,7 +568,7 @@ let main = {
       }
     },
 
-    // ---------- helper functions ----------
+    // ---------- Helper Functions ----------
     pieceColor: function (key) {
       return key ? key.charAt(0) : null;
     },
@@ -166,7 +620,6 @@ let main = {
       return null;
     },
 
-    // Attack squares for a piece sitting at fromCellId on the specified board
     getAttackSquaresFrom: function (pieceKey, fromCellId, board) {
       let color = main.methods.pieceColor(pieceKey);
       let type = main.methods.pieceTypeOf(pieceKey);
@@ -201,7 +654,7 @@ let main = {
           while (main.methods.inBounds(c, r)) {
             let id = main.methods.cellId(c, r);
             attacks.push(id);
-            if (board[id]) break; // ray blocked by piece
+            if (board[id]) break;
             c += dc; r += dr;
           }
         });
@@ -220,7 +673,6 @@ let main = {
       return false;
     },
 
-    // Pseudo-legal moves for a piece on the board
     getPseudoMoves: function (pieceKey, board) {
       let obj = main.variables.pieces[pieceKey];
       if (!obj || obj.captured || !obj.position) return [];
@@ -234,18 +686,15 @@ let main = {
         let dir = color === 'w' ? 1 : -1;
         let startRow = color === 'w' ? 2 : 7;
 
-        // Forward 1 square
         let oneStep = main.methods.cellId(col, row + dir);
         if (main.methods.inBounds(col, row + dir) && !board[oneStep]) {
           moves.push(oneStep);
-          // Forward 2 squares from initial rank
           let twoStep = main.methods.cellId(col, row + 2 * dir);
           if (row === startRow && !board[twoStep]) {
             moves.push(twoStep);
           }
         }
 
-        // Standard diagonal captures
         [[col - 1, row + dir], [col + 1, row + dir]].forEach(([c, r]) => {
           if (main.methods.inBounds(c, r)) {
             let id = main.methods.cellId(c, r);
@@ -255,7 +704,6 @@ let main = {
           }
         });
 
-        // En passant capture
         if (main.variables.enPassantTarget && main.variables.enPassantTarget.color !== color) {
           let ep = main.variables.enPassantTarget;
           let epRow = color === 'w' ? 5 : 4;
@@ -291,14 +739,12 @@ let main = {
           }
         }
 
-        // Castling
         if (!obj.moved && !obj.captured) {
           let oppColor = color === 'w' ? 'b' : 'w';
           let rank = color === 'w' ? 1 : 8;
           let kingStart = main.methods.cellId(5, rank);
 
           if (board[kingStart] === pieceKey && !main.methods.isSquareAttacked(kingStart, oppColor, board)) {
-            // Kingside Castle
             let rookKSKey = color + '_rook2';
             let rookKS = main.variables.pieces[rookKSKey];
             if (rookKS && !rookKS.moved && !rookKS.captured && board[main.methods.cellId(8, rank)] === rookKSKey) {
@@ -311,7 +757,6 @@ let main = {
               }
             }
 
-            // Queenside Castle
             let rookQSKey = color + '_rook1';
             let rookQS = main.variables.pieces[rookQSKey];
             if (rookQS && !rookQS.moved && !rookQS.captured && board[main.methods.cellId(1, rank)] === rookQSKey) {
@@ -410,7 +855,7 @@ let main = {
       return false;
     },
 
-    // ---------- SAN (Standard Algebraic Notation) Generator ----------
+    // ---------- SAN Generator ----------
     getDisambiguation: function (pieceKey, fromCell, toCell) {
       let type = main.methods.pieceTypeOf(pieceKey);
       if (type === 'pawn' || type === 'king') return '';
@@ -438,11 +883,11 @@ let main = {
       let sameRow = candidates.some(pos => main.methods.parseCell(pos).row === fromPos.row);
 
       if (!sameCol) {
-        return fromAlg.charAt(0); // file disambiguation (e.g. Ndf3)
+        return fromAlg.charAt(0);
       } else if (!sameRow) {
-        return fromAlg.charAt(1); // rank disambiguation (e.g. R1a3)
+        return fromAlg.charAt(1);
       } else {
-        return fromAlg; // both file and rank
+        return fromAlg;
       }
     },
 
@@ -490,7 +935,6 @@ let main = {
         san += toAlg;
       }
 
-      // Check / Checkmate indicator
       if (main.methods.isInCheck(oppColor, resultingBoard)) {
         san += main.methods.hasAnyLegalMoves(oppColor) ? '+' : '#';
       }
@@ -498,7 +942,7 @@ let main = {
       return san;
     },
 
-    // ---------- Position Key & Draw Detection (Threefold & 50-Move) ----------
+    // ---------- Position Key & Draw Detection ----------
     getPositionKey: function (board, turn, enPassantTarget) {
       let fenRows = [];
       let charMap = {
@@ -529,7 +973,6 @@ let main = {
 
       let placement = fenRows.join('/');
 
-      // Castling rights
       let castling = '';
       let wk = main.variables.pieces['w_king'];
       let wr1 = main.variables.pieces['w_rook1'];
@@ -548,7 +991,6 @@ let main = {
       }
       if (!castling) castling = '-';
 
-      // En passant square (only if valid capture exists)
       let epStr = '-';
       if (enPassantTarget) {
         epStr = main.methods.toAlgebraic(enPassantTarget.cell);
@@ -558,14 +1000,14 @@ let main = {
     },
 
     checkDrawConditions: function (color) {
-      // 1. 50-Move Rule (100 half-moves)
       if (main.variables.halfmoveClock >= 100) {
         main.variables.gameOver = true;
+        ClockManager.stop();
         $('#turn').addClass('turnhighlight').text('DRAW BY 50-MOVE RULE');
+        AudioManager.playGameOver();
         return true;
       }
 
-      // 2. Threefold Repetition
       let currentKey = main.methods.getPositionKey(main.methods.getBoard(), color, main.variables.enPassantTarget);
       let count = (main.variables.positionCounts[currentKey] || 0) + 1;
       main.variables.positionCounts[currentKey] = count;
@@ -573,7 +1015,9 @@ let main = {
 
       if (count >= 3) {
         main.variables.gameOver = true;
+        ClockManager.stop();
         $('#turn').addClass('turnhighlight').text('DRAW BY THREEFOLD REPETITION');
+        AudioManager.playGameOver();
         return true;
       }
 
@@ -596,7 +1040,9 @@ let main = {
         capturedBlackHtml: $('#captured-black .captured-pieces-list').html(),
         capturedWhiteHtml: $('#captured-white .captured-pieces-list').html(),
         lastMove: main.variables.lastMove ? Object.assign({}, main.variables.lastMove) : null,
-        moveHistory: JSON.parse(JSON.stringify(main.variables.moveHistory))
+        moveHistory: JSON.parse(JSON.stringify(main.variables.moveHistory)),
+        clockWhiteMs: ClockManager.state.whiteMs,
+        clockBlackMs: ClockManager.state.blackMs
       };
     },
 
@@ -614,6 +1060,12 @@ let main = {
       main.variables.selectedpiece = '';
       main.variables.highlighted = [];
       main.variables.isPromoting = false;
+
+      // Restore clock times
+      if (snap.clockWhiteMs !== undefined) ClockManager.state.whiteMs = snap.clockWhiteMs;
+      if (snap.clockBlackMs !== undefined) ClockManager.state.blackMs = snap.clockBlackMs;
+      ClockManager.state.activeColor = snap.gameOver ? null : snap.turn;
+      ClockManager.updateDisplay();
 
       // Update DOM
       main.methods.gamesetup();
@@ -639,6 +1091,7 @@ let main = {
 
       let prevSnap = main.variables.historyStack.pop();
       main.methods.restoreSnapshot(prevSnap);
+      AudioManager.playMove();
     },
 
     redo: function () {
@@ -648,6 +1101,7 @@ let main = {
 
       let nextSnap = main.variables.redoStack.pop();
       main.methods.restoreSnapshot(nextSnap);
+      AudioManager.playMove();
     },
 
     updateNavButtons: function () {
@@ -679,15 +1133,15 @@ let main = {
       html += '</tbody></table>';
 
       $('#move-history-list').html(html);
-      let listEl = document.getElementById('move-history-list');
+      let listEl = (typeof document !== 'undefined') ? document.getElementById('move-history-list') : null;
       if (listEl) listEl.scrollTop = listEl.scrollHeight;
     },
 
     exportPGN: function () {
       let result = '*';
       let text = $('#turn').text();
-      if (text.includes('White wins')) result = '1-0';
-      else if (text.includes('Black wins')) result = '0-1';
+      if (text.includes('White wins') || text.includes('WHITE WINS')) result = '1-0';
+      else if (text.includes('Black wins') || text.includes('BLACK WINS')) result = '0-1';
       else if (text.includes('draw') || text.includes('Stalemate') || text.includes('DRAW')) result = '1/2-1/2';
 
       let d = new Date();
@@ -710,16 +1164,18 @@ let main = {
 
     copyPGNToClipboard: function () {
       let pgn = main.methods.exportPGN();
-      if (navigator.clipboard && navigator.clipboard.writeText) {
+      if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(pgn).then(() => {
           let prevText = $('#pgn-btn').text();
-          $('#pgn-btn').text('✓ Copied!');
-          setTimeout(() => $('#pgn-btn').text(prevText), 1500);
+          $('#pgn-btn, #export-pgn-btn').text('✓ Copied!');
+          setTimeout(() => $('#pgn-btn, #export-pgn-btn').text(prevText), 1500);
         }).catch(() => {
           prompt('Copy PGN below:', pgn);
         });
       } else {
-        prompt('Copy PGN below:', pgn);
+        if (typeof prompt !== 'undefined') {
+          prompt('Copy PGN below:', pgn);
+        }
       }
     },
 
@@ -742,7 +1198,6 @@ let main = {
       let rookObj = main.variables.pieces[rookKey];
       let fromCell = kingObj.position;
 
-      // Save pre-move snapshot for Undo
       main.variables.historyStack.push(main.methods.createSnapshot());
       main.variables.redoStack = [];
 
@@ -760,7 +1215,6 @@ let main = {
       main.variables.lastMove = { from: fromCell, to: kingTarget };
       main.variables.halfmoveClock += 1;
 
-      // SAN recording
       let resultingBoard = main.methods.getBoard();
       let oppColor = color === 'w' ? 'b' : 'w';
       let san = main.methods.generateSAN(kingKey, fromCell, kingTarget, false, side, null, resultingBoard, oppColor, '');
@@ -779,6 +1233,7 @@ let main = {
         isEnPassant: false
       });
 
+      AudioManager.playCastle();
       main.methods.endturn(null);
     },
 
@@ -793,11 +1248,9 @@ let main = {
       let capturedPieceObj = main.variables.pieces[capturedPieceName];
       let color = main.methods.pieceColor(selectedKey);
 
-      // Save pre-move snapshot for Undo
       main.variables.historyStack.push(main.methods.createSnapshot());
       main.variables.redoStack = [];
 
-      // Remove captured enemy pawn from board
       $('#' + capturedPawnCell).html('&nbsp;').attr('chess', 'null');
       if (capturedPieceObj) {
         capturedPieceObj.captured = true;
@@ -810,7 +1263,6 @@ let main = {
         }
       }
 
-      // Move attacking pawn
       $('#' + targetCellId).html(pieceObj.img).attr('chess', selectedKey);
       $('#' + fromCell).html('&nbsp;').attr('chess', 'null');
 
@@ -818,9 +1270,8 @@ let main = {
       pieceObj.moved = true;
 
       main.variables.lastMove = { from: fromCell, to: targetCellId };
-      main.variables.halfmoveClock = 0; // Pawn move/capture resets 50-move clock
+      main.variables.halfmoveClock = 0;
 
-      // SAN recording
       let resultingBoard = main.methods.getBoard();
       let oppColor = color === 'w' ? 'b' : 'w';
       let san = main.methods.generateSAN(selectedKey, fromCell, targetCellId, true, null, null, resultingBoard, oppColor, '');
@@ -839,6 +1290,7 @@ let main = {
         isEnPassant: true
       });
 
+      AudioManager.playCapture();
       main.methods.endturn(null);
     },
 
@@ -897,7 +1349,7 @@ let main = {
       }, 300);
     },
 
-    // ---------- move execution ----------
+    // ---------- Move Execution ----------
     move: function (target) {
       let selectedpiece = $('#' + main.variables.selectedpiece).attr('chess');
       let pieceObj = main.variables.pieces[selectedpiece];
@@ -907,14 +1359,11 @@ let main = {
       let targetRank = target.id.split('_')[1];
       let color = main.methods.pieceColor(selectedpiece);
 
-      // Calculate disambiguation on the pre-move board
       let preDisambig = main.methods.getDisambiguation(selectedpiece, fromCell, target.id);
 
-      // Save pre-move snapshot for Undo
       main.variables.historyStack.push(main.methods.createSnapshot());
       main.variables.redoStack = [];
 
-      // Track en passant eligibility
       let nextEnPassant = null;
       let isPawn = pieceObj.type.endsWith('_pawn');
       if (isPawn && Math.abs(toPos.row - fromPos.row) === 2) {
@@ -927,7 +1376,6 @@ let main = {
         };
       }
 
-      // Halfmove clock tracking (resets on pawn move)
       if (isPawn) {
         main.variables.halfmoveClock = 0;
       } else {
@@ -966,6 +1414,7 @@ let main = {
             isCastling: null,
             isEnPassant: false
           });
+          AudioManager.playMove();
           main.methods.endturn(nextEnPassant);
         });
       } else {
@@ -985,6 +1434,7 @@ let main = {
           isCastling: null,
           isEnPassant: false
         });
+        AudioManager.playMove();
         main.methods.endturn(nextEnPassant);
       }
     },
@@ -998,14 +1448,11 @@ let main = {
       let targetRank = target.id.split('_')[1];
       let color = main.methods.pieceColor(selectedKey);
 
-      // Calculate disambiguation on the pre-move board
       let preDisambig = main.methods.getDisambiguation(selectedKey, fromCell, target.id);
 
-      // Save pre-move snapshot for Undo
       main.variables.historyStack.push(main.methods.createSnapshot());
       main.variables.redoStack = [];
 
-      // Halfmove clock tracking (resets on capture)
       main.variables.halfmoveClock = 0;
 
       $('#' + target.id).html(pieceObj.img);
@@ -1052,6 +1499,7 @@ let main = {
             isCastling: null,
             isEnPassant: false
           });
+          AudioManager.playCapture();
           main.methods.endturn(null);
         });
       } else {
@@ -1071,6 +1519,7 @@ let main = {
           isCastling: null,
           isEnPassant: false
         });
+        AudioManager.playCapture();
         main.methods.endturn(null);
       }
     },
@@ -1114,6 +1563,7 @@ let main = {
     },
 
     endturn: function (nextEnPassant) {
+      let previousColor = main.variables.turn;
       main.variables.selectedpiece = '';
       main.variables.highlighted = [];
       main.variables.enPassantTarget = nextEnPassant || null;
@@ -1133,17 +1583,24 @@ let main = {
 
       if (inCheck && !hasMoves) {
         main.variables.gameOver = true;
+        ClockManager.stop();
         let winner = color === 'w' ? 'Black' : 'White';
         $('#turn').addClass('turnhighlight').text('Checkmate! ' + winner + ' wins!');
+        AudioManager.playGameOver();
       } else if (!inCheck && !hasMoves) {
         main.variables.gameOver = true;
+        ClockManager.stop();
         $('#turn').addClass('turnhighlight').text("Stalemate! It's a draw.");
+        AudioManager.playGameOver();
       } else if (main.methods.checkDrawConditions(color)) {
-        // Draw by Threefold or 50-move handled inside checkDrawConditions
+        // Draw handled inside checkDrawConditions
       } else if (inCheck) {
         $('#turn').removeClass('turnhighlight').text((color === 'w' ? "White" : "Black") + "'s turn \u2014 Check!");
+        AudioManager.playCheck();
+        ClockManager.onMoveMade(previousColor, color);
       } else {
         $('#turn').removeClass('turnhighlight').text(color === 'w' ? "It's White's Turn!" : "It's Black's Turn!");
+        ClockManager.onMoveMade(previousColor, color);
       }
 
       // Auto Flip if enabled
@@ -1177,12 +1634,13 @@ let main = {
       $('.gamecell').removeClass('green yellow red last-move-from last-move-to');
       $('#turn').removeClass('turnhighlight').text("It's White's Turn!");
 
+      ClockManager.reset();
+
       main.methods.renderBoard();
       main.methods.gamesetup();
       main.methods.updateMoveHistoryUI();
       main.methods.updateNavButtons();
 
-      // Record initial position
       let initialKey = main.methods.getPositionKey(main.methods.getBoard(), 'w', null);
       main.variables.positionCounts[initialKey] = 1;
       main.variables.positionHistory.push(initialKey);
@@ -1195,6 +1653,11 @@ main.variables.pieces = main.methods.getInitialPieces();
 
 if (typeof $ !== 'undefined') {
   $(document).ready(function () {
+    AudioManager.init();
+    ThemeManager.init();
+    ClockManager.init();
+    DragManager.init();
+
     main.methods.renderBoard();
     main.methods.gamesetup();
 
@@ -1204,8 +1667,8 @@ if (typeof $ !== 'undefined') {
     main.methods.updateNavButtons();
     main.methods.updateMoveHistoryUI();
 
-    // Cell click handler (delegated)
-    $(document).on('click', '.gamecell', function () {
+    // Click handler for click-to-move
+    $(document).on('click', '.gamecell', function (e) {
       if (main.variables.gameOver || main.variables.isPromoting) return;
 
       let cellId = $(this).attr('id');
@@ -1219,7 +1682,6 @@ if (typeof $ !== 'undefined') {
         if (main.variables.selectedpiece === cellId) {
           main.methods.clearSelection();
         } else if (chessPiece && chessPiece !== 'null' && main.methods.pieceColor(chessPiece) === main.variables.turn) {
-          // Switch selection to another piece of current player's color
           main.methods.clearSelection();
           main.methods.selectPiece(cellId);
         } else {
@@ -1248,7 +1710,7 @@ if (typeof $ !== 'undefined') {
       }
     });
 
-    // Action button handlers (delegated)
+    // Action button handlers
     $(document).on('click', '#undo-btn', function () {
       main.methods.undo();
     });
@@ -1272,9 +1734,42 @@ if (typeof $ !== 'undefined') {
     $(document).on('change', '#autoflip-check', function () {
       main.variables.autoFlip = $(this).is(':checked');
     });
+
+    // Theme selector
+    $(document).on('change', '#theme-select', function () {
+      ThemeManager.apply($(this).val());
+    });
+
+    // Sound toggle
+    $(document).on('click', '#sound-toggle', function () {
+      AudioManager.toggleSound();
+    });
+
+    // Time Control Presets
+    $(document).on('change', '#time-preset', function () {
+      let val = $(this).val();
+      if (val === 'custom') {
+        $('#custom-time-inputs').css('display', 'flex');
+      } else {
+        $('#custom-time-inputs').css('display', 'none');
+        ClockManager.setPreset(val);
+      }
+    });
+
+    $(document).on('click', '#apply-custom-time', function () {
+      let mins = $('#custom-mins').val();
+      let inc = $('#custom-inc').val();
+      ClockManager.setPreset('custom', mins, inc);
+    });
   });
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = main;
+  module.exports = {
+    main,
+    ClockManager,
+    AudioManager,
+    ThemeManager,
+    DragManager
+  };
 }

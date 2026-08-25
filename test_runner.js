@@ -1,5 +1,13 @@
 const assert = require('assert');
 
+// Mock localStorage
+const storage = {};
+global.localStorage = {
+  getItem: function(key) { return storage[key] !== undefined ? storage[key] : null; },
+  setItem: function(key, val) { storage[key] = String(val); },
+  clear: function() { for (let k in storage) delete storage[k]; }
+};
+
 // Mock a lightweight DOM environment for Node.js
 const dom = {
   cells: {},
@@ -12,7 +20,14 @@ const dom = {
   undoDisabled: false,
   redoDisabled: false,
   gameHtml: '',
-  historyHtml: ''
+  historyHtml: '',
+  clockWhiteText: '--:--',
+  clockBlackText: '--:--',
+  clockWhiteClasses: new Set(),
+  clockBlackClasses: new Set(),
+  soundToggleText: '🔊 Sound',
+  themeSelectVal: 'classic',
+  timePresetVal: 'untimed'
 };
 
 function resetDom() {
@@ -37,9 +52,29 @@ function resetDom() {
   dom.redoDisabled = true;
   dom.gameHtml = '';
   dom.historyHtml = '';
+  dom.clockWhiteText = '--:--';
+  dom.clockBlackText = '--:--';
+  dom.clockWhiteClasses.clear();
+  dom.clockBlackClasses.clear();
 }
 
 resetDom();
+
+// Mock document.body
+global.document = {
+  body: {
+    className: 'theme-classic'
+  },
+  ready: function(cb) { cb(); },
+  getElementById: function(id) {
+    if (id === 'move-history-list') return { scrollTop: 0, scrollHeight: 100 };
+    if (id === 'drag-ghost') return { style: {}, innerHTML: '' };
+    return null;
+  },
+  elementFromPoint: function(x, y) {
+    return null;
+  }
+};
 
 // Mock jQuery global
 global.$ = function(selector) {
@@ -47,10 +82,13 @@ global.$ = function(selector) {
     return {
       attr: () => null,
       html: () => '',
+      text: () => '',
       addClass: function() { return this; },
       removeClass: function() { return this; },
       prop: function() { return false; },
-      hasClass: function() { return false; }
+      hasClass: function() { return false; },
+      val: function() { return ''; },
+      css: function() { return this; }
     };
   }
 
@@ -113,120 +151,172 @@ global.$ = function(selector) {
     };
   }
 
-  if (typeof selector === 'string' && selector.startsWith('#')) {
-    let id = selector.substring(1);
+  if (typeof selector === 'string') {
+    if (selector.startsWith('#')) {
+      let id = selector.substring(1);
 
-    if (id === 'game') {
-      return {
-        html: function(h) {
-          if (h !== undefined) { dom.gameHtml = h; return this; }
-          return dom.gameHtml;
-        }
-      };
-    }
+      if (id === 'game') {
+        return {
+          html: function(h) {
+            if (h !== undefined) { dom.gameHtml = h; return this; }
+            return dom.gameHtml;
+          }
+        };
+      }
 
-    if (id === 'turn') {
-      return {
-        text: function(txt) {
-          if (txt !== undefined) { dom.turnText = txt; return this; }
-          return dom.turnText;
-        },
-        addClass: function(cls) { dom.turnClasses.add(cls); return this; },
-        removeClass: function(cls) { dom.turnClasses.delete(cls); return this; },
-        hasClass: function(cls) { return dom.turnClasses.has(cls); }
-      };
-    }
+      if (id === 'turn') {
+        return {
+          text: function(txt) {
+            if (txt !== undefined) { dom.turnText = txt; return this; }
+            return dom.turnText;
+          },
+          addClass: function(cls) { dom.turnClasses.add(cls); return this; },
+          removeClass: function(cls) { dom.turnClasses.delete(cls); return this; },
+          hasClass: function(cls) { return dom.turnClasses.has(cls); }
+        };
+      }
 
-    if (id === 'move-history-list') {
-      return {
-        html: function(h) {
-          if (h !== undefined) { dom.historyHtml = h; return this; }
-          return dom.historyHtml;
-        }
-      };
-    }
+      if (id === 'clock-white-time') {
+        return {
+          text: function(txt) {
+            if (txt !== undefined) { dom.clockWhiteText = txt; return this; }
+            return dom.clockWhiteText;
+          }
+        };
+      }
 
-    if (id === 'undo-btn') {
-      return {
-        prop: function(p, val) {
-          if (val !== undefined) { dom.undoDisabled = val; return this; }
-          return dom.undoDisabled;
-        }
-      };
-    }
+      if (id === 'clock-black-time') {
+        return {
+          text: function(txt) {
+            if (txt !== undefined) { dom.clockBlackText = txt; return this; }
+            return dom.clockBlackText;
+          }
+        };
+      }
 
-    if (id === 'redo-btn') {
-      return {
-        prop: function(p, val) {
-          if (val !== undefined) { dom.redoDisabled = val; return this; }
-          return dom.redoDisabled;
-        }
-      };
-    }
+      if (id === 'clock-white') {
+        return {
+          addClass: function(cls) { dom.clockWhiteClasses.add(cls); return this; },
+          removeClass: function(cls) { dom.clockWhiteClasses.delete(cls); return this; }
+        };
+      }
 
-    if (id === 'captured-black .captured-pieces-list') {
-      return {
-        append: function(html) { dom.capturedBlack.push(html); },
-        html: function(h) {
-          if (h !== undefined) {
-            dom.capturedBlack = h ? [h] : [];
+      if (id === 'clock-black') {
+        return {
+          addClass: function(cls) { dom.clockBlackClasses.add(cls); return this; },
+          removeClass: function(cls) { dom.clockBlackClasses.delete(cls); return this; }
+        };
+      }
+
+      if (id === 'sound-toggle') {
+        return {
+          text: function(txt) {
+            if (txt !== undefined) { dom.soundToggleText = txt; return this; }
+            return dom.soundToggleText;
+          }
+        };
+      }
+
+      if (id === 'theme-select') {
+        return {
+          val: function(v) {
+            if (v !== undefined) { dom.themeSelectVal = v; return this; }
+            return dom.themeSelectVal;
+          }
+        };
+      }
+
+      if (id === 'move-history-list') {
+        return {
+          html: function(h) {
+            if (h !== undefined) { dom.historyHtml = h; return this; }
+            return dom.historyHtml;
+          }
+        };
+      }
+
+      if (id === 'undo-btn') {
+        return {
+          prop: function(p, val) {
+            if (val !== undefined) { dom.undoDisabled = val; return this; }
+            return dom.undoDisabled;
+          }
+        };
+      }
+
+      if (id === 'redo-btn') {
+        return {
+          prop: function(p, val) {
+            if (val !== undefined) { dom.redoDisabled = val; return this; }
+            return dom.redoDisabled;
+          }
+        };
+      }
+
+      if (id === 'captured-black .captured-pieces-list') {
+        return {
+          append: function(html) { dom.capturedBlack.push(html); },
+          html: function(h) {
+            if (h !== undefined) {
+              dom.capturedBlack = h ? [h] : [];
+              return this;
+            }
+            return dom.capturedBlack.join('');
+          },
+          empty: function() { dom.capturedBlack = []; }
+        };
+      }
+
+      if (id === 'captured-white .captured-pieces-list') {
+        return {
+          append: function(html) { dom.capturedWhite.push(html); },
+          html: function(h) {
+            if (h !== undefined) {
+              dom.capturedWhite = h ? [h] : [];
+              return this;
+            }
+            return dom.capturedWhite.join('');
+          },
+          empty: function() { dom.capturedWhite = []; }
+        };
+      }
+
+      if (id === 'promotion-modal') {
+        return {
+          css: function(prop, val) {
+            if (prop === 'display') dom.promoDisplay = val;
             return this;
           }
-          return dom.capturedBlack.join('');
-        },
-        empty: function() { dom.capturedBlack = []; }
-      };
-    }
+        };
+      }
 
-    if (id === 'captured-white .captured-pieces-list') {
-      return {
-        append: function(html) { dom.capturedWhite.push(html); },
-        html: function(h) {
-          if (h !== undefined) {
-            dom.capturedWhite = h ? [h] : [];
+      if (id === 'promotion-options') {
+        return {
+          html: function(h) { dom.promoHtml = h; return this; }
+        };
+      }
+
+      if (dom.cells[id]) {
+        let cell = dom.cells[id];
+        return {
+          attr: function(name, val) {
+            if (val !== undefined) { cell[name] = val; return this; }
+            return cell[name];
+          },
+          html: function(val) {
+            if (val !== undefined) { cell.html = val; return this; }
+            return cell.html;
+          },
+          addClass: function(cls) {
+            cls.split(' ').forEach(c => cell.classes.add(c));
+            return this;
+          },
+          removeClass: function(cls) {
+            cls.split(' ').forEach(c => cell.classes.delete(c));
             return this;
           }
-          return dom.capturedWhite.join('');
-        },
-        empty: function() { dom.capturedWhite = []; }
-      };
-    }
-
-    if (id === 'promotion-modal') {
-      return {
-        css: function(prop, val) {
-          if (prop === 'display') dom.promoDisplay = val;
-          return this;
-        }
-      };
-    }
-
-    if (id === 'promotion-options') {
-      return {
-        html: function(h) { dom.promoHtml = h; return this; }
-      };
-    }
-
-    if (dom.cells[id]) {
-      let cell = dom.cells[id];
-      return {
-        attr: function(name, val) {
-          if (val !== undefined) { cell[name] = val; return this; }
-          return cell[name];
-        },
-        html: function(val) {
-          if (val !== undefined) { cell.html = val; return this; }
-          return cell.html;
-        },
-        addClass: function(cls) {
-          cls.split(' ').forEach(c => cell.classes.add(c));
-          return this;
-        },
-        removeClass: function(cls) {
-          cls.split(' ').forEach(c => cell.classes.delete(c));
-          return this;
-        }
-      };
+        };
+      }
     }
   }
 
@@ -235,19 +325,16 @@ global.$ = function(selector) {
     on: function() {},
     off: function() { return this; },
     prop: function() { return false; },
-    is: function() { return false; }
+    is: function() { return false; },
+    addClass: function() { return this; },
+    removeClass: function() { return this; },
+    text: function() { return ''; },
+    val: function() { return ''; },
+    css: function() { return this; }
   };
 };
 
-global.document = {
-  ready: function(cb) { cb(); },
-  getElementById: function(id) {
-    if (id === 'move-history-list') return { scrollTop: 0, scrollHeight: 100 };
-    return null;
-  }
-};
-
-const main = require('./script.js');
+const { main, ClockManager, AudioManager, ThemeManager, DragManager } = require('./script.js');
 
 let passedTests = 0;
 let failedTests = 0;
@@ -267,8 +354,9 @@ function runTest(name, fn) {
   }
 }
 
-console.log('=== CHESS COMPREHENSIVE AUTOMATED TEST SUITE ===\n');
+console.log('=== CHESS ADVANCED COMPREHENSIVE TEST SUITE ===\n');
 
+// 1 - 20: Full Regression Suite
 runTest('1. Initial Setup & Piece Count', () => {
   let board = main.methods.getBoard();
   let pieceCount = 0;
@@ -296,7 +384,6 @@ runTest('2. Initial Legal Moves for White', () => {
 });
 
 runTest('3. Move History & Standard Algebraic Notation (SAN)', () => {
-  // 1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 4. Bxc6 dxc6
   main.variables.selectedpiece = '5_2'; main.methods.move({ id: '5_4' });
   assert.strictEqual(main.variables.moveHistory[0].san, 'e4');
 
@@ -328,14 +415,12 @@ runTest('4. SAN Disambiguation (Two Knights Reaching Same Square)', () => {
   main.variables.selectedpiece = '2_1'; main.methods.move({ id: '4_2' }); // 2. Nd2
   main.variables.selectedpiece = '1_7'; main.methods.move({ id: '1_6' }); // 2... a6
 
-  // White has knight on d2 (4_2) and knight on g1 (7_1), both can jump to f3 (6_3)
   main.variables.selectedpiece = '4_2'; main.methods.move({ id: '6_3' });
   let lastSan = main.variables.moveHistory[main.variables.moveHistory.length - 1].san;
   assert.strictEqual(lastSan, 'Ndf3', 'Must disambiguate knight file: Ndf3');
 });
 
 runTest('5. Fool\'s Mate (Checkmate Detection & # Suffix)', () => {
-  // 1. f3 e5 2. g4 Qh4#
   main.variables.selectedpiece = '6_2'; main.methods.move({ id: '6_3' }); // 1. f3
   main.variables.selectedpiece = '5_7'; main.methods.move({ id: '5_5' }); // 1... e5
   main.variables.selectedpiece = '7_2'; main.methods.move({ id: '7_4' }); // 2. g4
@@ -348,7 +433,6 @@ runTest('5. Fool\'s Mate (Checkmate Detection & # Suffix)', () => {
 });
 
 runTest('6. Scholar\'s Mate & PGN Export', () => {
-  // 1. e4 e5 2. Bc4 Nc6 3. Qh5 Nf6 4. Qxf7#
   main.variables.selectedpiece = '5_2'; main.methods.move({ id: '5_4' });
   main.variables.selectedpiece = '5_7'; main.methods.move({ id: '5_5' });
   main.variables.selectedpiece = '6_1'; main.methods.move({ id: '3_4' });
@@ -410,17 +494,17 @@ runTest('9. Castling Prevented When Transit Squares Attacked', () => {
   main.variables.selectedpiece = '6_1'; main.methods.move({ id: '4_3' });
   main.variables.selectedpiece = '3_8'; main.methods.move({ id: '1_6' });
   main.variables.selectedpiece = '1_2'; main.methods.move({ id: '1_3' });
-  main.variables.selectedpiece = '1_6'; main.methods.move({ id: '6_1' }); // Black bishop attacks f1 (6_1)
+  main.variables.selectedpiece = '1_6'; main.methods.move({ id: '6_1' });
 
   let kingMoves = main.methods.getLegalMoves('w_king');
   assert.ok(!kingMoves.includes('7_1_castleKS'), 'Kingside castle must be forbidden when f1 is attacked');
 });
 
 runTest('10. En Passant Capture (White capturing Black pawn)', () => {
-  main.variables.selectedpiece = '5_2'; main.methods.move({ id: '5_4' }); // 1. e4
-  main.variables.selectedpiece = '8_7'; main.methods.move({ id: '8_6' }); // 1... h6
-  main.variables.selectedpiece = '5_4'; main.methods.move({ id: '5_5' }); // 2. e5
-  main.variables.selectedpiece = '4_7'; main.methods.move({ id: '4_5' }); // 2... d5
+  main.variables.selectedpiece = '5_2'; main.methods.move({ id: '5_4' });
+  main.variables.selectedpiece = '8_7'; main.methods.move({ id: '8_6' });
+  main.variables.selectedpiece = '5_4'; main.methods.move({ id: '5_5' });
+  main.variables.selectedpiece = '4_7'; main.methods.move({ id: '4_5' });
 
   assert.ok(main.variables.enPassantTarget !== null);
   assert.strictEqual(main.variables.enPassantTarget.cell, '4_6');
@@ -437,20 +521,19 @@ runTest('10. En Passant Capture (White capturing Black pawn)', () => {
 });
 
 runTest('11. Absolute Pin Prevents Exposing King to Check', () => {
-  main.variables.selectedpiece = '5_2'; main.methods.move({ id: '5_4' }); // 1. e4
-  main.variables.selectedpiece = '5_7'; main.methods.move({ id: '5_5' }); // 1... e5
-  main.variables.selectedpiece = '4_1'; main.methods.move({ id: '5_2' }); // 2. Qe2
-  main.variables.selectedpiece = '4_8'; main.methods.move({ id: '5_7' }); // 2... Qe7
-  main.variables.selectedpiece = '1_2'; main.methods.move({ id: '1_3' }); // 3. a3
-  main.variables.selectedpiece = '1_7'; main.methods.move({ id: '1_6' }); // 3... a6
-  main.variables.selectedpiece = '4_2'; main.methods.move({ id: '4_3' }); // 4. d3
+  main.variables.selectedpiece = '5_2'; main.methods.move({ id: '5_4' });
+  main.variables.selectedpiece = '5_7'; main.methods.move({ id: '5_5' });
+  main.variables.selectedpiece = '4_1'; main.methods.move({ id: '5_2' });
+  main.variables.selectedpiece = '4_8'; main.methods.move({ id: '5_7' });
+  main.variables.selectedpiece = '1_2'; main.methods.move({ id: '1_3' });
+  main.variables.selectedpiece = '1_7'; main.methods.move({ id: '1_6' });
+  main.variables.selectedpiece = '4_2'; main.methods.move({ id: '4_3' });
 
   let bPawnMoves = main.methods.getLegalMoves('b_pawn5');
   assert.strictEqual(bPawnMoves.length, 0, 'Pinned pawn on e5 cannot legally move');
 });
 
 runTest('12. Stalemate Detection', () => {
-  // Clear board and setup 2-piece stalemate: White King on a6, Queen on b6, Black King on a8
   for (let key in main.variables.pieces) {
     main.variables.pieces[key].captured = true;
     main.variables.pieces[key].position = '';
@@ -472,13 +555,11 @@ runTest('12. Stalemate Detection', () => {
 });
 
 runTest('13. Move Undo and Redo Mechanics', () => {
-  // 1. e4
   main.variables.selectedpiece = '5_2'; main.methods.move({ id: '5_4' });
   assert.strictEqual(main.variables.turn, 'b');
   assert.strictEqual(main.variables.moveHistory.length, 1);
   assert.strictEqual(dom.undoDisabled, false);
 
-  // Undo 1. e4
   main.methods.undo();
   assert.strictEqual(main.variables.turn, 'w');
   assert.strictEqual(main.variables.pieces['w_pawn5'].position, '5_2');
@@ -486,7 +567,6 @@ runTest('13. Move Undo and Redo Mechanics', () => {
   assert.strictEqual(main.methods.getBoard()['5_2'], 'w_pawn5');
   assert.strictEqual(dom.redoDisabled, false);
 
-  // Redo 1. e4
   main.methods.redo();
   assert.strictEqual(main.variables.turn, 'b');
   assert.strictEqual(main.variables.pieces['w_pawn5'].position, '5_4');
@@ -494,7 +574,6 @@ runTest('13. Move Undo and Redo Mechanics', () => {
 });
 
 runTest('14. Capture Undo Restores Captured Pieces & UI', () => {
-  // 1. e4 d5 2. exd5
   main.variables.selectedpiece = '5_2'; main.methods.move({ id: '5_4' });
   main.variables.selectedpiece = '4_7'; main.methods.move({ id: '4_5' });
   main.variables.selectedpiece = '5_4'; main.methods.capture({ id: '4_5', name: 'b_pawn4' });
@@ -502,7 +581,6 @@ runTest('14. Capture Undo Restores Captured Pieces & UI', () => {
   assert.strictEqual(main.variables.pieces['b_pawn4'].captured, true);
   assert.strictEqual(dom.capturedBlack.length, 1);
 
-  // Undo capture
   main.methods.undo();
   assert.strictEqual(main.variables.turn, 'w');
   assert.strictEqual(main.variables.pieces['b_pawn4'].captured, false);
@@ -510,7 +588,6 @@ runTest('14. Capture Undo Restores Captured Pieces & UI', () => {
   assert.strictEqual(main.methods.getBoard()['4_5'], 'b_pawn4');
   assert.strictEqual(dom.capturedBlack.length, 0);
 
-  // Redo capture
   main.methods.redo();
   assert.strictEqual(main.variables.turn, 'b');
   assert.strictEqual(main.variables.pieces['b_pawn4'].captured, true);
@@ -529,7 +606,6 @@ runTest('15. Castling Undo Restores King & Rook State', () => {
   assert.strictEqual(main.variables.pieces['w_king'].moved, true);
   assert.strictEqual(main.variables.pieces['w_rook2'].moved, true);
 
-  // Undo
   main.methods.undo();
   assert.strictEqual(main.variables.pieces['w_king'].moved, false);
   assert.strictEqual(main.variables.pieces['w_rook2'].moved, false);
@@ -550,15 +626,15 @@ runTest('16. New Move Clears Redo Stack', () => {
 });
 
 runTest('17. Threefold Repetition Draw Detection', () => {
-  main.variables.selectedpiece = '7_1'; main.methods.move({ id: '6_3' }); // Nf3
-  main.variables.selectedpiece = '7_8'; main.methods.move({ id: '6_6' }); // Nf6
-  main.variables.selectedpiece = '6_3'; main.methods.move({ id: '7_1' }); // Ng1
-  main.variables.selectedpiece = '6_6'; main.methods.move({ id: '7_8' }); // Ng8 (2nd)
+  main.variables.selectedpiece = '7_1'; main.methods.move({ id: '6_3' });
+  main.variables.selectedpiece = '7_8'; main.methods.move({ id: '6_6' });
+  main.variables.selectedpiece = '6_3'; main.methods.move({ id: '7_1' });
+  main.variables.selectedpiece = '6_6'; main.methods.move({ id: '7_8' });
 
-  main.variables.selectedpiece = '7_1'; main.methods.move({ id: '6_3' }); // Nf3
-  main.variables.selectedpiece = '7_8'; main.methods.move({ id: '6_6' }); // Nf6
-  main.variables.selectedpiece = '6_3'; main.methods.move({ id: '7_1' }); // Ng1
-  main.variables.selectedpiece = '6_6'; main.methods.move({ id: '7_8' }); // Ng8 (3rd -> Draw)
+  main.variables.selectedpiece = '7_1'; main.methods.move({ id: '6_3' });
+  main.variables.selectedpiece = '7_8'; main.methods.move({ id: '6_6' });
+  main.variables.selectedpiece = '6_3'; main.methods.move({ id: '7_1' });
+  main.variables.selectedpiece = '6_6'; main.methods.move({ id: '7_8' });
 
   assert.strictEqual(main.variables.gameOver, true);
   assert.strictEqual(dom.turnText, 'DRAW BY THREEFOLD REPETITION');
@@ -566,13 +642,12 @@ runTest('17. Threefold Repetition Draw Detection', () => {
 
 runTest('18. 50-Move Rule (100 Half-Moves Draw & Resets)', () => {
   main.variables.halfmoveClock = 99;
-  main.variables.selectedpiece = '7_1'; main.methods.move({ id: '6_3' }); // quiet knight move
+  main.variables.selectedpiece = '7_1'; main.methods.move({ id: '6_3' });
 
   assert.strictEqual(main.variables.halfmoveClock, 100);
   assert.strictEqual(main.variables.gameOver, true);
   assert.strictEqual(dom.turnText, 'DRAW BY 50-MOVE RULE');
 
-  // Pawn move resets clock
   main.methods.undo();
   main.variables.halfmoveClock = 50;
   main.variables.selectedpiece = '5_2'; main.methods.move({ id: '5_4' });
@@ -589,7 +664,6 @@ runTest('19. Board Flip Orientation & Coordinate Invariance', () => {
   assert.strictEqual(board['5_1'], 'w_king');
   assert.strictEqual(board['5_8'], 'b_king');
 
-  // Move while flipped
   main.variables.selectedpiece = '5_2'; main.methods.move({ id: '5_4' });
   assert.strictEqual(main.methods.getBoard()['5_4'], 'w_pawn5');
 
@@ -610,6 +684,152 @@ runTest('20. Game Reset Clears History and Snapshots', () => {
   assert.strictEqual(main.variables.halfmoveClock, 0);
   assert.strictEqual(main.variables.gameOver, false);
   assert.strictEqual(dom.turnText, "It's White's Turn!");
+});
+
+// 21 - 30: New Advanced Features (Clocks, Audio, Themes, Drag, Highlights)
+runTest('21. Chess Clock: Initial State & Untimed Mode', () => {
+  ClockManager.setPreset('untimed');
+  assert.strictEqual(ClockManager.state.isTimed, false);
+  assert.strictEqual(ClockManager.formatTime(ClockManager.state.whiteMs), '--:--');
+  assert.strictEqual(ClockManager.state.running, false);
+});
+
+runTest('22. Chess Clock: Presets (1+0, 3+2, 10+0, Custom)', () => {
+  ClockManager.setPreset('1+0');
+  assert.strictEqual(ClockManager.state.isTimed, true);
+  assert.strictEqual(ClockManager.state.whiteMs, 60000);
+  assert.strictEqual(ClockManager.state.incrementMs, 0);
+  assert.strictEqual(ClockManager.formatTime(ClockManager.state.whiteMs), '01:00');
+
+  ClockManager.setPreset('3+2');
+  assert.strictEqual(ClockManager.state.whiteMs, 180000);
+  assert.strictEqual(ClockManager.state.incrementMs, 2000);
+  assert.strictEqual(ClockManager.formatTime(ClockManager.state.whiteMs), '03:00');
+
+  ClockManager.setPreset('custom', 15, 10);
+  assert.strictEqual(ClockManager.state.whiteMs, 900000);
+  assert.strictEqual(ClockManager.state.incrementMs, 10000);
+  assert.strictEqual(ClockManager.formatTime(ClockManager.state.whiteMs), '15:00');
+});
+
+runTest('23. Chess Clock: Starts on First Move & Applies Increment', () => {
+  ClockManager.setPreset('3+2');
+  assert.strictEqual(ClockManager.state.running, false);
+
+  // White plays 1. e4
+  main.variables.selectedpiece = '5_2';
+  main.methods.move({ id: '5_4' });
+
+  // Clock started for Black, White was awarded increment
+  assert.strictEqual(ClockManager.state.running, true);
+  assert.strictEqual(ClockManager.state.activeColor, 'b');
+
+  // Black plays 1... e5
+  main.variables.selectedpiece = '5_7';
+  main.methods.move({ id: '5_5' });
+
+  // Black awarded increment and active clock switched to White
+  assert.strictEqual(ClockManager.state.activeColor, 'w');
+  assert.strictEqual(ClockManager.state.blackMs, 180000 + 2000);
+  ClockManager.stop();
+});
+
+runTest('24. Chess Clock: Flag Fall (Timeout) Ends Game', () => {
+  ClockManager.setPreset('1+0');
+  main.variables.selectedpiece = '5_2';
+  main.methods.move({ id: '5_4' });
+
+  // Simulate timeout on Black's clock
+  ClockManager.handleTimeout('b');
+
+  assert.strictEqual(main.variables.gameOver, true);
+  assert.strictEqual(ClockManager.state.running, false);
+  assert.ok(dom.turnText.includes('WHITE WINS'));
+});
+
+runTest('25. Chess Clock: Stops on Checkmate', () => {
+  ClockManager.setPreset('3+0');
+  // Fool's Mate: 1. f3 e5 2. g4 Qh4#
+  main.variables.selectedpiece = '6_2'; main.methods.move({ id: '6_3' });
+  main.variables.selectedpiece = '5_7'; main.methods.move({ id: '5_5' });
+  main.variables.selectedpiece = '7_2'; main.methods.move({ id: '7_4' });
+  main.variables.selectedpiece = '4_8'; main.methods.move({ id: '8_4' });
+
+  assert.strictEqual(main.variables.gameOver, true);
+  assert.strictEqual(ClockManager.state.running, false);
+});
+
+runTest('26. Audio Manager: Sound Triggering & Mute Toggle', () => {
+  AudioManager.init();
+  assert.strictEqual(AudioManager.enabled, true);
+
+  AudioManager.toggleSound();
+  assert.strictEqual(AudioManager.enabled, false);
+  assert.strictEqual(global.localStorage.getItem('chess_sound'), 'false');
+
+  AudioManager.toggleSound();
+  assert.strictEqual(AudioManager.enabled, true);
+});
+
+runTest('27. Theme Manager: Theme Switching & Persistence', () => {
+  ThemeManager.apply('neon');
+  assert.strictEqual(ThemeManager.current, 'neon');
+  assert.strictEqual(global.document.body.className, 'theme-neon');
+  assert.strictEqual(global.localStorage.getItem('chess_theme'), 'neon');
+
+  ThemeManager.apply('wood');
+  assert.strictEqual(ThemeManager.current, 'wood');
+  assert.strictEqual(global.document.body.className, 'theme-wood');
+
+  ThemeManager.apply('slate');
+  assert.strictEqual(ThemeManager.current, 'slate');
+  assert.strictEqual(global.document.body.className, 'theme-slate');
+
+  ThemeManager.apply('classic');
+  assert.strictEqual(ThemeManager.current, 'classic');
+  assert.strictEqual(global.document.body.className, 'theme-classic');
+});
+
+runTest('28. Last-Move Highlighting: Normal, Capture & Castling', () => {
+  // Move 1. e4
+  main.variables.selectedpiece = '5_2'; main.methods.move({ id: '5_4' });
+  assert.deepStrictEqual(main.variables.lastMove, { from: '5_2', to: '5_4' });
+
+  // Move 1... d5
+  main.variables.selectedpiece = '4_7'; main.methods.move({ id: '4_5' });
+  assert.deepStrictEqual(main.variables.lastMove, { from: '4_7', to: '4_5' });
+
+  // Capture 2. exd5
+  main.variables.selectedpiece = '5_4'; main.methods.capture({ id: '4_5', name: 'b_pawn4' });
+  assert.deepStrictEqual(main.variables.lastMove, { from: '5_4', to: '4_5' });
+});
+
+runTest('29. Last-Move Highlighting Preserved Across Undo and Redo', () => {
+  main.variables.selectedpiece = '5_2'; main.methods.move({ id: '5_4' });
+  main.variables.selectedpiece = '5_7'; main.methods.move({ id: '5_5' });
+
+  assert.deepStrictEqual(main.variables.lastMove, { from: '5_7', to: '5_5' });
+
+  main.methods.undo();
+  assert.deepStrictEqual(main.variables.lastMove, { from: '5_2', to: '5_4' });
+
+  main.methods.redo();
+  assert.deepStrictEqual(main.variables.lastMove, { from: '5_7', to: '5_5' });
+});
+
+runTest('30. Drag Manager: Interaction State & Cleanup', () => {
+  DragManager.init();
+  assert.strictEqual(DragManager.active, false);
+  assert.strictEqual(DragManager.thresholdMet, false);
+
+  // Pointer down on White pawn
+  DragManager.handlePointerDown({ clientX: 100, clientY: 100 }, dom.cells['5_2']);
+  assert.strictEqual(DragManager.active, true);
+  assert.strictEqual(DragManager.fromCellId, '5_2');
+
+  // Pointer up with threshold not met (treated as standard selection)
+  DragManager.handlePointerUp({ clientX: 101, clientY: 101 });
+  assert.strictEqual(DragManager.active, false);
 });
 
 console.log('\n------------------------------------');

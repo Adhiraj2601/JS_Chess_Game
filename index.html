@@ -2,49 +2,106 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>JavaScript Chess Game by Adhiraj</title>
   <link rel="stylesheet" href="./style.css">
 </head>
-<body>
+<body class="theme-classic">
+
+<!-- Top Toolbar: Theme + Sound -->
+<div id="toolbar">
+  <div class="toolbar-section">
+    <label for="theme-select">🎨</label>
+    <select id="theme-select" title="Select Board Theme">
+      <option value="classic">Classic</option>
+      <option value="wood">Wood</option>
+      <option value="neon">Neon</option>
+      <option value="slate">Slate Dark</option>
+    </select>
+  </div>
+  <div class="toolbar-section toolbar-center">
+    <span id="app-title">♟ JS Chess</span>
+  </div>
+  <div class="toolbar-section">
+    <button id="sound-toggle" class="action-btn" title="Toggle Move Sounds">🔊 Sound</button>
+  </div>
+</div>
 
 <div id="game-container">
-  <!-- Captured Black pieces (captured by White) -->
+
+  <!-- Left: White Captures (Black pieces captured by White) -->
   <div id="captured-black" class="captured-panel">
     <h3>White Captures</h3>
     <div class="captured-pieces-list"></div>
   </div>
 
+  <!-- Center: Clocks + Board + Time Control -->
   <div id="game-center">
+
+    <div id="clock-black" class="clock-panel">
+      <div class="clock-label">♟ Black</div>
+      <div class="clock-time" id="clock-black-time">--:--</div>
+    </div>
+
     <div id="game"></div>
+
+    <div id="clock-white" class="clock-panel">
+      <div class="clock-label">♙ White</div>
+      <div class="clock-time" id="clock-white-time">--:--</div>
+    </div>
+
+    <div id="time-control-panel">
+      <span class="tc-label">⏱ Time:</span>
+      <select id="time-preset">
+        <option value="untimed">Untimed</option>
+        <option value="1+0">Bullet 1+0</option>
+        <option value="3+0">Blitz 3+0</option>
+        <option value="3+2">Blitz 3+2</option>
+        <option value="10+0">Rapid 10+0</option>
+        <option value="custom">Custom…</option>
+      </select>
+      <div id="custom-time-inputs">
+        <input type="number" id="custom-mins" min="1" max="180" value="5" title="Minutes per player">
+        <span>min</span>
+        <input type="number" id="custom-inc" min="0" max="60" value="0" title="Increment in seconds">
+        <span>sec</span>
+        <button id="apply-custom-time" class="action-btn">Apply</button>
+      </div>
+    </div>
+
   </div>
 
-  <!-- Captured White pieces (captured by Black) -->
-  <div id="captured-white" class="captured-panel">
-    <h3>Black Captures</h3>
-    <div class="captured-pieces-list"></div>
-  </div>
+  <!-- Right: Black Captures + History -->
+  <div id="right-panel">
+    <div id="captured-white" class="captured-panel">
+      <h3>Black Captures</h3>
+      <div class="captured-pieces-list"></div>
+    </div>
 
-  <!-- Move History Panel -->
-  <div id="history-panel" class="history-panel">
-    <h3>Game History</h3>
-    <div id="move-history-list"></div>
-    <div class="pgn-actions">
-      <button id="export-pgn-btn" class="action-btn">📋 Copy PGN</button>
+    <div id="history-panel" class="history-panel">
+      <h3>Game History</h3>
+      <div id="move-history-list"></div>
+      <div class="pgn-actions">
+        <button id="export-pgn-btn" class="action-btn">📋 Copy PGN</button>
+      </div>
     </div>
   </div>
 
-  <div id="promotion-modal" class="modal-overlay">
-    <div class="modal-content">
-      <h3>Choose Promotion Piece</h3>
-      <div id="promotion-options"></div>
-    </div>
+</div>
+
+<!-- Promotion Modal -->
+<div id="promotion-modal" class="modal-overlay">
+  <div class="modal-content">
+    <h3>Choose Promotion Piece</h3>
+    <div id="promotion-options"></div>
   </div>
 </div>
+
+<!-- Drag Ghost Element (follows cursor during drag) -->
+<div id="drag-ghost" aria-hidden="true"></div>
 
 <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js'></script>
 <script src="./script.js"></script>
 
 </body>
 </html>
-
