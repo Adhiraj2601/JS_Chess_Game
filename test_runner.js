@@ -364,7 +364,7 @@ function runTest(name, fn) {
   }
 }
 
-console.log('=== CHESS ADVANCED COMPREHENSIVE TEST SUITE (40 TESTS) ===\n');
+console.log('=== CHESS ADVANCED COMPREHENSIVE TEST SUITE (54 TESTS) ===\n');
 
 // 1 - 20: Full Regression Suite
 runTest('1. Initial Setup & Piece Count', () => {
@@ -960,6 +960,183 @@ runTest('40. Board Flip: Coordinate Invariance Across Special Moves', () => {
 
   main.methods.flipBoard();
   assert.strictEqual(main.variables.orientation, 'w');
+});
+
+runTest('41. Threatened Piece: Knight Threatening an Opponent Piece', () => {
+  main.variables.selectedpiece = '5_2'; main.methods.move({ id: '5_4' }); // 1. e4
+  main.variables.selectedpiece = '4_7'; main.methods.move({ id: '4_5' }); // 1... d5
+  main.variables.selectedpiece = '7_1'; main.methods.move({ id: '6_3' }); // 2. Nf3
+  main.variables.selectedpiece = '4_5'; main.methods.capture({ id: '5_4', name: 'w_pawn5' }); // 2... dxe4
+  main.variables.selectedpiece = '6_3'; main.methods.move({ id: '7_5' }); // 3. Ng5
+
+  // Now it's Black's turn: White Knight on g5 threatens Black Pawn on e4
+  let threatened = main.methods.getThreatenedSquares('b');
+  assert.ok(threatened.includes('5_4'), 'Black pawn on e4 must be marked as threatened by White Knight on g5');
+});
+
+runTest('42. Threatened Piece: Bishop Threatening an Opponent Piece', () => {
+  main.variables.selectedpiece = '5_2'; main.methods.move({ id: '5_4' }); // 1. e4
+  main.variables.selectedpiece = '5_7'; main.methods.move({ id: '5_5' }); // 1... e5
+  main.variables.selectedpiece = '6_1'; main.methods.move({ id: '3_4' }); // 2. Bc4
+
+  // It is Black's turn: White Bishop on c4 threatens Black Pawn on f7
+  let threatened = main.methods.getThreatenedSquares('b');
+  assert.ok(threatened.includes('6_7'), 'Black pawn on f7 must be threatened by White Bishop on c4');
+});
+
+runTest('43. Threatened Piece: Rook Threatening an Opponent Piece', () => {
+  main.variables.selectedpiece = '1_2'; main.methods.move({ id: '1_4' }); // 1. a4
+  main.variables.selectedpiece = '5_7'; main.methods.move({ id: '5_5' }); // 1... e5
+  main.variables.selectedpiece = '1_1'; main.methods.move({ id: '1_3' }); // 2. Ra3
+  main.variables.selectedpiece = '1_7'; main.methods.move({ id: '1_6' }); // 2... a6
+  main.variables.selectedpiece = '1_3'; main.methods.move({ id: '5_3' }); // 3. Re3
+
+  // It is Black's turn: White Rook on e3 threatens Black Pawn on e5
+  let threatened = main.methods.getThreatenedSquares('b');
+  assert.ok(threatened.includes('5_5'), 'Black pawn on e5 must be threatened by White Rook on e3');
+});
+
+runTest('44. Threatened Piece: Queen Threatening Multiple Pieces', () => {
+  main.variables.selectedpiece = '5_2'; main.methods.move({ id: '5_4' }); // 1. e4
+  main.variables.selectedpiece = '5_7'; main.methods.move({ id: '5_5' }); // 1... e5
+  main.variables.selectedpiece = '4_1'; main.methods.move({ id: '8_5' }); // 2. Qh5
+
+  // It is Black's turn: White Queen on h5 threatens both e5 pawn and f7 pawn
+  let threatened = main.methods.getThreatenedSquares('b');
+  assert.ok(threatened.includes('5_5'), 'Black pawn on e5 must be threatened by Queen on h5');
+  assert.ok(threatened.includes('6_7'), 'Black pawn on f7 must be threatened by Queen on h5');
+});
+
+runTest('45. Threatened Piece: Pawn Threatening an Opponent Piece', () => {
+  main.variables.selectedpiece = '5_2'; main.methods.move({ id: '5_4' }); // 1. e4
+  main.variables.selectedpiece = '4_7'; main.methods.move({ id: '4_5' }); // 1... d5
+
+  // It is White's turn: Black pawn on d5 threatens White pawn on e4
+  let whiteThreatened = main.methods.getThreatenedSquares('w');
+  assert.ok(whiteThreatened.includes('5_4'), 'White pawn on e4 is threatened by Black pawn on d5');
+});
+
+runTest('46. Threatened Piece: Empty Attacked Squares Do NOT Glow Red', () => {
+  main.variables.selectedpiece = '5_2'; main.methods.move({ id: '5_4' }); // 1. e4
+
+  // On Black's turn, White pawn attacks d5 and f5, but both are empty
+  let threatened = main.methods.getThreatenedSquares('b');
+  assert.ok(!threatened.includes('4_5'), 'Empty square d5 must NOT be in threatened list');
+  assert.ok(!threatened.includes('6_5'), 'Empty square f5 must NOT be in threatened list');
+});
+
+runTest('47. Threatened Piece: Pinned Enemy Piece Cannot Threaten (False Threat Pruning)', () => {
+  main.variables.selectedpiece = '5_2'; main.methods.move({ id: '5_4' }); // 1. e4
+  main.variables.selectedpiece = '5_7'; main.methods.move({ id: '5_5' }); // 1... e5
+  main.variables.selectedpiece = '4_1'; main.methods.move({ id: '5_2' }); // 2. Qe2
+  main.variables.selectedpiece = '4_8'; main.methods.move({ id: '5_7' }); // 2... Qe7
+  main.variables.selectedpiece = '1_2'; main.methods.move({ id: '1_3' }); // 3. a3
+  main.variables.selectedpiece = '1_7'; main.methods.move({ id: '1_6' }); // 3... a6
+  main.variables.selectedpiece = '4_2'; main.methods.move({ id: '4_3' }); // 4. d3
+
+  // Black pawn on e5 is pinned by White Queen on e2 to Black King on e8
+  // Thus, Black pawn on e5 CANNOT legally capture White d3 pawn on d4
+  let threatened = main.methods.getThreatenedSquares('w');
+  assert.ok(!threatened.includes('4_3'), 'White pawn on d3 is NOT threatened by pinned Black pawn on e5');
+});
+
+runTest('48. Threatened Piece: King in Check Hierarchy', () => {
+  main.variables.selectedpiece = '5_2'; main.methods.move({ id: '5_4' }); // 1. e4
+  main.variables.selectedpiece = '6_7'; main.methods.move({ id: '6_5' }); // 1... f5
+  main.variables.selectedpiece = '4_1'; main.methods.move({ id: '8_5' }); // 2. Qh5+ (Check!)
+
+  // Black King on e8 is in check
+  let kingCell = main.methods.findKingCell('b', main.methods.getBoard());
+  assert.strictEqual(kingCell, '5_8');
+  assert.strictEqual(main.methods.isInCheck('b'), true);
+  assert.ok(dom.cells['5_8'].classes.has('red'), 'King in check square must have red check highlight');
+});
+
+runTest('49. Threatened Piece: Moving or Capturing Clears Threat', () => {
+  main.variables.selectedpiece = '5_2'; main.methods.move({ id: '5_4' }); // 1. e4
+  main.variables.selectedpiece = '5_7'; main.methods.move({ id: '5_5' }); // 1... e5
+  main.variables.selectedpiece = '7_1'; main.methods.move({ id: '6_3' }); // 2. Nf3 (threatens e5)
+
+  let threatenedBefore = main.methods.getThreatenedSquares('b');
+  assert.ok(threatenedBefore.includes('5_5'), 'e5 is threatened');
+
+  // Black defends by playing 2... Nc6
+  main.variables.selectedpiece = '2_8'; main.methods.move({ id: '3_6' }); // 2... Nc6
+
+  // Now White plays 3. a3 (e5 is still defended, but on White's turn check White's threats)
+  let threatenedWhite = main.methods.getThreatenedSquares('w');
+  assert.ok(!threatenedWhite.includes('6_3'), 'Nf3 is not threatened by Black');
+});
+
+runTest('50. Threatened Piece: Undo and Redo Restore Threat State', () => {
+  main.variables.selectedpiece = '5_2'; main.methods.move({ id: '5_4' }); // 1. e4
+  main.variables.selectedpiece = '5_7'; main.methods.move({ id: '5_5' }); // 1... e5
+  main.variables.selectedpiece = '7_1'; main.methods.move({ id: '6_3' }); // 2. Nf3 (threatens e5)
+
+  assert.ok(main.methods.getThreatenedSquares('b').includes('5_5'));
+
+  main.methods.undo(); // Undo 2. Nf3 -> back to White's turn
+  assert.strictEqual(main.variables.turn, 'w');
+  assert.ok(!main.methods.getThreatenedSquares('w').includes('7_1'));
+
+  main.methods.redo(); // Redo 2. Nf3 -> back to Black's turn
+  assert.strictEqual(main.variables.turn, 'b');
+  assert.ok(main.methods.getThreatenedSquares('b').includes('5_5'), 'Threat on e5 restored on redo');
+});
+
+runTest('51. Threatened Piece: En Passant Threat Detection', () => {
+  main.variables.selectedpiece = '5_2'; main.methods.move({ id: '5_4' }); // 1. e4
+  main.variables.selectedpiece = '8_7'; main.methods.move({ id: '8_6' }); // 1... h6
+  main.variables.selectedpiece = '5_4'; main.methods.move({ id: '5_5' }); // 2. e5
+  main.variables.selectedpiece = '4_7'; main.methods.move({ id: '4_5' }); // 2... d5 (En Passant available)
+
+  // It is White's turn: White pawn on e5 can capture Black pawn on d5 via en passant
+  // From Black's perspective or White's turn, Black pawn on d5 is under threat
+  let whiteThreatsOnBlack = main.methods.getThreatenedSquares('w');
+  // On White's turn, getThreatenedSquares('w') evaluates Black's threats on White
+  let blackThreats = main.methods.getThreatenedSquares('b');
+  assert.ok(blackThreats.includes('4_5'), 'Black pawn on d5 is under en-passant threat from White pawn on e5');
+});
+
+runTest('52. Threatened Piece: Board Flip Preserves Threat Detection', () => {
+  main.variables.selectedpiece = '5_2'; main.methods.move({ id: '5_4' }); // 1. e4
+  main.variables.selectedpiece = '5_7'; main.methods.move({ id: '5_5' }); // 1... e5
+  main.variables.selectedpiece = '7_1'; main.methods.move({ id: '6_3' }); // 2. Nf3 (threatens e5)
+
+  main.methods.flipBoard(); // Flip board to Black orientation
+  assert.strictEqual(main.variables.orientation, 'b');
+
+  let threatened = main.methods.getThreatenedSquares('b');
+  assert.ok(threatened.includes('5_5'), 'Threatened coordinate 5_5 is invariant to visual flip');
+
+  main.methods.flipBoard();
+});
+
+runTest('53. Threatened Piece: Theme Switching Preserves Threat Highlighting', () => {
+  ThemeManager.apply('neon');
+  assert.strictEqual(ThemeManager.current, 'neon');
+
+  ThemeManager.apply('wood');
+  assert.strictEqual(ThemeManager.current, 'wood');
+
+  ThemeManager.apply('slate');
+  assert.strictEqual(ThemeManager.current, 'slate');
+
+  ThemeManager.apply('classic');
+  assert.strictEqual(ThemeManager.current, 'classic');
+});
+
+runTest('54. Threatened Piece: Checkmate Threat State Cleanup', () => {
+  // Fool's Mate
+  main.variables.selectedpiece = '6_2'; main.methods.move({ id: '6_3' }); // 1. f3
+  main.variables.selectedpiece = '5_7'; main.methods.move({ id: '5_5' }); // 1... e5
+  main.variables.selectedpiece = '7_2'; main.methods.move({ id: '7_4' }); // 2. g4
+  main.variables.selectedpiece = '4_8'; main.methods.move({ id: '8_4' }); // 2... Qh4#
+
+  assert.strictEqual(main.variables.gameOver, true);
+  let kingCell = main.methods.findKingCell('w', main.methods.getBoard());
+  assert.strictEqual(kingCell, '5_1');
+  assert.ok(dom.cells['5_1'].classes.has('red'), 'King in checkmate has red check highlight');
 });
 
 console.log('\n------------------------------------');

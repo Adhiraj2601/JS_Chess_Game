@@ -8,11 +8,11 @@
   <img src="https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white" />
   <img src="https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white" />
   <img src="https://img.shields.io/badge/jQuery-0769AD?style=for-the-badge&logo=jquery&logoColor=white" />
-  <img src="https://img.shields.io/badge/Tests-40%20Passed-brightgreen?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Tests-54%20Passed-brightgreen?style=for-the-badge" />
 </p>
 
 <p align="center">
-A modern, fully playable browser-based Chess game built with HTML5, CSS3, JavaScript (ES6+), and jQuery, featuring complete FIDE chess rules, SAN move notation, PGN export, Undo/Redo, Threefold Repetition, 50-Move draw rule, Chess Clocks, Web Audio sound effects, unified Click-to-Move and Drag-and-Drop interaction, Theme Selector, and a tightly centered, responsive workspace layout.
+A modern, fully playable browser-based Chess game built with HTML5, CSS3, JavaScript (ES6+), and jQuery, featuring complete FIDE chess rules, SAN move notation, PGN export, Undo/Redo, Threefold Repetition, 50-Move draw rule, Chess Clocks, Web Audio sound effects, unified Click-to-Move and Drag-and-Drop interaction, Theme Selector, Threatened Piece Red Glow Indicators, and a tightly centered, responsive workspace layout.
 </p>
 
 ---
@@ -27,17 +27,24 @@ A modern, fully playable browser-based Chess game built with HTML5, CSS3, JavaSc
 
 This project is an advanced, production-quality implementation of Chess designed around the chessboard as the central focal point.
 
-The interface eliminates excessive whitespace by organizing all gameplay elements into a balanced 3-column CSS Grid:
+The interface organizes all gameplay elements into a balanced 3-column CSS Grid:
 - **Left Column**: White Captures
 - **Center Column**: Black Clock, Board, Turn Status Banner, Control Buttons, Auto-Flip option, and White Clock sharing the exact same width
 - **Right Column**: Black Captures and Live Game History
 
-Players can seamlessly use both **Click-to-Move** and **Drag-and-Drop** piece interactions interchangeably in both standard and 180° flipped board orientations.
+Players can use both **Click-to-Move** and **Drag-and-Drop** piece interactions interchangeably in both standard and 180° flipped board orientations, with instant visual **Threatened Piece Red Glow** highlighting indicating when any friendly piece is under legal attack.
 
 ---
 
 ## ✨ Features
 
+- **🔴 Threatened Piece / Square Red Glow**:
+  - Automatically detects when pieces belonging to the current player are under **legal threat** of capture.
+  - Highlights the occupied square with an inner red pulsing glow (`.threatened-piece`).
+  - **Legal Threat Accuracy**: Filters out pseudo-attacks from pinned enemy pieces that cannot legally capture without placing their own king in check.
+  - Empty squares do NOT glow red.
+  - Highlights multiple threatened pieces simultaneously.
+  - Seamlessly updates on every move, capture, castle, en passant, promotion, undo, redo, and board flip.
 - **🎯 Centered 3-Column Workspace Layout**:
   - Balanced `max-width: 1140px` workspace container eliminating wasted side margins.
   - Black and White clocks, status banner, and control buttons precisely match the chessboard width.
@@ -77,10 +84,10 @@ Players can seamlessly use both **Click-to-Move** and **Drag-and-Drop** piece in
 |------------|---------|
 | **HTML5** | Semantic structure, Centered Workspace, Clocks & Toolbar |
 | **CSS3** | CSS Variables, 3-Column Grid, Theme palettes, Animations, Media Queries |
-| **JavaScript (ES6+)** | Core Chess Engine, ClockManager, AudioManager, ThemeManager, DragManager |
+| **JavaScript (ES6+)** | Core Chess Engine, Threat Detection, ClockManager, AudioManager, ThemeManager, DragManager |
 | **Web Audio API** | Procedural tone synthesis for movement and game events |
 | **jQuery** | Lightweight DOM event delegation & manipulation |
-| **Node.js** | Automated headless test suite runner (40 tests) |
+| **Node.js** | Automated headless test suite runner (54 tests) |
 
 ---
 
@@ -90,9 +97,9 @@ Players can seamlessly use both **Click-to-Move** and **Drag-and-Drop** piece in
 JS_Chess_Game/
 │
 ├── index.html         # Main UI layout (Toolbar, 3-Column Workspace, Clocks, Board, Captures, History)
-├── style.css          # Theme stylesheets, CSS variables, Workspace Grid, Board Grid, Media Queries
-├── script.js          # Core Engine, ClockManager, AudioManager, ThemeManager, DragManager
-├── test_runner.js     # 40-case automated test suite (Node.js)
+├── style.css          # Theme stylesheets, CSS variables, Workspace Grid, Threat Glow, Media Queries
+├── script.js          # Core Engine, Threat Detection, ClockManager, AudioManager, ThemeManager, DragManager
+├── test_runner.js     # 54-case automated test suite (Node.js)
 └── README.md          # Comprehensive documentation
 ```
 
@@ -100,7 +107,7 @@ JS_Chess_Game/
 
 ## 🧪 Automated Testing
 
-The repository contains an automated test suite verifying all 40 core engine features, layout coordinates, clocks, audio, themes, click-to-move, drag-and-drop, history, undo/redo, draw detection, and board orientation.
+The repository contains an automated test suite verifying all 54 core engine features, threat detection, layout coordinates, clocks, audio, themes, click-to-move, drag-and-drop, history, undo/redo, draw detection, and board orientation.
 
 ### Running the Test Suite:
 
@@ -149,6 +156,20 @@ node test_runner.js
 38. `Click vs Drag Distinction: JustDropped Guard`
 39. `Board Flip: Click-to-Move in Black Orientation`
 40. `Board Flip: Coordinate Invariance Across Special Moves`
+41. `Threatened Piece: Knight Threatening an Opponent Piece`
+42. `Threatened Piece: Bishop Threatening an Opponent Piece`
+43. `Threatened Piece: Rook Threatening an Opponent Piece`
+44. `Threatened Piece: Queen Threatening Multiple Pieces`
+45. `Threatened Piece: Pawn Threatening an Opponent Piece`
+46. `Threatened Piece: Empty Attacked Squares Do NOT Glow Red`
+47. `Threatened Piece: Pinned Enemy Piece Cannot Threaten (False Threat Pruning)`
+48. `Threatened Piece: King in Check Hierarchy`
+49. `Threatened Piece: Moving or Capturing Clears Threat`
+50. `Threatened Piece: Undo and Redo Restore Threat State`
+51. `Threatened Piece: En Passant Threat Detection`
+52. `Threatened Piece: Board Flip Preserves Threat Detection`
+53. `Threatened Piece: Theme Switching Preserves Threat Highlighting`
+54. `Threatened Piece: Checkmate Threat State Cleanup`
 
 ---
 

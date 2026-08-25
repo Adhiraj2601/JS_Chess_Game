@@ -1279,14 +1279,57 @@ let main = {
       main.methods.updateVisualHighlights();
     },
 
-    updateVisualHighlights: function () {
-      $('.gamecell').removeClass('green yellow last-move-from last-move-to');
+    getThreatenedSquares: function (color) {
+      let board = main.methods.getBoard();
+      let oppColor = color === 'w' ? 'b' : 'w';
+      let threatenedSet = new Set();
 
+      for (let pieceKey in main.variables.pieces) {
+        let p = main.variables.pieces[pieceKey];
+        if (p.captured || !p.position) continue;
+        if (main.methods.pieceColor(pieceKey) !== oppColor) continue;
+
+        let legalMoves = main.methods.getLegalMoves(pieceKey);
+        legalMoves.forEach(moveToken => {
+          if (moveToken.includes('_castle')) return;
+
+          if (moveToken.includes('_ep')) {
+            if (main.variables.enPassantTarget && main.variables.enPassantTarget.color === color) {
+              threatenedSet.add(main.variables.enPassantTarget.pawnCell);
+            }
+          } else {
+            let targetId = moveToken;
+            let occupantKey = board[targetId];
+            if (occupantKey && occupantKey !== 'null' && main.methods.pieceColor(occupantKey) === color) {
+              threatenedSet.add(targetId);
+            }
+          }
+        });
+      }
+
+      return Array.from(threatenedSet);
+    },
+
+    updateVisualHighlights: function () {
+      $('.gamecell').removeClass('green yellow red last-move-from last-move-to threatened-piece');
+
+      let color = main.variables.turn;
+
+      // 1. Highlight threatened pieces of the current player with a red glow
+      if (!main.variables.gameOver) {
+        let threatened = main.methods.getThreatenedSquares(color);
+        threatened.forEach(cellId => {
+          $('#' + cellId).addClass('threatened-piece');
+        });
+      }
+
+      // 2. Highlight previous move squares
       if (main.variables.lastMove) {
         $('#' + main.variables.lastMove.from).addClass('last-move-from');
         $('#' + main.variables.lastMove.to).addClass('last-move-to');
       }
 
+      // 3. Highlight selected square and legal destination targets
       if (main.variables.selectedpiece) {
         $('#' + main.variables.selectedpiece).addClass('yellow');
         let key = $('#' + main.variables.selectedpiece).attr('chess');
@@ -1298,11 +1341,12 @@ let main = {
         });
       }
 
-      $('.gamecell').removeClass('red');
-      let color = main.variables.turn;
+      // 4. King in check takes top priority for red check danger highlight
       if (main.methods.isInCheck(color)) {
         let kingCell = main.methods.findKingCell(color, main.methods.getBoard());
-        if (kingCell) $('#' + kingCell).addClass('red');
+        if (kingCell) {
+          $('#' + kingCell).removeClass('threatened-piece').addClass('red');
+        }
       }
     },
 

@@ -40,6 +40,9 @@ body.theme-classic {
   --btn-hover: #484858;
   --status-bg: #22222a;
 
+  --threat-color: rgba(220, 38, 38, 0.95);
+  --threat-glow: inset 0 0 0 2.5px rgba(220, 38, 38, 0.95), inset 0 0 14px rgba(220, 38, 38, 0.5), 0 0 8px rgba(220, 38, 38, 0.4);
+
   --board-size: min(520px, calc(100vh - 200px), calc(100vw - 32px));
 }
 
@@ -79,6 +82,9 @@ body.theme-wood {
   --btn-text: #f5eedc;
   --btn-hover: #674730;
   --status-bg: #2b1c11;
+
+  --threat-color: rgba(239, 68, 68, 0.95);
+  --threat-glow: inset 0 0 0 2.5px rgba(239, 68, 68, 0.95), inset 0 0 14px rgba(239, 68, 68, 0.55), 0 0 10px rgba(239, 68, 68, 0.45);
 }
 
 body.theme-neon {
@@ -117,6 +123,9 @@ body.theme-neon {
   --btn-text: #00f7ff;
   --btn-hover: #ff007f;
   --status-bg: #0d0e1c;
+
+  --threat-color: #ff0044;
+  --threat-glow: inset 0 0 0 2.5px #ff0044, inset 0 0 16px rgba(255, 0, 68, 0.7), 0 0 12px rgba(255, 0, 68, 0.6);
 }
 
 body.theme-slate {
@@ -155,6 +164,9 @@ body.theme-slate {
   --btn-text: #eceff4;
   --btn-hover: #434e64;
   --status-bg: #1d222c;
+
+  --threat-color: #bf616a;
+  --threat-glow: inset 0 0 0 2.5px #bf616a, inset 0 0 14px rgba(191, 97, 106, 0.6), 0 0 10px rgba(191, 97, 106, 0.5);
 }
 
 /* ==========================================================
@@ -524,6 +536,23 @@ html, body {
 
 .gamecell.red {
   background: var(--cell-check) !important;
+  box-shadow: inset 0 0 0 3px #ff0000, 0 0 14px rgba(255, 0, 0, 0.75) !important;
+  z-index: 3;
+}
+
+.gamecell.threatened-piece {
+  box-shadow: var(--threat-glow);
+  animation: threat-pulse 2s ease-in-out infinite alternate;
+  z-index: 2;
+}
+
+@keyframes threat-pulse {
+  from {
+    filter: drop-shadow(0 0 1px var(--threat-color));
+  }
+  to {
+    filter: drop-shadow(0 0 5px var(--threat-color));
+  }
 }
 
 .gamecell.last-move-from {
