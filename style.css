@@ -91,20 +91,30 @@ div * {
   font-size: 28px;
 }
 
+#controls {
+  width: 448px;
+  margin-left: 56px;
+  margin-top: 10px;
+  clear: both;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 #turn {
-  max-width: 451px;
-  max-height: 30px;
   width: 100%;
-  height: 100%;
+  max-width: 448px;
+  height: 30px;
   position: relative;
-  float: right;
   border-radius: 5px;
   border: 1px solid rgb(0, 0, 0);
   border-style: inset;
   text-align: center;
-  padding: 5px 0 0 0;
+  line-height: 28px;
+  padding: 0;
   background: #fff;
   transition: .85s linear;
+  box-sizing: border-box;
 }
 
 .turnhighlight {
