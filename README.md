@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-A modern, fully playable browser-based Chess game built with HTML5, CSS3, JavaScript (ES6+), and jQuery, featuring complete FIDE chess rules, SAN move notation, PGN export, Undo/Redo, Threefold Repetition, 50-Move draw rule, Chess Clocks, Web Audio sound effects, unified Click-to-Move and Drag-and-Drop interaction, Theme Selector, Threatened Piece Red Glow Indicators, and a tightly centered, responsive workspace layout.
+A modern, fully playable browser-based Chess game built with HTML5, CSS3, JavaScript (ES6+), and jQuery, featuring complete FIDE chess rules, SAN move notation, PGN export, Undo/Redo, Threefold Repetition, 50-Move draw rule, Chess Clocks, Web Audio sound effects, unified Click-to-Move and Drag-and-Drop interaction, Permanent Wood Theme, Dual Attacking & Threatened Piece Red Glow Indicators, and a tightly centered, responsive workspace layout.
 </p>
 
 ---
@@ -32,26 +32,25 @@ The interface organizes all gameplay elements into a balanced 3-column CSS Grid:
 - **Center Column**: Black Clock, Board, Turn Status Banner, Control Buttons, Auto-Flip option, and White Clock sharing the exact same width
 - **Right Column**: Black Captures and Live Game History
 
-Players can use both **Click-to-Move** and **Drag-and-Drop** piece interactions interchangeably in both standard and 180° flipped board orientations, with instant visual **Threatened Piece Red Glow** highlighting indicating when any friendly piece is under legal attack.
+Players can use both **Click-to-Move** and **Drag-and-Drop** piece interactions interchangeably in both standard and 180° flipped board orientations, with instant visual **Attacking & Threatened Piece Red Glow** highlighting indicating when any piece can capture an enemy piece or is under legal attack.
 
 ---
 
 ## ✨ Features
 
-- **🔴 Threatened Piece / Square Red Glow**:
-  - Automatically detects when pieces belonging to the current player are under **legal threat** of capture.
-  - Highlights the occupied square with an inner red pulsing glow (`.threatened-piece`).
+- **🔴 Attacking & Threatened Piece Red Glow**:
+  - Automatically highlights any piece that can capture an opponent piece on its next move with a red box/border (`.threatened-piece`).
+  - Automatically highlights any piece that is currently threatened by an opponent piece with a red border (`.threatened-piece`).
+  - When opposing pieces attack each other (such as pawns attacking each other), both the attacking piece and the threatened piece receive the red border indicator.
   - **Legal Threat Accuracy**: Filters out pseudo-attacks from pinned enemy pieces that cannot legally capture without placing their own king in check.
   - Empty squares do NOT glow red.
-  - Highlights multiple threatened pieces simultaneously.
+  - Highlights multiple attacking and threatened pieces simultaneously.
   - Seamlessly updates on every move, capture, castle, en passant, promotion, undo, redo, and board flip.
 - **🎯 Centered 3-Column Workspace Layout**:
   - Balanced `max-width: 1140px` workspace container eliminating wasted side margins.
   - Black and White clocks, status banner, and control buttons precisely match the chessboard width.
-  - Symmetrical side panels for captured pieces and game history.
-- **🖐️ Unified Click-to-Move & Drag-and-Drop**:
-  - **Click-to-Move**: Single-click selection, legal target indicators, friendly piece switching, and deselect on click.
-  - **Drag-and-Drop**: Pointer Events (`pointerdown`, `pointermove`, `pointerup`) with a smooth floating ghost, drop target detection, and touch-action optimization.
+- **✋ Unified Click-to-Move & Drag-and-Drop Interaction**:
+  - **Pointer Events**: Universal touch, pen, and mouse support across all screen types.
   - **Interchangeable Input**: Use Click or Drag at any moment without configuration or interference.
   - **180° Board Flip Compatibility**: Flawless coordinate resolution regardless of orientation.
 - **⏱️ Chess Clocks & Time Controls**:
@@ -61,46 +60,41 @@ Players can use both **Click-to-Move** and **Drag-and-Drop** piece interactions 
 - **🔊 Web Audio API Procedural Sound Effects**:
   - Synthesized tones for standard moves, captures, check alerts, castling, victory fanfare, and timeout alarm.
   - Single shared `AudioContext` with mute toggle and `localStorage` persistence.
-- **🎨 Theme Selector**:
-  - 4 customizable themes styled via CSS variables: **Classic**, **Wood**, **Neon Cyberpunk**, and **Slate Dark**.
+- **🌲 Default Wood Theme**:
+  - Warm, permanent wood board aesthetic styled via clean CSS variables.
 - **📍 Last-Move Highlighting**:
   - Translucent highlights for source (`.last-move-from`) and target (`.last-move-to`) squares preserved across all moves, undo, redo, and flips.
 - **📱 Responsive Mobile & Tablet Layout**:
   - Adaptive CSS Grid / Flexbox breakpoints with smooth scaling down to mobile viewports.
 - **♟️ Complete FIDE Chess Engine & Rules**:
   - Full movement calculation, pin protection, checkmate, stalemate, castling (`O-O`, `O-O-O`), en passant, and pawn promotion modal.
-- **📜 Move History, SAN & PGN Export**:
-  - Live move list in Standard Algebraic Notation with disambiguation (`Ndf3`, `Bxc6`) and one-click PGN clipboard copy.
+- **📜 Move History & SAN Notation**:
+  - Live move list in Standard Algebraic Notation with disambiguation (`Ndf3`, `Bxc6`).
 - **↺ Full State Undo & Redo**:
   - Immutable snapshots restoring board, turn, en passant, clocks, captured pieces, and move history.
-- **⚖️ Draw Detection**:
-  - Threefold Repetition (FEN position hashing) and 50-Move Rule (100 halfmoves).
+- **⚖️ Automatic Draw Detection**:
+  - **Threefold Repetition**: Automatic instant detection with claim/draw trigger.
+  - **50-Move Rule**: Halfmove counter tracking pawn moves and captures with automatic draw alert at 100 plies.
+  - **Stalemate Detection**: Instant game over banner when the side to move has no legal moves and is not in check.
 
 ---
 
-## 🛠️ Tech Stack
+## 🛠️ Tech Stack & Architecture
 
-| Technology | Purpose |
-|------------|---------|
-| **HTML5** | Semantic structure, Centered Workspace, Clocks & Toolbar |
-| **CSS3** | CSS Variables, 3-Column Grid, Theme palettes, Animations, Media Queries |
-| **JavaScript (ES6+)** | Core Chess Engine, Threat Detection, ClockManager, AudioManager, ThemeManager, DragManager |
-| **Web Audio API** | Procedural tone synthesis for movement and game events |
-| **jQuery** | Lightweight DOM event delegation & manipulation |
-| **Node.js** | Automated headless test suite runner (54 tests) |
-
----
-
-## 📂 Project Structure
+| Technology | Role |
+|---|---|
+| **HTML5** | Semantic DOM layout, Promotion Modal, Dynamic Game Grid |
+| **CSS3** | CSS Variables, 3-Column Grid, Wood palette, Animations, Media Queries |
+| **JavaScript (ES6+)** | Core Chess Engine, Threat Detection, ClockManager, AudioManager, DragManager |
+| **jQuery (3.2.1)** | DOM manipulation, dynamic square injection, and event delegation |
 
 ```text
 JS_Chess_Game/
-│
-├── index.html         # Main UI layout (Toolbar, 3-Column Workspace, Clocks, Board, Captures, History)
-├── style.css          # Theme stylesheets, CSS variables, Workspace Grid, Threat Glow, Media Queries
-├── script.js          # Core Engine, Threat Detection, ClockManager, AudioManager, ThemeManager, DragManager
-├── test_runner.js     # 54-case automated test suite (Node.js)
-└── README.md          # Comprehensive documentation
+├── index.html          # Semantic 3-column layout structure & modal overlays
+├── style.css          # Wood theme stylesheet, CSS variables, Workspace Grid, Threat Glow, Media Queries
+├── script.js          # Core Engine, Threat Detection, ClockManager, AudioManager, DragManager
+├── test_runner.js     # 54 Automated tests verifying rules, engine, clocks, threats, coordinates
+└── README.md          # Documentation & Technical Specifications
 ```
 
 ---
@@ -142,7 +136,7 @@ node test_runner.js
 24. `Chess Clock: Flag Fall (Timeout) Ends Game`
 25. `Chess Clock: Stops on Checkmate`
 26. `Audio Manager: Sound Triggering & Mute Toggle`
-27. `Theme Manager: Theme Switching & Persistence`
+27. `Theme System: Permanent Wood Theme Loaded at Startup`
 28. `Last-Move Highlighting: Normal, Capture & Castling`
 29. `Last-Move Highlighting Preserved Across Undo and Redo`
 30. `Drag Manager: Interaction State & Cleanup`
@@ -168,7 +162,7 @@ node test_runner.js
 50. `Threatened Piece: Undo and Redo Restore Threat State`
 51. `Threatened Piece: En Passant Threat Detection`
 52. `Threatened Piece: Board Flip Preserves Threat Detection`
-53. `Threatened Piece: Theme Switching Preserves Threat Highlighting`
+53. `Threat Highlighting: Attacker and Threatened Piece Both Receive Red Highlight`
 54. `Threatened Piece: Checkmate Threat State Cleanup`
 
 ---

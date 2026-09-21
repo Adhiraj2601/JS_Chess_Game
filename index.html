@@ -6,21 +6,13 @@
   <title>JavaScript Chess Game by Adhiraj</title>
   <link rel="stylesheet" href="./style.css">
 </head>
-<body class="theme-classic">
+<body class="theme-wood">
 
 <div id="app-wrapper">
 
   <!-- Top Toolbar / Header (Compact) -->
   <header id="toolbar">
-    <div class="toolbar-left">
-      <label for="theme-select" class="toolbar-label">🎨 Theme:</label>
-      <select id="theme-select" title="Select Board Theme">
-        <option value="classic">Classic</option>
-        <option value="wood">Wood</option>
-        <option value="neon">Neon</option>
-        <option value="slate">Slate Dark</option>
-      </select>
-    </div>
+    <div class="toolbar-left"></div>
 
     <div class="toolbar-center">
       <h1 id="app-title">♟ JS Chess</h1>
@@ -80,7 +72,6 @@
         <button id="undo-btn" class="action-btn" title="Undo Move">↺ Undo</button>
         <button id="redo-btn" class="action-btn" title="Redo Move">↻ Redo</button>
         <button id="flip-btn" class="action-btn" title="Flip Board Orientation">⇄ Flip</button>
-        <button id="pgn-btn" class="action-btn" title="Copy PGN Notation">📋 Copy PGN</button>
         <button id="reset-btn" class="action-btn" title="Reset Match">🔄 Reset</button>
       </div>
 
@@ -107,9 +98,6 @@
       <div id="history-panel" class="panel-card history-panel">
         <h3 class="panel-title">Game History</h3>
         <div id="move-history-list"></div>
-        <div class="pgn-actions">
-          <button id="export-pgn-btn" class="action-btn">📋 Copy PGN</button>
-        </div>
       </div>
     </aside>
 

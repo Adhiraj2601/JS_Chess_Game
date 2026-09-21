@@ -3,49 +3,7 @@
    ========================================================== */
 
 :root,
-body.theme-classic {
-  --bg-primary: #1e1e24;
-  --bg-secondary: #282830;
-  --panel-bg: #282830;
-  --panel-header-bg: #22222a;
-  --text-primary: #e8e8e8;
-  --text-secondary: #a0a0a8;
-  --border-color: #3e3e4a;
-  --panel-border: #383844;
-  
-  --board-light: #edd6b0;
-  --board-dark: #b88b4a;
-  --board-border: #2c2214;
-  --board-label-color: #d0c0a8;
-  
-  --cell-hover: rgba(255, 255, 255, 0.25);
-  --cell-selected: rgba(240, 210, 60, 0.85);
-  --cell-legal: #41a149;
-  --cell-check: rgba(220, 53, 69, 0.9);
-  
-  --last-move-from: rgba(255, 235, 59, 0.45);
-  --last-move-to: rgba(255, 214, 0, 0.75);
-  
-  --clock-bg: #22222a;
-  --clock-border: #3e3e4a;
-  --clock-active-border: #41a149;
-  --clock-active-bg: #1c3322;
-  --clock-warn-bg: #422910;
-  --clock-warn-color: #ffa726;
-  --clock-crit-bg: #4a151b;
-  --clock-crit-color: #ef5350;
-  
-  --btn-bg: #353542;
-  --btn-text: #f0f0f5;
-  --btn-hover: #484858;
-  --status-bg: #22222a;
-
-  --threat-color: rgba(220, 38, 38, 0.95);
-  --threat-glow: inset 0 0 0 2.5px rgba(220, 38, 38, 0.95), inset 0 0 14px rgba(220, 38, 38, 0.5), 0 0 8px rgba(220, 38, 38, 0.4);
-
-  --board-size: min(520px, calc(100vh - 200px), calc(100vw - 32px));
-}
-
+body,
 body.theme-wood {
   --bg-primary: #24170e;
   --bg-secondary: #332216;
@@ -85,88 +43,8 @@ body.theme-wood {
 
   --threat-color: rgba(239, 68, 68, 0.95);
   --threat-glow: inset 0 0 0 2.5px rgba(239, 68, 68, 0.95), inset 0 0 14px rgba(239, 68, 68, 0.55), 0 0 10px rgba(239, 68, 68, 0.45);
-}
 
-body.theme-neon {
-  --bg-primary: #090912;
-  --bg-secondary: #121324;
-  --panel-bg: #15172c;
-  --panel-header-bg: #0d0e1c;
-  --text-primary: #00f7ff;
-  --text-secondary: #ff007f;
-  --border-color: #00f7ff;
-  --panel-border: #1f2244;
-  
-  --board-light: #1f2347;
-  --board-dark: #0d0f1f;
-  --board-border: #00f7ff;
-  --board-label-color: #00f7ff;
-  
-  --cell-hover: rgba(0, 247, 255, 0.3);
-  --cell-selected: #ff007f;
-  --cell-legal: #00ff88;
-  --cell-check: #ff0044;
-  
-  --last-move-from: rgba(0, 247, 255, 0.35);
-  --last-move-to: rgba(255, 0, 127, 0.6);
-  
-  --clock-bg: #0d0e1c;
-  --clock-border: #00f7ff;
-  --clock-active-border: #00ff88;
-  --clock-active-bg: #102925;
-  --clock-warn-bg: #332010;
-  --clock-warn-color: #ffaa00;
-  --clock-crit-bg: #3d0c1e;
-  --clock-crit-color: #ff0055;
-  
-  --btn-bg: #181b36;
-  --btn-text: #00f7ff;
-  --btn-hover: #ff007f;
-  --status-bg: #0d0e1c;
-
-  --threat-color: #ff0044;
-  --threat-glow: inset 0 0 0 2.5px #ff0044, inset 0 0 16px rgba(255, 0, 68, 0.7), 0 0 12px rgba(255, 0, 68, 0.6);
-}
-
-body.theme-slate {
-  --bg-primary: #1a1e26;
-  --bg-secondary: #222733;
-  --panel-bg: #272d3b;
-  --panel-header-bg: #1d222c;
-  --text-primary: #eceff4;
-  --text-secondary: #9aa2b1;
-  --border-color: #3b4354;
-  --panel-border: #333a4a;
-  
-  --board-light: #708298;
-  --board-dark: #475263;
-  --board-border: #1a1e26;
-  --board-label-color: #88c0d0;
-  
-  --cell-hover: rgba(136, 192, 208, 0.35);
-  --cell-selected: #ebcb8b;
-  --cell-legal: #a3be8c;
-  --cell-check: #bf616a;
-  
-  --last-move-from: rgba(235, 203, 139, 0.35);
-  --last-move-to: rgba(235, 203, 139, 0.7);
-  
-  --clock-bg: #1d222c;
-  --clock-border: #3b4354;
-  --clock-active-border: #88c0d0;
-  --clock-active-bg: #293747;
-  --clock-warn-bg: #443725;
-  --clock-warn-color: #ebcb8b;
-  --clock-crit-bg: #422227;
-  --clock-crit-color: #bf616a;
-  
-  --btn-bg: #323a4b;
-  --btn-text: #eceff4;
-  --btn-hover: #434e64;
-  --status-bg: #1d222c;
-
-  --threat-color: #bf616a;
-  --threat-glow: inset 0 0 0 2.5px #bf616a, inset 0 0 14px rgba(191, 97, 106, 0.6), 0 0 10px rgba(191, 97, 106, 0.5);
+  --board-size: min(520px, calc(100vh - 200px), calc(100vw - 32px));
 }
 
 /* ==========================================================
@@ -226,12 +104,6 @@ html, body {
   gap: 8px;
 }
 
-.toolbar-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
 #app-title {
   font-size: 1.05rem;
   font-weight: 700;
@@ -239,7 +111,7 @@ html, body {
   color: var(--text-primary);
 }
 
-#theme-select, #time-preset {
+#time-preset {
   padding: 4px 8px;
   background: var(--panel-bg);
   color: var(--text-primary);
@@ -372,10 +244,6 @@ html, body {
   border-radius: 3px;
 }
 
-.pgn-actions {
-  margin-top: 6px;
-  text-align: center;
-}
 
 /* ==========================================================
    CENTER COLUMN (BOARD, CLOCKS, CONTROLS)

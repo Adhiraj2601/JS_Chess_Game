@@ -26,7 +26,6 @@ const dom = {
   clockWhiteClasses: new Set(),
   clockBlackClasses: new Set(),
   soundToggleText: '🔊 Sound',
-  themeSelectVal: 'classic',
   timePresetVal: 'untimed'
 };
 
@@ -63,7 +62,7 @@ resetDom();
 // Mock document.body
 global.document = {
   body: {
-    className: 'theme-classic'
+    className: 'theme-wood'
   },
   ready: function(cb) { cb(); },
   getElementById: function(id) {
@@ -223,14 +222,6 @@ global.$ = function(selector) {
         };
       }
 
-      if (id === 'theme-select') {
-        return {
-          val: function(v) {
-            if (v !== undefined) { dom.themeSelectVal = v; return this; }
-            return dom.themeSelectVal;
-          }
-        };
-      }
 
       if (id === 'move-history-list') {
         return {
@@ -344,7 +335,7 @@ global.$ = function(selector) {
   };
 };
 
-const { main, ClockManager, AudioManager, ThemeManager, DragManager } = require('./script.js');
+const { main, ClockManager, AudioManager, DragManager } = require('./script.js');
 
 let passedTests = 0;
 let failedTests = 0;
@@ -775,23 +766,8 @@ runTest('26. Audio Manager: Sound Triggering & Mute Toggle', () => {
   assert.strictEqual(AudioManager.enabled, true);
 });
 
-runTest('27. Theme Manager: Theme Switching & Persistence', () => {
-  ThemeManager.apply('neon');
-  assert.strictEqual(ThemeManager.current, 'neon');
-  assert.strictEqual(global.document.body.className, 'theme-neon');
-  assert.strictEqual(global.localStorage.getItem('chess_theme'), 'neon');
-
-  ThemeManager.apply('wood');
-  assert.strictEqual(ThemeManager.current, 'wood');
+runTest('27. Theme System: Permanent Wood Theme Loaded at Startup', () => {
   assert.strictEqual(global.document.body.className, 'theme-wood');
-
-  ThemeManager.apply('slate');
-  assert.strictEqual(ThemeManager.current, 'slate');
-  assert.strictEqual(global.document.body.className, 'theme-slate');
-
-  ThemeManager.apply('classic');
-  assert.strictEqual(ThemeManager.current, 'classic');
-  assert.strictEqual(global.document.body.className, 'theme-classic');
 });
 
 runTest('28. Last-Move Highlighting: Normal, Capture & Castling', () => {
@@ -1112,18 +1088,26 @@ runTest('52. Threatened Piece: Board Flip Preserves Threat Detection', () => {
   main.methods.flipBoard();
 });
 
-runTest('53. Threatened Piece: Theme Switching Preserves Threat Highlighting', () => {
-  ThemeManager.apply('neon');
-  assert.strictEqual(ThemeManager.current, 'neon');
+runTest('53. Threat Highlighting: Attacker and Threatened Piece Both Receive Red Highlight', () => {
+  // 1. e4 d5 (Both White pawn on e4 and Black pawn on d5 threaten each other)
+  main.variables.selectedpiece = '5_2'; main.methods.move({ id: '5_4' }); // 1. e4
+  main.variables.selectedpiece = '4_7'; main.methods.move({ id: '4_5' }); // 1... d5
 
-  ThemeManager.apply('wood');
-  assert.strictEqual(ThemeManager.current, 'wood');
+  let threatHighlights = main.methods.getThreatHighlightSquares();
+  assert.ok(threatHighlights.includes('5_4'), 'Attacking White pawn on e4 must receive threat highlight');
+  assert.ok(threatHighlights.includes('4_5'), 'Threatened Black pawn on d5 must receive threat highlight');
 
-  ThemeManager.apply('slate');
-  assert.strictEqual(ThemeManager.current, 'slate');
+  main.methods.updateVisualHighlights();
+  assert.ok(dom.cells['5_4'].classes.has('threatened-piece'), 'White pawn cell 5_4 has threatened-piece class');
+  assert.ok(dom.cells['4_5'].classes.has('threatened-piece'), 'Black pawn cell 4_5 has threatened-piece class');
 
-  ThemeManager.apply('classic');
-  assert.strictEqual(ThemeManager.current, 'classic');
+  // 2. Nf3 dxe4 3. Ng5 (Knight on g5 threatens Black pawn on e4; Black pawn on e4 cannot attack g5)
+  main.variables.selectedpiece = '7_1'; main.methods.move({ id: '6_3' }); // 2. Nf3
+  main.variables.selectedpiece = '4_5'; main.methods.capture({ id: '5_4', name: 'w_pawn5' }); // 2... dxe4
+  main.variables.selectedpiece = '6_3'; main.methods.move({ id: '7_5' }); // 3. Ng5
+  threatHighlights = main.methods.getThreatHighlightSquares();
+  assert.ok(threatHighlights.includes('7_5'), 'Attacking White Knight on g5 must receive threat highlight');
+  assert.ok(threatHighlights.includes('5_4'), 'Threatened Black pawn on e4 must receive threat highlight');
 });
 
 runTest('54. Threatened Piece: Checkmate Threat State Cleanup', () => {

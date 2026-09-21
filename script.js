@@ -97,32 +97,6 @@ const AudioManager = {
   }
 };
 
-// ==========================================================
-// THEME MANAGER
-// ==========================================================
-const ThemeManager = {
-  current: 'classic',
-  themes: ['classic', 'wood', 'neon', 'slate'],
-
-  init: function () {
-    let saved = (typeof localStorage !== 'undefined') ? localStorage.getItem('chess_theme') || 'classic' : 'classic';
-    this.apply(saved);
-  },
-
-  apply: function (theme) {
-    if (!this.themes.includes(theme)) theme = 'classic';
-    this.current = theme;
-    if (typeof document !== 'undefined' && document.body) {
-      document.body.className = `theme-${theme}`;
-      if (typeof localStorage !== 'undefined') {
-        localStorage.setItem('chess_theme', theme);
-      }
-      if (typeof $ !== 'undefined') {
-        $('#theme-select').val(theme);
-      }
-    }
-  }
-};
 
 // ==========================================================
 // CHESS CLOCK MANAGER (Drift-free timestamp timing)
@@ -1133,23 +1107,6 @@ let main = {
       return pgn;
     },
 
-    copyPGNToClipboard: function () {
-      let pgn = main.methods.exportPGN();
-      if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(pgn).then(() => {
-          let prevText = $('#pgn-btn').text();
-          $('#pgn-btn, #export-pgn-btn').text('✓ Copied!');
-          setTimeout(() => $('#pgn-btn, #export-pgn-btn').text(prevText), 1500);
-        }).catch(() => {
-          prompt('Copy PGN below:', pgn);
-        });
-      } else {
-        if (typeof prompt !== 'undefined') {
-          prompt('Copy PGN below:', pgn);
-        }
-      }
-    },
-
     // ---------- Visual Highlights & Flip ----------
     flipBoard: function () {
       main.variables.orientation = main.variables.orientation === 'w' ? 'b' : 'w';
@@ -1298,7 +1255,7 @@ let main = {
               threatenedSet.add(main.variables.enPassantTarget.pawnCell);
             }
           } else {
-            let targetId = moveToken;
+            let targetId = moveToken.indexOf('_') !== -1 ? moveToken.split('_').slice(0, 2).join('_') : moveToken;
             let occupantKey = board[targetId];
             if (occupantKey && occupantKey !== 'null' && main.methods.pieceColor(occupantKey) === color) {
               threatenedSet.add(targetId);
@@ -1310,15 +1267,47 @@ let main = {
       return Array.from(threatenedSet);
     },
 
+    getThreatHighlightSquares: function () {
+      let board = main.methods.getBoard();
+      let highlightSet = new Set();
+
+      for (let pieceKey in main.variables.pieces) {
+        let p = main.variables.pieces[pieceKey];
+        if (p.captured || !p.position) continue;
+        let pColor = main.methods.pieceColor(pieceKey);
+
+        let legalMoves = main.methods.getLegalMoves(pieceKey);
+        legalMoves.forEach(moveToken => {
+          if (moveToken.includes('_castle')) return;
+
+          if (moveToken.includes('_ep')) {
+            if (main.variables.enPassantTarget && main.variables.enPassantTarget.color !== pColor) {
+              highlightSet.add(p.position);
+              highlightSet.add(main.variables.enPassantTarget.pawnCell);
+            }
+          } else {
+            let targetId = moveToken.indexOf('_') !== -1 ? moveToken.split('_').slice(0, 2).join('_') : moveToken;
+            let occupantKey = board[targetId];
+            if (occupantKey && occupantKey !== 'null' && main.methods.pieceColor(occupantKey) !== pColor) {
+              highlightSet.add(p.position);
+              highlightSet.add(targetId);
+            }
+          }
+        });
+      }
+
+      return Array.from(highlightSet);
+    },
+
     updateVisualHighlights: function () {
       $('.gamecell').removeClass('green yellow red last-move-from last-move-to threatened-piece');
 
       let color = main.variables.turn;
 
-      // 1. Highlight threatened pieces of the current player with a red glow
+      // 1. Highlight pieces that can capture on next move and threatened pieces with a red glow
       if (!main.variables.gameOver) {
-        let threatened = main.methods.getThreatenedSquares(color);
-        threatened.forEach(cellId => {
+        let threatHighlights = main.methods.getThreatHighlightSquares();
+        threatHighlights.forEach(cellId => {
           $('#' + cellId).addClass('threatened-piece');
         });
       }
@@ -1665,7 +1654,9 @@ main.variables.pieces = main.methods.getInitialPieces();
 if (typeof $ !== 'undefined') {
   $(document).ready(function () {
     AudioManager.init();
-    ThemeManager.init();
+    if (typeof document !== 'undefined' && document.body) {
+      document.body.className = 'theme-wood';
+    }
     ClockManager.init();
     DragManager.init();
 
@@ -1735,21 +1726,12 @@ if (typeof $ !== 'undefined') {
       main.methods.flipBoard();
     });
 
-    $(document).on('click', '#pgn-btn, #export-pgn-btn', function () {
-      main.methods.copyPGNToClipboard();
-    });
-
     $(document).on('click', '#reset-btn', function () {
       main.methods.resetGame();
     });
 
     $(document).on('change', '#autoflip-check', function () {
       main.variables.autoFlip = $(this).is(':checked');
-    });
-
-    // Theme selector
-    $(document).on('change', '#theme-select', function () {
-      ThemeManager.apply($(this).val());
     });
 
     // Sound toggle
@@ -1781,7 +1763,6 @@ if (typeof module !== 'undefined' && module.exports) {
     main,
     ClockManager,
     AudioManager,
-    ThemeManager,
     DragManager
   };
 }
