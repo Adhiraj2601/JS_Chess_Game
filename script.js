@@ -1110,6 +1110,11 @@ let main = {
     // ---------- Visual Highlights & Flip ----------
     flipBoard: function () {
       main.variables.orientation = main.variables.orientation === 'w' ? 'b' : 'w';
+      if (main.variables.orientation === 'b') {
+        $('#board-stage').addClass('orientation-black');
+      } else {
+        $('#board-stage').removeClass('orientation-black');
+      }
       main.methods.renderBoard();
       main.methods.gamesetup();
       main.methods.updateVisualHighlights();
@@ -1633,6 +1638,7 @@ let main = {
       $('#promotion-modal').css('display', 'none');
       $('.gamecell').removeClass('green yellow red last-move-from last-move-to');
       $('#turn').removeClass('turnhighlight').text("It's White's Turn!");
+      $('#board-stage').removeClass('orientation-black');
 
       ClockManager.reset();
 

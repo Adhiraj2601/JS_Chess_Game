@@ -4,23 +4,27 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>JavaScript Chess Game by Adhiraj</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css">
 </head>
 <body class="theme-wood">
 
 <div id="app-wrapper">
 
-  <!-- Top Toolbar / Header (Compact) -->
+  <!-- Top Navigation Header -->
   <header id="toolbar">
-    <div class="toolbar-left"></div>
-
-    <div class="toolbar-center">
-      <h1 id="app-title">♟ JS Chess</h1>
+    <div class="toolbar-left">
+      <div class="brand-badge">
+        <span class="brand-icon">♟</span>
+        <h1 id="app-title">JS Chess</h1>
+      </div>
     </div>
 
     <div class="toolbar-right">
       <div id="time-control-panel">
-        <span class="tc-label">⏱</span>
+        <span class="tc-label" aria-hidden="true">⏱</span>
         <select id="time-preset" title="Time Control Preset">
           <option value="untimed">Untimed</option>
           <option value="1+0">Bullet 1+0</option>
@@ -34,71 +38,87 @@
           <span>m</span>
           <input type="number" id="custom-inc" min="0" max="60" value="0" title="Increment in seconds">
           <span>s</span>
-          <button id="apply-custom-time" class="action-btn">Set</button>
+          <button id="apply-custom-time" class="action-btn set-time-btn">Set</button>
         </div>
       </div>
-      <button id="sound-toggle" class="action-btn" title="Toggle Move Sounds">🔊 Sound</button>
+      <button id="sound-toggle" class="action-btn sound-btn" title="Toggle Move Sounds">🔊 Sound</button>
     </div>
   </header>
 
-  <!-- Main 3-Column Centered Game Workspace -->
+  <!-- Main 2-Column Board-Centric Game Workspace -->
   <main id="game-workspace">
 
-    <!-- Left Column: White Captures -->
-    <aside id="left-sidebar">
-      <div id="captured-black" class="panel-card captured-panel">
-        <h3 class="panel-title">White Captures</h3>
-        <div class="captured-pieces-list"></div>
-      </div>
-    </aside>
+    <!-- Primary Stage: Board & Player Strips -->
+    <section id="board-stage">
 
-    <!-- Center Column: Black Clock -> Board -> Status -> Controls -> Auto Flip -> White Clock -->
-    <section id="game-center">
-
-      <!-- Black Clock (Top of Board) -->
-      <div id="clock-black" class="clock-panel">
-        <div class="clock-player"><span class="player-icon">♟</span> Black</div>
-        <div class="clock-time" id="clock-black-time">--:--</div>
-      </div>
-
-      <!-- Chess Board -->
-      <div id="game"></div>
-
-      <!-- Turn & Game Status Banner -->
-      <div id="turn">It's White's Turn!</div>
-
-      <!-- Action Button Controls -->
-      <div id="btn-group">
-        <button id="undo-btn" class="action-btn" title="Undo Move">↺ Undo</button>
-        <button id="redo-btn" class="action-btn" title="Redo Move">↻ Redo</button>
-        <button id="flip-btn" class="action-btn" title="Flip Board Orientation">⇄ Flip</button>
-        <button id="reset-btn" class="action-btn" title="Reset Match">🔄 Reset</button>
+      <!-- Black (Opponent) Player Strip -->
+      <div class="player-strip player-top">
+        <div class="player-identity">
+          <div class="player-avatar avatar-black">♟</div>
+          <div class="player-details">
+            <span class="player-name">Black</span>
+            <div id="captured-white" class="captured-tray" title="Pieces captured by Black">
+              <div class="captured-pieces-list"></div>
+            </div>
+          </div>
+        </div>
+        <div id="clock-black" class="clock-capsule">
+          <span class="clock-time" id="clock-black-time">--:--</span>
+        </div>
       </div>
 
-      <!-- Auto Flip Checkbox -->
-      <div id="autoflip-container">
-        <label><input type="checkbox" id="autoflip-check"> Auto Flip on Turn</label>
+      <!-- Chess Board Container -->
+      <div id="board-wrapper">
+        <div id="game"></div>
       </div>
 
-      <!-- White Clock (Bottom of Controls) -->
-      <div id="clock-white" class="clock-panel">
-        <div class="clock-player"><span class="player-icon">♙</span> White</div>
-        <div class="clock-time" id="clock-white-time">--:--</div>
+      <!-- White (Player) Player Strip -->
+      <div class="player-strip player-bottom">
+        <div class="player-identity">
+          <div class="player-avatar avatar-white">♙</div>
+          <div class="player-details">
+            <span class="player-name">White</span>
+            <div id="captured-black" class="captured-tray" title="Pieces captured by White">
+              <div class="captured-pieces-list"></div>
+            </div>
+          </div>
+        </div>
+        <div id="clock-white" class="clock-capsule">
+          <span class="clock-time" id="clock-white-time">--:--</span>
+        </div>
       </div>
 
     </section>
 
-    <!-- Right Column: Black Captures + Game History -->
-    <aside id="right-sidebar">
-      <div id="captured-white" class="panel-card captured-panel">
-        <h3 class="panel-title">Black Captures</h3>
-        <div class="captured-pieces-list"></div>
-      </div>
+    <!-- Secondary Stage: Game Hub (Match Status, Move Log, Action Controls) -->
+    <aside id="game-sidebar">
 
+      <!-- Match Turn & Status Banner -->
+      <div id="turn" class="status-banner">It's White's Turn!</div>
+
+      <!-- Game Move History Card -->
       <div id="history-panel" class="panel-card history-panel">
-        <h3 class="panel-title">Game History</h3>
+        <div class="panel-header">
+          <span class="panel-header-icon">📜</span>
+          <h3 class="panel-title">Move History</h3>
+        </div>
         <div id="move-history-list"></div>
       </div>
+
+      <!-- Tactical Controls Card -->
+      <div class="panel-card controls-panel">
+        <div id="btn-group">
+          <button id="undo-btn" class="action-btn" title="Undo Move">↺ Undo</button>
+          <button id="redo-btn" class="action-btn" title="Redo Move">↻ Redo</button>
+          <button id="flip-btn" class="action-btn" title="Flip Board Orientation">⇄ Flip</button>
+          <button id="reset-btn" class="action-btn" title="Reset Match">🔄 Reset</button>
+        </div>
+
+        <div id="autoflip-container">
+          <label><input type="checkbox" id="autoflip-check"> Auto Flip on Turn</label>
+        </div>
+      </div>
+
     </aside>
 
   </main>

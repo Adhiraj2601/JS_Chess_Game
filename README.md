@@ -27,10 +27,9 @@ A modern, fully playable browser-based Chess game built with HTML5, CSS3, JavaSc
 
 This project is an advanced, production-quality implementation of Chess designed around the chessboard as the central focal point.
 
-The interface organizes all gameplay elements into a balanced 3-column CSS Grid:
-- **Left Column**: White Captures
-- **Center Column**: Black Clock, Board, Turn Status Banner, Control Buttons, Auto-Flip option, and White Clock sharing the exact same width
-- **Right Column**: Black Captures and Live Game History
+The interface organizes all gameplay elements into an inviting, board-centric layout:
+- **Board Stage**: Prominent, richly textured chessboard flanked directly above and below by integrated Opponent and Player strips pairing avatar chips, names, inline captured piece trays, and countdown clocks.
+- **Game Hub**: Focused side panel housing the match status banner, live move history log, tactile action buttons (Undo, Redo, Flip, Reset), and auto-flip toggle.
 
 Players can use both **Click-to-Move** and **Drag-and-Drop** piece interactions interchangeably in both standard and 180° flipped board orientations, with instant visual **Attacking & Threatened Piece Red Glow** highlighting indicating when any piece can capture an enemy piece or is under legal attack.
 
@@ -46,9 +45,9 @@ Players can use both **Click-to-Move** and **Drag-and-Drop** piece interactions 
   - Empty squares do NOT glow red.
   - Highlights multiple attacking and threatened pieces simultaneously.
   - Seamlessly updates on every move, capture, castle, en passant, promotion, undo, redo, and board flip.
-- **🎯 Centered 3-Column Workspace Layout**:
-  - Balanced `max-width: 1140px` workspace container eliminating wasted side margins.
-  - Black and White clocks, status banner, and control buttons precisely match the chessboard width.
+- **🎯 Board-Centric Cozy Parlor Layout**:
+  - Warm, intimate, and player-focused interface that eliminates wasted empty margins.
+  - Seamless integrated player strips with avatar badges, captured pieces, and tabular countdown clocks.
 - **✋ Unified Click-to-Move & Drag-and-Drop Interaction**:
   - **Pointer Events**: Universal touch, pen, and mouse support across all screen types.
   - **Interchangeable Input**: Use Click or Drag at any moment without configuration or interference.
