@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./uno_mode.css">
 </head>
 <body class="theme-wood">
 
@@ -42,6 +43,7 @@
         </div>
       </div>
       <button id="sound-toggle" class="action-btn sound-btn" title="Toggle Move Sounds">🔊 Sound</button>
+      <button id="mode-toggle-btn" class="action-btn mode-btn" title="Select Game Mode">♟ Standard</button>
     </div>
   </header>
 
@@ -90,11 +92,106 @@
 
     </section>
 
-    <!-- Secondary Stage: Game Hub (Match Status, Move Log, Action Controls) -->
+    <!-- Secondary Stage: Game Hub (Match Status, UNO Panels, Move Log, Action Controls) -->
     <aside id="game-sidebar">
+
+      <!-- UNO Floating Prompt Banner (Target Selection) -->
+      <div id="uno-prompt-banner" class="uno-only">
+        <span id="uno-prompt-text">Select target</span>
+        <button id="uno-prompt-cancel" class="uno-cancel-btn">Cancel</button>
+      </div>
 
       <!-- Match Turn & Status Banner -->
       <div id="turn" class="status-banner">It's White's Turn!</div>
+
+      <!-- UNO MODE: Black Player's Hand -->
+      <div id="uno-hand-black" class="player-hand-container uno-only">
+        <div class="hand-header-bar">
+          <span>♟ Black's Hand</span>
+        </div>
+        <div id="hand-black-cards" class="hand-cards-row"></div>
+      </div>
+
+      <!-- UNO MODE: Deck, Discard & Energy Dashboard -->
+      <div id="uno-main-panel" class="panel-card uno-panel uno-only">
+        <div class="panel-header">
+          <span class="panel-header-icon">🃏</span>
+          <h3 class="panel-title">UNO Deck & Energy</h3>
+        </div>
+
+        <div class="deck-status-bar">
+          <div class="deck-pile-info">
+            <span>Deck:</span>
+            <span id="deck-count-badge" class="pile-badge">108</span>
+          </div>
+          <div class="discard-pile-info">
+            <span>Discard:</span>
+            <span id="discard-count-badge" class="pile-badge">0</span>
+            <div id="discard-top-display"></div>
+          </div>
+        </div>
+
+        <!-- Energy Meters -->
+        <div class="energy-tracker">
+          <div class="energy-row">
+            <span class="energy-player-tag">♙ White:</span>
+            <div class="energy-meter">
+              <div id="energy-white-fill" class="energy-fill"></div>
+            </div>
+            <span id="energy-white-val" class="energy-val">0 / 20</span>
+          </div>
+          <div class="energy-row">
+            <span class="energy-player-tag">♟ Black:</span>
+            <div class="energy-meter">
+              <div id="energy-black-fill" class="energy-fill"></div>
+            </div>
+            <span id="energy-black-val" class="energy-val">0 / 20</span>
+          </div>
+        </div>
+
+        <!-- Energy Actions -->
+        <div class="energy-actions">
+          <button id="energy-draw-btn" class="energy-action-btn" title="Spend 6 Energy to draw 1 card">
+            ⚡ Draw (6E)
+          </button>
+          <button id="energy-recycle-btn" class="energy-action-btn" title="Spend 3 Energy to replace 1 card">
+            ♻️ Recycle (3E)
+          </button>
+        </div>
+      </div>
+
+      <!-- UNO MODE: White Player's Hand -->
+      <div id="uno-hand-white" class="player-hand-container uno-only">
+        <div class="hand-header-bar">
+          <span>♙ White's Hand</span>
+        </div>
+        <div id="hand-white-cards" class="hand-cards-row"></div>
+      </div>
+
+      <!-- UNO MODE: Graveyard Trays -->
+      <div id="uno-graveyard-panel" class="panel-card graveyard-tray uno-only">
+        <div class="panel-header">
+          <span class="panel-header-icon">⚰️</span>
+          <h3 class="panel-title">Graveyard (Revival Pool)</h3>
+        </div>
+        <div class="graveyard-row">
+          <span class="graveyard-tag">White:</span>
+          <div id="graveyard-white-pieces" class="graveyard-pieces-list"></div>
+        </div>
+        <div class="graveyard-row">
+          <span class="graveyard-tag">Black:</span>
+          <div id="graveyard-black-pieces" class="graveyard-pieces-list"></div>
+        </div>
+      </div>
+
+      <!-- UNO MODE: Card Action Log -->
+      <div id="uno-card-log-panel" class="panel-card uno-only">
+        <div class="panel-header">
+          <span class="panel-header-icon">📋</span>
+          <h3 class="panel-title">Card Action Log</h3>
+        </div>
+        <div id="card-log-box" class="card-log-box"></div>
+      </div>
 
       <!-- Game Move History Card -->
       <div id="history-panel" class="panel-card history-panel">
@@ -125,6 +222,26 @@
 
 </div>
 
+<!-- Mode Selection Modal -->
+<div id="mode-select-modal" class="modal-overlay">
+  <div class="modal-content mode-modal">
+    <h3>Select Game Mode</h3>
+    <div class="mode-options-grid">
+      <div class="mode-card-btn active" data-mode="standard">
+        <div class="mode-card-icon">♟</div>
+        <div class="mode-card-title">Standard Chess</div>
+        <div class="mode-card-desc">Authentic FIDE chess with full rules & clocks.</div>
+      </div>
+      <div class="mode-card-btn" data-mode="uno">
+        <div class="mode-card-icon">🃏</div>
+        <div class="mode-card-title">Chess UNO Mode</div>
+        <div class="mode-card-desc">Chess enhanced with tactical UNO card powers & energy.</div>
+      </div>
+    </div>
+    <button id="close-mode-modal" class="action-btn" style="margin-top: 18px; width: 100%;">Close</button>
+  </div>
+</div>
+
 <!-- Promotion Modal -->
 <div id="promotion-modal" class="modal-overlay">
   <div class="modal-content">
@@ -137,6 +254,7 @@
 <div id="drag-ghost" aria-hidden="true"></div>
 
 <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js'></script>
+<script src="./uno_mode.js"></script>
 <script src="./script.js"></script>
 
 </body>

@@ -328,14 +328,18 @@ global.$ = function(selector) {
     addClass: function() { return this; },
     removeClass: function() { return this; },
     text: function() { return ''; },
+    html: function() { return ''; },
     val: function() { return ''; },
     css: function() { return this; },
+    data: function() { return null; },
     closest: function() { return this; },
     length: 0
   };
 };
 
-const { main, ClockManager, AudioManager, DragManager } = require('./script.js');
+const { main, ClockManager, AudioManager, DragManager, GameModeManager } = require('./script.js');
+const UnoMode = require('./uno_mode.js');
+GameModeManager.register('uno', UnoMode);
 
 let passedTests = 0;
 let failedTests = 0;
@@ -355,7 +359,7 @@ function runTest(name, fn) {
   }
 }
 
-console.log('=== CHESS ADVANCED COMPREHENSIVE TEST SUITE (54 TESTS) ===\n');
+console.log('=== CHESS ADVANCED COMPREHENSIVE TEST SUITE (66 TESTS) ===\n');
 
 // 1 - 20: Full Regression Suite
 runTest('1. Initial Setup & Piece Count', () => {
@@ -1132,9 +1136,213 @@ runTest('54. Threatened Piece: Checkmate Threat State Cleanup', () => {
   assert.ok(dom.cells['5_1'].classes.has('red'), 'King in checkmate has red check highlight');
 });
 
+// ==========================================================
+// 55 - 66: CHESS UNO MODE TEST SUITE
+// ==========================================================
+runTest('55. Chess UNO: Deck Generation (108 cards with correct distribution)', () => {
+  let deck = UnoMode.buildDeck();
+  assert.strictEqual(deck.length, 108);
+  assert.strictEqual(deck.filter(c => c.type === 'number').length, 76);
+  assert.strictEqual(deck.filter(c => c.value === 0).length, 4);
+  assert.strictEqual(deck.filter(c => c.type === 'skip').length, 8);
+  assert.strictEqual(deck.filter(c => c.type === 'reverse').length, 8);
+  assert.strictEqual(deck.filter(c => c.type === 'drawTwo').length, 8);
+  assert.strictEqual(deck.filter(c => c.type === 'wild').length, 4);
+  assert.strictEqual(deck.filter(c => c.type === 'wildDrawFour').length, 4);
+});
+
+runTest('56. Chess UNO: Initial Deal & Max Hand Size Cap (5)', () => {
+  UnoMode.startNewGame();
+  assert.strictEqual(UnoMode.state.hands.w.length, 3);
+  assert.strictEqual(UnoMode.state.hands.b.length, 3);
+  assert.strictEqual(UnoMode.state.deck.length, 102);
+
+  UnoMode.drawCard('w');
+  UnoMode.drawCard('w');
+  assert.strictEqual(UnoMode.state.hands.w.length, 5);
+
+  let blocked = UnoMode.drawCard('w');
+  assert.strictEqual(blocked, null);
+  assert.strictEqual(UnoMode.state.hands.w.length, 5);
+});
+
+runTest('57. Chess UNO: Number Card Grants Energy with 20 Cap', () => {
+  UnoMode.startNewGame();
+  main.variables.turn = 'w';
+  UnoMode.state.hands.w = [
+    { id: 'c_test_8', color: 'green', type: 'number', value: 8, label: '8', title: 'Number 8' }
+  ];
+  UnoMode.state.energy.w = 0;
+
+  UnoMode.playCard('c_test_8', 'w');
+  assert.strictEqual(UnoMode.state.energy.w, 8);
+  assert.strictEqual(UnoMode.state.hands.w.length, 0);
+  assert.strictEqual(UnoMode.state.discardPile.length, 1);
+
+  UnoMode.addEnergy('w', 15);
+  assert.strictEqual(UnoMode.state.energy.w, 20);
+});
+
+runTest('58. Chess UNO: Spending Energy (Draw 6E & Recycle 3E)', () => {
+  UnoMode.startNewGame();
+  main.variables.turn = 'w';
+  UnoMode.state.energy.w = 9;
+  UnoMode.state.hands.w = [
+    { id: 'c_recycle', color: 'red', type: 'number', value: 2, label: '2', title: 'Card 2' }
+  ];
+
+  let drawn = UnoMode.spendEnergy('draw_card', 'w');
+  assert.strictEqual(drawn, true);
+  assert.strictEqual(UnoMode.state.energy.w, 3);
+  assert.strictEqual(UnoMode.state.hands.w.length, 2);
+
+  let recycleStarted = UnoMode.spendEnergy('recycle', 'w');
+  assert.strictEqual(recycleStarted, true);
+  UnoMode.executeRecycleCard('c_recycle', 'w');
+  assert.strictEqual(UnoMode.state.energy.w, 3);
+  assert.strictEqual(UnoMode.state.hands.w.length, 2);
+});
+
+runTest('59. Chess UNO: Auto-Draw Every 3 Turns', () => {
+  GameModeManager.setMode('uno');
+  UnoMode.startNewGame();
+  UnoMode.state.hands.w = [];
+  UnoMode.state.hands.b = [];
+
+  UnoMode.onTurnEnd('w', 'b');
+  assert.strictEqual(UnoMode.state.hands.w.length, 0);
+  UnoMode.onTurnEnd('b', 'w');
+  assert.strictEqual(UnoMode.state.hands.b.length, 0);
+  UnoMode.onTurnEnd('w', 'b');
+  assert.strictEqual(UnoMode.state.hands.w.length, 1);
+});
+
+runTest('60. Chess UNO: Reshuffle Discard Pile on Empty Deck', () => {
+  UnoMode.startNewGame();
+  UnoMode.state.deck = [];
+  UnoMode.state.discardPile = [
+    { id: 'cd1', color: 'blue', type: 'number', value: 5, label: '5', title: 'Card 5' },
+    { id: 'cd2', color: 'yellow', type: 'number', value: 6, label: '6', title: 'Card 6' }
+  ];
+
+  let drawn = UnoMode.drawCard('w');
+  assert.notStrictEqual(drawn, null);
+  assert.strictEqual(UnoMode.state.deck.length, 1);
+});
+
+runTest('61. Chess UNO: Skip Card (Immune King, Freezes Enemy Piece, Turn Expiration)', () => {
+  GameModeManager.setMode('uno');
+  UnoMode.startNewGame();
+  main.variables.turn = 'w';
+
+  UnoMode.setPendingEffect({ type: 'skip', card: {}, cardIdx: 0, color: 'w' });
+  UnoMode.executeSkipOnPiece('5_8', 'b_king');
+  assert.strictEqual(UnoMode.state.skippedPiece, null);
+
+  UnoMode.state.hands.w = [{ id: 'c_sk', type: 'skip', color: 'red', label: '⊘', title: 'Skip' }];
+  UnoMode.initiateSkipCard(UnoMode.state.hands.w[0], 'w', 0);
+  UnoMode.executeSkipOnPiece('2_8', 'b_knight1');
+  assert.strictEqual(UnoMode.state.skippedPiece.pieceKey, 'b_knight1');
+
+  main.variables.turn = 'b';
+  let moves = main.methods.getLegalMoves('b_knight1');
+  assert.strictEqual(moves.length, 0);
+
+  UnoMode.onTurnEnd('b', 'w');
+  assert.strictEqual(UnoMode.state.skippedPiece, null);
+});
+
+runTest('62. Chess UNO: Reverse Card Swaps Friendly Pieces without Leaving King in Check', () => {
+  GameModeManager.setMode('uno');
+  UnoMode.startNewGame();
+  main.variables.turn = 'w';
+
+  UnoMode.state.hands.w = [{ id: 'c_rev', type: 'reverse', color: 'blue', label: '⇄', title: 'Reverse' }];
+  UnoMode.initiateReverseCard(UnoMode.state.hands.w[0], 'w', 0);
+
+  UnoMode.handleReverseSelection('1_1', 'w_rook1');
+  UnoMode.handleReverseSelection('2_1', 'w_knight1');
+
+  assert.strictEqual(main.variables.pieces['w_rook1'].position, '2_1');
+  assert.strictEqual(main.variables.pieces['w_knight1'].position, '1_1');
+  assert.strictEqual(UnoMode.state.cardPlayedThisTurn, true);
+});
+
+runTest('63. Chess UNO: Draw Two Revives Friendly Pawn to Starting File', () => {
+  GameModeManager.setMode('uno');
+  UnoMode.startNewGame();
+  main.variables.turn = 'w';
+
+  main.variables.pieces['w_pawn4'].captured = true;
+  main.variables.pieces['w_pawn4'].position = '';
+  $('#4_2').html('&nbsp;').attr('chess', 'null');
+  UnoMode.state.graveyard.w.push({ key: 'w_pawn4', type: 'w_pawn', img: '&#9817;' });
+
+  UnoMode.state.hands.w = [{ id: 'c_dt', type: 'drawTwo', color: 'yellow', label: '+2', title: 'Draw Two' }];
+  UnoMode.executeDrawTwoCard(UnoMode.state.hands.w[0], 'w', 0);
+
+  assert.strictEqual(main.variables.pieces['w_pawn4'].captured, false);
+  assert.strictEqual(main.variables.pieces['w_pawn4'].position, '4_2');
+  assert.strictEqual(UnoMode.state.graveyard.w.length, 0);
+});
+
+runTest('64. Chess UNO: Wild Draw Four Revives Captured Queen', () => {
+  GameModeManager.setMode('uno');
+  UnoMode.startNewGame();
+  main.variables.turn = 'w';
+
+  main.variables.pieces['w_queen'].captured = true;
+  main.variables.pieces['w_queen'].position = '';
+  UnoMode.state.graveyard.w.push({ key: 'w_queen', type: 'w_queen', img: '&#9813;' });
+
+  UnoMode.state.hands.w = [{ id: 'c_w4', type: 'wildDrawFour', color: 'wild', label: '★+4', title: 'Wild Draw Four' }];
+  UnoMode.setPendingEffect({
+    type: 'wildDrawFour',
+    step: 2,
+    card: UnoMode.state.hands.w[0],
+    cardIdx: 0,
+    color: 'w',
+    revivePiece: UnoMode.state.graveyard.w[0],
+    graveIdx: 0
+  });
+
+  UnoMode.executeWildDrawFourPlacement('4_4');
+  assert.strictEqual(main.variables.pieces['w_queen'].captured, false);
+  assert.strictEqual(main.variables.pieces['w_queen'].position, '4_4');
+  assert.strictEqual(UnoMode.state.graveyard.w.length, 0);
+});
+
+runTest('65. Chess UNO: Snapshots (Undo/Redo State Fidelity)', () => {
+  GameModeManager.setMode('uno');
+  UnoMode.startNewGame();
+  main.variables.turn = 'w';
+  UnoMode.state.energy.w = 12;
+  UnoMode.state.hands.w = [{ id: 'snap_card', color: 'red', type: 'number', value: 5, label: '5', title: 'Card 5' }];
+
+  let snap = main.methods.createSnapshot();
+  assert.ok(snap.modeSnapshot);
+  assert.strictEqual(snap.modeSnapshot.energy.w, 12);
+
+  UnoMode.state.energy.w = 2;
+  UnoMode.state.hands.w = [];
+
+  main.methods.restoreSnapshot(snap);
+  assert.strictEqual(UnoMode.state.energy.w, 12);
+  assert.strictEqual(UnoMode.state.hands.w.length, 1);
+  assert.strictEqual(UnoMode.state.hands.w[0].id, 'snap_card');
+});
+
+runTest('66. Standard Chess Mode: Zero Card Interference', () => {
+  GameModeManager.setMode('standard');
+  assert.strictEqual(GameModeManager.activeMode, 'standard');
+  let moves = main.methods.getLegalMoves('w_knight1');
+  assert.strictEqual(moves.length, 2);
+});
+
 console.log('\n------------------------------------');
 console.log('TOTAL PASSED: ' + passedTests);
 console.log('TOTAL FAILED: ' + failedTests);
 console.log('------------------------------------');
 
 if (failedTests > 0) process.exit(1);
+

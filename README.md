@@ -8,11 +8,11 @@
   <img src="https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white" />
   <img src="https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white" />
   <img src="https://img.shields.io/badge/jQuery-0769AD?style=for-the-badge&logo=jquery&logoColor=white" />
-  <img src="https://img.shields.io/badge/Tests-54%20Passed-brightgreen?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Tests-66%20Passed-brightgreen?style=for-the-badge" />
 </p>
 
 <p align="center">
-A modern, fully playable browser-based Chess game built with HTML5, CSS3, JavaScript (ES6+), and jQuery, featuring complete FIDE chess rules, SAN move notation, PGN export, Undo/Redo, Threefold Repetition, 50-Move draw rule, Chess Clocks, Web Audio sound effects, unified Click-to-Move and Drag-and-Drop interaction, Permanent Wood Theme, Dual Attacking & Threatened Piece Red Glow Indicators, and a tightly centered, responsive workspace layout.
+A modern, fully playable browser-based Chess game built with HTML5, CSS3, JavaScript (ES6+), and jQuery, featuring complete FIDE chess rules, SAN move notation, PGN export, Undo/Redo, Threefold Repetition, 50-Move draw rule, Chess Clocks, Web Audio sound effects, unified Click-to-Move and Drag-and-Drop interaction, Permanent Wood Theme, and an extensible Game Mode Plugin Architecture featuring both <b>Standard Chess</b> and <b>Chess UNO Mode</b>.
 </p>
 
 ---
@@ -29,14 +29,27 @@ This project is an advanced, production-quality implementation of Chess designed
 
 The interface organizes all gameplay elements into an inviting, board-centric layout:
 - **Board Stage**: Prominent, richly textured chessboard flanked directly above and below by integrated Opponent and Player strips pairing avatar chips, names, inline captured piece trays, and countdown clocks.
-- **Game Hub**: Focused side panel housing the match status banner, live move history log, tactile action buttons (Undo, Redo, Flip, Reset), and auto-flip toggle.
+- **Game Hub**: Focused side panel housing the match status banner, live move history log, tactical action buttons (Undo, Redo, Flip, Reset), and auto-flip toggle.
+- **Game Mode Plugin Architecture**: Play classic FIDE **Standard Chess** or select **Chess UNO Mode** to introduce UNO-inspired tactical card mechanics and energy strategy without altering core chess rules.
 
-Players can use both **Click-to-Move** and **Drag-and-Drop** piece interactions interchangeably in both standard and 180° flipped board orientations, with instant visual **Attacking & Threatened Piece Red Glow** highlighting indicating when any piece can capture an enemy piece or is under legal attack.
+Players can use both **Click-to-Move** and **Drag-and-Drop** piece interactions interchangeably in both standard and 180° flipped board orientations, with instant visual **Dynamic Move & Capture Highlighting** indicating when any square is a quiet legal move or capture target.
 
 ---
 
 ## ✨ Features
 
+- **🃏 Chess UNO Mode (New Game Mode)**:
+  - **Mode Selection**: Switch anytime between **Standard Chess** and **Chess UNO Mode** via the toolbar mode selector.
+  - **Tabletop Parlor Card Deck**: 108-card deck matching the cozy wood theme with muted reds, deep blues, soft yellows, and forest greens.
+  - **Player Hands & Dynamic Privacy**: Start with 3 cards each (max 5); active player's hand is interactive face-up while inactive opponent hand displays face-down wooden card backs. Auto-draws 1 card every 3 turns.
+  - **Energy System (0–20)**: Playing Number cards grants Energy Points (Card 5 → +5 Energy). Spend 6 Energy to draw an extra card or 3 Energy to recycle/replace a card.
+  - **Tactical UNO Powers**:
+    - **Skip (⊘)**: Target an enemy non-king piece; freezes its movement for their next turn. FIDE rule enforcement prevents skipping if it is the opponent's only legal response to check.
+    - **Reverse (⇄)**: Swap the board positions of two friendly non-king pieces. Strictly prevents swaps that would expose the King to check.
+    - **Draw Two (+2)**: Revive a captured friendly pawn from the graveyard to its starting file.
+    - **Wild (★)**: Execute an immediate chess move with any friendly piece as the turn action.
+    - **Wild Draw Four (★+4)**: Select any captured non-king piece from the graveyard and revive it onto any empty legal square.
+  - **State Fidelity**: Full Undo/Redo support restores deck, hands, energy, and graveyard state.
 - **🎯 Dynamic Move & Capture Highlighting**:
   - Clicking on any piece dynamically highlights valid destination squares:
     - **Quiet Moves**: Legal empty squares and castling destinations turn soft moss green (`.green`).
@@ -73,6 +86,7 @@ Players can use both **Click-to-Move** and **Drag-and-Drop** piece interactions 
   - **Threefold Repetition**: Automatic instant detection with claim/draw trigger.
   - **50-Move Rule**: Halfmove counter tracking pawn moves and captures with automatic draw alert at 100 plies.
   - **Stalemate Detection**: Instant game over banner when the side to move has no legal moves and is not in check.
+
 
 ---
 

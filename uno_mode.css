@@ -1,0 +1,551 @@
+/* ==========================================================
+   CHESS UNO MODE — TABLETOP PARLOR CARD STYLING
+   ========================================================== */
+
+/* Mode-specific visibility controls */
+body:not(.mode-uno) .uno-only {
+  display: none !important;
+}
+
+body.mode-uno .standard-only {
+  display: none !important;
+}
+
+/* ----------------------------------------------------------
+   TOOLBAR MODE TOGGLE BUTTON & MODAL
+   ---------------------------------------------------------- */
+.mode-btn {
+  background: linear-gradient(180deg, #443224 0%, #2f2015 100%) !important;
+  border-color: #d4a359 !important;
+  color: #f5eedc !important;
+  font-weight: 700 !important;
+}
+
+.mode-btn:hover {
+  background: linear-gradient(180deg, #533e2c 0%, #3a281b 100%) !important;
+  box-shadow: 0 0 10px rgba(212, 163, 89, 0.4) !important;
+}
+
+/* Mode Selection Modal */
+.mode-modal {
+  max-width: 440px;
+  width: 90%;
+  padding: 24px;
+}
+
+.mode-options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.mode-card-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 12px;
+  background: #241a13;
+  border: 1.5px solid rgba(240, 215, 185, 0.15);
+  border-radius: 12px;
+  cursor: pointer;
+  color: var(--text-primary);
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.mode-card-btn:hover {
+  border-color: #d4a359;
+  transform: translateY(-2px);
+  background: #312319;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+}
+
+.mode-card-btn.active {
+  border-color: #d4a359;
+  background: linear-gradient(165deg, #3b2a1e, #291c13);
+  box-shadow: 0 0 14px rgba(212, 163, 89, 0.35), inset 0 0 0 1px #d4a359;
+}
+
+.mode-card-icon {
+  font-size: 32px;
+  line-height: 1;
+}
+
+.mode-card-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f5eedc;
+}
+
+.mode-card-desc {
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-align: center;
+  line-height: 1.3;
+}
+
+/* ----------------------------------------------------------
+   UNO SIDEBAR PANELS & ENERGY GAUGES
+   ---------------------------------------------------------- */
+.uno-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.deck-status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(240, 215, 185, 0.08);
+}
+
+.deck-pile-info, .discard-pile-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.pile-badge {
+  background: #3a281c;
+  color: #f5eedc;
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(240, 215, 185, 0.15);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* Energy Bars */
+.energy-tracker {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(240, 215, 185, 0.08);
+}
+
+.energy-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+}
+
+.energy-player-tag {
+  width: 58px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.energy-meter {
+  flex: 1;
+  height: 10px;
+  background: #18110c;
+  border-radius: 5px;
+  overflow: hidden;
+  border: 1px solid rgba(240, 215, 185, 0.1);
+  position: relative;
+}
+
+.energy-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #d48b28, #f5b942);
+  border-radius: 4px;
+  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 0 8px rgba(245, 185, 66, 0.5);
+}
+
+.energy-val {
+  width: 38px;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: right;
+  color: #f5eedc;
+}
+
+/* Energy Action Buttons */
+.energy-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.energy-action-btn {
+  flex: 1;
+  padding: 6px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #2b1f16;
+  border: 1px solid rgba(240, 215, 185, 0.15);
+  border-radius: 6px;
+  color: #f5eedc;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.energy-action-btn:hover:not(:disabled) {
+  background: #3c2a1e;
+  border-color: #d4a359;
+  transform: translateY(-1px);
+}
+
+.energy-action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ----------------------------------------------------------
+   PLAYER CARDS HAND CONTAINER
+   ---------------------------------------------------------- */
+.player-hand-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hand-header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  padding: 0 2px;
+}
+
+.hand-cards-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px 8px;
+  min-height: 90px;
+  align-items: center;
+}
+
+.hand-cards-row::-webkit-scrollbar {
+  height: 4px;
+}
+.hand-cards-row::-webkit-scrollbar-thumb {
+  background: rgba(240, 215, 185, 0.2);
+  border-radius: 2px;
+}
+
+/* ----------------------------------------------------------
+   UNO CARD VISUALS (TABLETOP WARM PARLOR DESIGN)
+   ---------------------------------------------------------- */
+.uno-card {
+  width: 58px;
+  height: 84px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 5px 6px;
+  position: relative;
+  user-select: none;
+  cursor: pointer;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.uno-card:hover:not(.face-down):not(.disabled) {
+  transform: translateY(-6px) scale(1.05);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.6), 0 0 12px rgba(212, 163, 89, 0.5);
+  z-index: 10;
+}
+
+.uno-card.selected {
+  transform: translateY(-8px) scale(1.08);
+  box-shadow: 0 0 0 2px #f5eedc, 0 12px 24px rgba(0, 0, 0, 0.7);
+  z-index: 20;
+}
+
+.uno-card.disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: grayscale(0.5);
+}
+
+/* Card Color Themes (Warm Muted Tabletop) */
+.card-red {
+  background: linear-gradient(145deg, #a83838 0%, #661e1e 100%);
+  color: #fffaf0;
+  border: 1px solid #c94c4c;
+}
+
+.card-blue {
+  background: linear-gradient(145deg, #2b5682 0%, #162f4d 100%);
+  color: #f0f7ff;
+  border: 1px solid #3d75ad;
+}
+
+.card-green {
+  background: linear-gradient(145deg, #326d40 0%, #193d22 100%);
+  color: #f2fbf4;
+  border: 1px solid #459458;
+}
+
+.card-yellow {
+  background: linear-gradient(145deg, #b88628 0%, #6e4e12 100%);
+  color: #fff9e6;
+  border: 1px solid #d49f39;
+}
+
+.card-wild {
+  background: linear-gradient(135deg, #8a2a2a 0%, #204066 33%, #225732 66%, #8a6519 100%);
+  color: #ffffff;
+  border: 1.5px solid #e6be60;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5), inset 0 0 8px rgba(230, 190, 96, 0.4);
+}
+
+/* Card Typography & Symbols */
+.card-corner {
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.card-corner.bottom-corner {
+  align-self: flex-end;
+  transform: rotate(180deg);
+}
+
+.card-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.card-type-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.85;
+}
+
+/* Card Back (Face-down cards) */
+.uno-card.face-down {
+  background: linear-gradient(145deg, #3a281d 0%, #1f140e 100%);
+  border: 1px solid rgba(212, 163, 89, 0.35);
+  cursor: default;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-back-pattern {
+  width: 100%;
+  height: 100%;
+  border: 1px dashed rgba(212, 163, 89, 0.3);
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(212, 163, 89, 0.6);
+  font-size: 22px;
+}
+
+/* Mini Card for Discard Pile */
+.mini-card {
+  width: 44px;
+  height: 62px;
+  padding: 3px 4px;
+  border-radius: 6px;
+  cursor: default;
+}
+.mini-card .card-corner { font-size: 9px; }
+.mini-card .card-center { font-size: 16px; }
+
+/* ----------------------------------------------------------
+   GRAVEYARD & CARD ACTION LOG
+   ---------------------------------------------------------- */
+.graveyard-tray {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.graveyard-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(240, 215, 185, 0.08);
+}
+
+.graveyard-tag {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-muted);
+  width: 50px;
+}
+
+.graveyard-pieces-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.graveyard-piece-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  background: #251b14;
+  border: 1px solid rgba(240, 215, 185, 0.12);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.graveyard-piece-chip:hover {
+  border-color: #d4a359;
+  transform: scale(1.15);
+  background: #38271c;
+}
+
+/* Card Action Log */
+.card-log-box {
+  max-height: 140px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  padding-right: 4px;
+}
+
+.card-log-entry {
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border-left: 2px solid #d4a359;
+  border-radius: 0 4px 4px 0;
+  color: var(--text-secondary);
+  line-height: 1.3;
+}
+
+.card-log-entry .log-color {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.card-log-entry .log-card-name {
+  font-weight: 700;
+  color: #f5eedc;
+}
+
+/* ----------------------------------------------------------
+   INTERACTION BANNERS & SKIPPED PIECE OVERLAY
+   ---------------------------------------------------------- */
+/* Floating Card Action Banner */
+#uno-prompt-banner {
+  display: none;
+  width: 100%;
+  padding: 8px 14px;
+  background: linear-gradient(135deg, #422f1c 0%, #2b1c10 100%);
+  border: 1.5px solid #d4a359;
+  border-radius: 8px;
+  color: #fff9ed;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: center;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  margin-bottom: 8px;
+}
+
+#uno-prompt-banner.active {
+  display: flex;
+}
+
+.uno-cancel-btn {
+  padding: 3px 8px;
+  font-size: 11px;
+  background: #24180f;
+  color: #e8d0a9;
+  border: 1px solid rgba(240, 215, 185, 0.2);
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.uno-cancel-btn:hover {
+  background: #3b2719;
+  color: #fff;
+}
+
+/* Skipped Piece Badge */
+.gamecell.skipped-piece {
+  position: relative;
+}
+
+.gamecell.skipped-piece::after {
+  content: '⊘';
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 18px;
+  height: 18px;
+  background: rgba(180, 40, 40, 0.85);
+  color: #fff;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  animation: skip-bounce 1.5s infinite ease-in-out;
+  pointer-events: none;
+  z-index: 5;
+}
+
+@keyframes skip-bounce {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+/* Reverse Target Glow */
+.gamecell.swap-candidate {
+  box-shadow: inset 0 0 0 3px #3b82f6, 0 0 12px rgba(59, 130, 246, 0.5) !important;
+  cursor: pointer !important;
+}
+
+.gamecell.swap-selected {
+  box-shadow: inset 0 0 0 3px #10b981, 0 0 14px rgba(16, 185, 129, 0.6) !important;
+}

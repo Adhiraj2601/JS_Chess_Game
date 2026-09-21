@@ -417,6 +417,95 @@ const DragManager = {
 };
 
 // ==========================================================
+// GAME MODE MANAGER (Extensible Plugin Host)
+// ==========================================================
+const GameModeManager = {
+  activeMode: 'standard', // 'standard' | 'uno'
+  modes: {},
+
+  register: function (name, modePlugin) {
+    this.modes[name] = modePlugin;
+  },
+
+  getMode: function (name) {
+    return this.modes[name || this.activeMode];
+  },
+
+  setMode: function (modeName) {
+    if (this.activeMode === modeName) return true;
+    let oldMode = this.modes[this.activeMode];
+    if (oldMode && oldMode.onDeactivate) {
+      oldMode.onDeactivate();
+    }
+    this.activeMode = modeName;
+    let newMode = this.modes[this.activeMode];
+    if (newMode && newMode.onActivate) {
+      newMode.onActivate();
+    }
+    if (typeof $ !== 'undefined') {
+      $('#mode-toggle-btn').html(modeName === 'uno' ? '🃏 Chess UNO' : '♟ Standard');
+      if (modeName === 'uno') {
+        $('body').addClass('mode-uno');
+      } else {
+        $('body').removeClass('mode-uno');
+      }
+    }
+    return true;
+  },
+
+  filterLegalMoves: function (pieceKey, moves) {
+    let mode = this.modes[this.activeMode];
+    if (mode && mode.filterLegalMoves) {
+      return mode.filterLegalMoves(pieceKey, moves);
+    }
+    return moves;
+  },
+
+  onMove: function (fromCell, toCell, pieceKey, isCapture) {
+    let mode = this.modes[this.activeMode];
+    if (mode && mode.onMove) {
+      mode.onMove(fromCell, toCell, pieceKey, isCapture);
+    }
+  },
+
+  onCapture: function (capturedKey, capturedPieceObj, capturingKey) {
+    let mode = this.modes[this.activeMode];
+    if (mode && mode.onCapture) {
+      mode.onCapture(capturedKey, capturedPieceObj, capturingKey);
+    }
+  },
+
+  onTurnEnd: function (previousColor, nextColor) {
+    let mode = this.modes[this.activeMode];
+    if (mode && mode.onTurnEnd) {
+      mode.onTurnEnd(previousColor, nextColor);
+    }
+  },
+
+  onReset: function () {
+    let mode = this.modes[this.activeMode];
+    if (mode && mode.onReset) {
+      mode.onReset();
+    }
+  },
+
+  createSnapshot: function () {
+    let mode = this.modes[this.activeMode];
+    if (mode && mode.createSnapshot) {
+      return mode.createSnapshot();
+    }
+    return null;
+  },
+
+  restoreSnapshot: function (snap) {
+    let mode = this.modes[this.activeMode];
+    if (mode && mode.restoreSnapshot) {
+      mode.restoreSnapshot(snap);
+    }
+  }
+};
+
+// ==========================================================
 // MAIN CHESS GAME OBJECT
 // ==========================================================
 let main = {
@@ -781,6 +870,9 @@ let main = {
           legal.push(moveToken);
         }
       });
+      if (typeof GameModeManager !== 'undefined') {
+        legal = GameModeManager.filterLegalMoves(pieceKey, legal);
+      }
       return legal;
     },
 
@@ -989,7 +1081,8 @@ let main = {
         lastMove: main.variables.lastMove ? Object.assign({}, main.variables.lastMove) : null,
         moveHistory: JSON.parse(JSON.stringify(main.variables.moveHistory)),
         clockWhiteMs: ClockManager.state.whiteMs,
-        clockBlackMs: ClockManager.state.blackMs
+        clockBlackMs: ClockManager.state.blackMs,
+        modeSnapshot: (typeof GameModeManager !== 'undefined') ? GameModeManager.createSnapshot() : null
       };
     },
 
@@ -1012,6 +1105,10 @@ let main = {
       if (snap.clockBlackMs !== undefined) ClockManager.state.blackMs = snap.clockBlackMs;
       ClockManager.state.activeColor = snap.gameOver ? null : snap.turn;
       ClockManager.updateDisplay();
+
+      if (typeof GameModeManager !== 'undefined' && snap.modeSnapshot) {
+        GameModeManager.restoreSnapshot(snap.modeSnapshot);
+      }
 
       main.methods.gamesetup();
       $('#captured-black .captured-pieces-list').html(snap.capturedBlackHtml || '');
@@ -1189,6 +1286,9 @@ let main = {
         capturedPieceObj.captured = true;
         capturedPieceObj.moved = true;
         capturedPieceObj.position = '';
+        if (typeof GameModeManager !== 'undefined') {
+          GameModeManager.onCapture(capturedPieceName, capturedPieceObj, selectedKey);
+        }
         if (capturedPieceName.startsWith('b_')) {
           $('#captured-black .captured-pieces-list').append('<span>' + capturedPieceObj.img + '</span>');
         } else if (capturedPieceName.startsWith('w_')) {
@@ -1201,6 +1301,10 @@ let main = {
 
       pieceObj.position = targetCellId;
       pieceObj.moved = true;
+
+      if (typeof GameModeManager !== 'undefined') {
+        GameModeManager.onMove(fromCell, targetCellId, selectedKey, true);
+      }
 
       main.variables.lastMove = { from: fromCell, to: targetCellId };
       main.variables.halfmoveClock = 0;
@@ -1407,6 +1511,10 @@ let main = {
       pieceObj.position = target.id;
       pieceObj.moved = true;
 
+      if (typeof GameModeManager !== 'undefined') {
+        GameModeManager.onMove(fromCell, target.id, selectedpiece, false);
+      }
+
       main.variables.lastMove = { from: fromCell, to: target.id };
 
       let isPawnPromotion = (pieceObj.type === 'w_pawn' && targetRank === '8') ||
@@ -1485,11 +1593,19 @@ let main = {
         capturedPieceObj.moved = true;
         capturedPieceObj.position = '';
 
+        if (typeof GameModeManager !== 'undefined') {
+          GameModeManager.onCapture(capturedPieceName, capturedPieceObj, selectedKey);
+        }
+
         if (capturedPieceName.startsWith('b_')) {
           $('#captured-black .captured-pieces-list').append('<span>' + capturedPieceObj.img + '</span>');
         } else if (capturedPieceName.startsWith('w_')) {
           $('#captured-white .captured-pieces-list').append('<span>' + capturedPieceObj.img + '</span>');
         }
+      }
+
+      if (typeof GameModeManager !== 'undefined') {
+        GameModeManager.onMove(fromCell, target.id, selectedKey, true);
       }
 
       main.variables.lastMove = { from: fromCell, to: target.id };
@@ -1624,6 +1740,10 @@ let main = {
           main.methods.flipBoard();
         }
       }
+
+      if (typeof GameModeManager !== 'undefined') {
+        GameModeManager.onTurnEnd(previousColor, color);
+      }
     },
 
     resetGame: function () {
@@ -1660,6 +1780,10 @@ let main = {
       let initialKey = main.methods.getPositionKey(main.methods.getBoard(), 'w', null);
       main.variables.positionCounts[initialKey] = 1;
       main.variables.positionHistory.push(initialKey);
+
+      if (typeof GameModeManager !== 'undefined') {
+        GameModeManager.onReset();
+      }
     }
   }
 };
@@ -1771,7 +1895,54 @@ if (typeof $ !== 'undefined') {
       let inc = $('#custom-inc').val();
       ClockManager.setPreset('custom', mins, inc);
     });
+
+    // Game Mode Selection Modal
+    $(document).on('click', '#mode-toggle-btn', function () {
+      $('.mode-card-btn').removeClass('active');
+      $(`.mode-card-btn[data-mode="${GameModeManager.activeMode}"]`).addClass('active');
+      $('#mode-select-modal').css('display', 'flex');
+    });
+
+    $(document).on('click', '#close-mode-modal, #mode-select-modal .modal-close-btn', function () {
+      $('#mode-select-modal').css('display', 'none');
+    });
+
+    $(document).on('click', '.mode-card-btn', function () {
+      let targetMode = $(this).data('mode');
+      if (targetMode === GameModeManager.activeMode) {
+        $('#mode-select-modal').css('display', 'none');
+        return;
+      }
+
+      let inProgress = main.variables.moveHistory && main.variables.moveHistory.length > 0;
+      if (inProgress) {
+        let confirmed = confirm("Switching game modes will reset the current match. Do you want to proceed?");
+        if (!confirmed) return;
+      }
+
+      GameModeManager.setMode(targetMode);
+      main.methods.resetGame();
+      $('#mode-select-modal').css('display', 'none');
+    });
+
+    // Initialize UNO Plugin if available
+    if (typeof UnoMode !== 'undefined') {
+      GameModeManager.register('uno', UnoMode);
+      UnoMode.init();
+    }
   });
+}
+
+if (typeof global !== 'undefined') {
+  global.main = main;
+  global.GameModeManager = GameModeManager;
+  global.ClockManager = ClockManager;
+  global.AudioManager = AudioManager;
+  global.DragManager = DragManager;
+}
+if (typeof window !== 'undefined') {
+  window.main = main;
+  window.GameModeManager = GameModeManager;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -1779,6 +1950,9 @@ if (typeof module !== 'undefined' && module.exports) {
     main,
     ClockManager,
     AudioManager,
-    DragManager
+    DragManager,
+    GameModeManager
   };
 }
+
+
