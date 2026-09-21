@@ -1088,26 +1088,35 @@ runTest('52. Threatened Piece: Board Flip Preserves Threat Detection', () => {
   main.methods.flipBoard();
 });
 
-runTest('53. Threat Highlighting: Attacker and Threatened Piece Both Receive Red Highlight', () => {
-  // 1. e4 d5 (Both White pawn on e4 and Black pawn on d5 threaten each other)
-  main.variables.selectedpiece = '5_2'; main.methods.move({ id: '5_4' }); // 1. e4
-  main.variables.selectedpiece = '4_7'; main.methods.move({ id: '4_5' }); // 1... d5
+runTest('53. Move Selection Highlighting: Legal Moves Green and Capture Targets Red', () => {
+  // 1. d4 e5
+  main.variables.selectedpiece = '4_2'; main.methods.move({ id: '4_4' }); // 1. d4
+  main.variables.selectedpiece = '5_7'; main.methods.move({ id: '5_5' }); // 1... e5
 
-  let threatHighlights = main.methods.getThreatHighlightSquares();
-  assert.ok(threatHighlights.includes('5_4'), 'Attacking White pawn on e4 must receive threat highlight');
-  assert.ok(threatHighlights.includes('4_5'), 'Threatened Black pawn on d5 must receive threat highlight');
-
+  // Before selection: verify no passive threat outlines are applied
   main.methods.updateVisualHighlights();
-  assert.ok(dom.cells['5_4'].classes.has('threatened-piece'), 'White pawn cell 5_4 has threatened-piece class');
-  assert.ok(dom.cells['4_5'].classes.has('threatened-piece'), 'Black pawn cell 4_5 has threatened-piece class');
+  assert.ok(!dom.cells['4_4'].classes.has('threatened-piece'), 'White pawn has no passive red outline');
+  assert.ok(!dom.cells['5_5'].classes.has('threatened-piece'), 'Black pawn has no passive red outline');
 
-  // 2. Nf3 dxe4 3. Ng5 (Knight on g5 threatens Black pawn on e4; Black pawn on e4 cannot attack g5)
-  main.variables.selectedpiece = '7_1'; main.methods.move({ id: '6_3' }); // 2. Nf3
-  main.variables.selectedpiece = '4_5'; main.methods.capture({ id: '5_4', name: 'w_pawn5' }); // 2... dxe4
-  main.variables.selectedpiece = '6_3'; main.methods.move({ id: '7_5' }); // 3. Ng5
-  threatHighlights = main.methods.getThreatHighlightSquares();
-  assert.ok(threatHighlights.includes('7_5'), 'Attacking White Knight on g5 must receive threat highlight');
-  assert.ok(threatHighlights.includes('5_4'), 'Threatened Black pawn on e4 must receive threat highlight');
+  // White selects pawn on d4 (4_4)
+  main.methods.selectPiece('4_4');
+  assert.ok(dom.cells['4_4'].classes.has('yellow'), 'Selected piece on d4 has yellow highlight');
+  assert.ok(dom.cells['4_5'].classes.has('green'), 'Quiet legal move to d5 has green highlight');
+  assert.ok(dom.cells['5_5'].classes.has('red'), 'Capture target e5 (black pawn) has red highlight');
+
+  // Test En Passant capture highlighting
+  main.methods.resetGame();
+  main.variables.selectedpiece = '5_2'; main.methods.move({ id: '5_4' }); // 1. e4
+  main.variables.selectedpiece = '8_7'; main.methods.move({ id: '8_6' }); // 1... h6
+  main.variables.selectedpiece = '5_4'; main.methods.move({ id: '5_5' }); // 2. e5
+  main.variables.selectedpiece = '4_7'; main.methods.move({ id: '4_5' }); // 2... d5
+
+  main.methods.selectPiece('5_5'); // Select e5 pawn
+  assert.ok(dom.cells['4_6'].classes.has('red'), 'En passant capture destination d6 has red highlight');
+
+  main.methods.clearSelection();
+  assert.ok(!dom.cells['4_6'].classes.has('red'), 'Clearing selection removes red capture highlight');
+  assert.ok(!dom.cells['5_5'].classes.has('yellow'), 'Clearing selection removes yellow highlight');
 });
 
 runTest('54. Threatened Piece: Checkmate Threat State Cleanup', () => {

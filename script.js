@@ -1305,41 +1305,51 @@ let main = {
     },
 
     updateVisualHighlights: function () {
-      $('.gamecell').removeClass('green yellow red last-move-from last-move-to threatened-piece');
+      $('.gamecell').removeClass('green yellow red in-check last-move-from last-move-to threatened-piece');
 
       let color = main.variables.turn;
 
-      // 1. Highlight pieces that can capture on next move and threatened pieces with a red glow
-      if (!main.variables.gameOver) {
-        let threatHighlights = main.methods.getThreatHighlightSquares();
-        threatHighlights.forEach(cellId => {
-          $('#' + cellId).addClass('threatened-piece');
-        });
-      }
-
-      // 2. Highlight previous move squares
+      // 1. Highlight previous move squares
       if (main.variables.lastMove) {
         $('#' + main.variables.lastMove.from).addClass('last-move-from');
         $('#' + main.variables.lastMove.to).addClass('last-move-to');
       }
 
-      // 3. Highlight selected square and legal destination targets
+      // 2. Highlight selected square and legal destination targets (green for quiet moves, red for captures)
       if (main.variables.selectedpiece) {
         $('#' + main.variables.selectedpiece).addClass('yellow');
         let key = $('#' + main.variables.selectedpiece).attr('chess');
         let legal = main.methods.getLegalMoves(key);
         main.variables.highlighted = legal;
+        let board = main.methods.getBoard();
+        let myColor = main.methods.pieceColor(key);
+
         legal.forEach(m => {
           let target = m.indexOf('_') !== -1 ? m.split('_').slice(0, 2).join('_') : m;
-          $('#' + target).addClass('green');
+          let isCapture = false;
+
+          if (m.includes('_ep')) {
+            isCapture = true;
+          } else {
+            let occupant = board[target];
+            if (occupant && occupant !== 'null' && main.methods.pieceColor(occupant) !== myColor) {
+              isCapture = true;
+            }
+          }
+
+          if (isCapture) {
+            $('#' + target).addClass('red');
+          } else {
+            $('#' + target).addClass('green');
+          }
         });
       }
 
-      // 4. King in check takes top priority for red check danger highlight
+      // 3. King in check takes top priority for red check danger highlight
       if (main.methods.isInCheck(color)) {
         let kingCell = main.methods.findKingCell(color, main.methods.getBoard());
         if (kingCell) {
-          $('#' + kingCell).removeClass('threatened-piece').addClass('red');
+          $('#' + kingCell).addClass('red in-check');
         }
       }
     },

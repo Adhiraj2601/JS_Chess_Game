@@ -37,14 +37,12 @@ Players can use both **Click-to-Move** and **Drag-and-Drop** piece interactions 
 
 ## ✨ Features
 
-- **🔴 Attacking & Threatened Piece Red Glow**:
-  - Automatically highlights any piece that can capture an opponent piece on its next move with a red box/border (`.threatened-piece`).
-  - Automatically highlights any piece that is currently threatened by an opponent piece with a red border (`.threatened-piece`).
-  - When opposing pieces attack each other (such as pawns attacking each other), both the attacking piece and the threatened piece receive the red border indicator.
-  - **Legal Threat Accuracy**: Filters out pseudo-attacks from pinned enemy pieces that cannot legally capture without placing their own king in check.
-  - Empty squares do NOT glow red.
-  - Highlights multiple attacking and threatened pieces simultaneously.
-  - Seamlessly updates on every move, capture, castle, en passant, promotion, undo, redo, and board flip.
+- **🎯 Dynamic Move & Capture Highlighting**:
+  - Clicking on any piece dynamically highlights valid destination squares:
+    - **Quiet Moves**: Legal empty squares and castling destinations turn soft moss green (`.green`).
+    - **Capture Targets**: Squares containing capturable opponent pieces (and en passant destinations) turn vivid warm red (`.red`), filling the square itself rather than just a border.
+  - Clean, distraction-free board experience with no passive red outline clutter.
+  - Selected pieces are highlighted with warm amber gold (`.yellow`).
 - **🎯 Board-Centric Cozy Parlor Layout**:
   - Warm, intimate, and player-focused interface that eliminates wasted empty margins.
   - Seamless integrated player strips with avatar badges, captured pieces, and tabular countdown clocks.
@@ -161,7 +159,7 @@ node test_runner.js
 50. `Threatened Piece: Undo and Redo Restore Threat State`
 51. `Threatened Piece: En Passant Threat Detection`
 52. `Threatened Piece: Board Flip Preserves Threat Detection`
-53. `Threat Highlighting: Attacker and Threatened Piece Both Receive Red Highlight`
+53. `Move Selection Highlighting: Legal Moves Green and Capture Targets Red`
 54. `Threatened Piece: Checkmate Threat State Cleanup`
 
 ---

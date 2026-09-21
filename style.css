@@ -31,6 +31,7 @@ body.theme-wood {
   --cell-hover: rgba(255, 255, 255, 0.12);
   --cell-selected: rgba(224, 168, 48, 0.65);
   --cell-legal: rgba(86, 158, 76, 0.52);
+  --cell-capture: rgba(215, 55, 55, 0.72);
   --cell-check: #c0392b;
 
   --last-move-from: rgba(220, 165, 55, 0.28);
@@ -52,10 +53,6 @@ body.theme-wood {
   --btn-text: #f5eedc;
   --btn-hover: #443327;
   --status-bg: #271e18;
-
-  /* Threat Glow (warm ember pulse) */
-  --threat-color: rgba(239, 68, 68, 0.95);
-  --threat-glow: inset 0 0 0 2.5px rgba(239, 68, 68, 0.95), inset 0 0 12px rgba(239, 68, 68, 0.45), 0 0 10px rgba(239, 68, 68, 0.35);
 
   /* Responsive Board Sizing */
   --board-size: min(580px, calc(100vh - 190px), calc(100vw - 390px));
@@ -452,15 +449,6 @@ html, body {
 }
 
 /* Square Highlights */
-.gamecell.yellow {
-  background: var(--cell-selected) !important;
-  box-shadow: inset 0 0 0 2px rgba(255, 230, 120, 0.6);
-}
-
-.gamecell.green {
-  background: var(--cell-legal) !important;
-}
-
 .gamecell.last-move-from {
   background: var(--last-move-from) !important;
 }
@@ -469,24 +457,27 @@ html, body {
   background: var(--last-move-to) !important;
 }
 
-.gamecell.threatened-piece {
-  box-shadow: var(--threat-glow);
-  animation: threat-pulse 2s ease-in-out infinite alternate;
+.gamecell.yellow {
+  background: var(--cell-selected) !important;
+  box-shadow: inset 0 0 0 2px rgba(255, 230, 120, 0.65) !important;
   z-index: 2;
 }
 
-@keyframes threat-pulse {
-  from {
-    filter: drop-shadow(0 0 1px var(--threat-color));
-  }
-  to {
-    filter: drop-shadow(0 0 5px var(--threat-color));
-  }
+.gamecell.green {
+  background: var(--cell-legal) !important;
+  box-shadow: inset 0 0 0 1.5px rgba(100, 200, 100, 0.35) !important;
+  z-index: 2;
 }
 
 .gamecell.red {
+  background: var(--cell-capture) !important;
+  box-shadow: inset 0 0 0 2px rgba(239, 68, 68, 0.9), inset 0 0 10px rgba(239, 68, 68, 0.25) !important;
+  z-index: 2;
+}
+
+.gamecell.in-check {
   background: var(--cell-check) !important;
-  box-shadow: inset 0 0 0 3px #ff3333, 0 0 14px rgba(255, 50, 50, 0.75) !important;
+  box-shadow: inset 0 0 0 3px #ff3333, 0 0 16px rgba(255, 50, 50, 0.8) !important;
   z-index: 3;
 }
 
