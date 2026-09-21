@@ -8,11 +8,11 @@
   <img src="https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white" />
   <img src="https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white" />
   <img src="https://img.shields.io/badge/jQuery-0769AD?style=for-the-badge&logo=jquery&logoColor=white" />
-  <img src="https://img.shields.io/badge/Tests-66%20Passed-brightgreen?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Tests-71%20Passed-brightgreen?style=for-the-badge" />
 </p>
 
 <p align="center">
-A modern, fully playable browser-based Chess game built with HTML5, CSS3, JavaScript (ES6+), and jQuery, featuring complete FIDE chess rules, SAN move notation, PGN export, Undo/Redo, Threefold Repetition, 50-Move draw rule, Chess Clocks, Web Audio sound effects, unified Click-to-Move and Drag-and-Drop interaction, Permanent Wood Theme, and an extensible Game Mode Plugin Architecture featuring both <b>Standard Chess</b> and <b>Chess UNO Mode</b>.
+A modern, fully playable browser-based Chess game built with HTML5, CSS3, JavaScript (ES6+), and jQuery, featuring complete FIDE chess rules, SAN move notation, PGN export, Undo/Redo, Threefold Repetition, 50-Move draw rule, Chess Clocks, Web Audio sound effects, unified Click-to-Move and Drag-and-Drop interaction, Permanent Wood Theme, an extensible Game Mode Plugin Architecture (<b>Standard Chess</b> & <b>Chess UNO Mode</b>), and a complete <b>Interactive Onboarding & Rulebook Help System</b>.
 </p>
 
 ---
@@ -31,12 +31,29 @@ The interface organizes all gameplay elements into an inviting, board-centric la
 - **Board Stage**: Prominent, richly textured chessboard flanked directly above and below by integrated Opponent and Player strips pairing avatar chips, names, inline captured piece trays, and countdown clocks.
 - **Game Hub**: Focused side panel housing the match status banner, live move history log, tactical action buttons (Undo, Redo, Flip, Reset), and auto-flip toggle.
 - **Game Mode Plugin Architecture**: Play classic FIDE **Standard Chess** or select **Chess UNO Mode** to introduce UNO-inspired tactical card mechanics and energy strategy without altering core chess rules.
+- **Onboarding & Rulebook System**: Comprehensive 6-tab Rulebook modal and 7-step interactive spotlight tutorial guiding first-time players through card powers, energy economy, graveyard revivals, and turn sequences.
 
 Players can use both **Click-to-Move** and **Drag-and-Drop** piece interactions interchangeably in both standard and 180° flipped board orientations, with instant visual **Dynamic Move & Capture Highlighting** indicating when any square is a quiet legal move or capture target.
 
 ---
 
 ## ✨ Features
+
+- **📖 Complete Onboarding & Board Game Rulebook**:
+  - **Header Help Button (📖 Help)**: Quick one-click access to an authentic parlor-style Rulebook modal.
+  - **6 Structured Guide Tabs**:
+    1. *Overview*: Core philosophy, standard FIDE rules preserved, checkmate objective.
+    2. *Turn Flow*: Step-by-step visual diagrams for move-first, card-first, and wild-card sequences.
+    3. *Card Guide*: Visual almanac detailing Number cards (0–9) and all Special Cards with restrictions.
+    4. *Energy System*: How energy accumulates up to 20 points, and spending for Draw (6E) and Recycle (3E).
+    5. *Graveyard & Revival*: Captured piece pool rules, placement legality, and King immunity.
+    6. *FAQ*: Direct answers to common questions regarding check, king revival, and card limits.
+  - **🎓 Interactive 7-Step Spotlight Tutorial**:
+    - Automatically guides new players on their first Chess UNO match.
+    - Highlights player hand, draw deck, energy tracker, graveyard, action log, and win condition with spotlight cutout effects.
+    - Includes Next, Back, Skip, and Finish controls with `localStorage` persistence.
+    - Replay anytime directly from the Rulebook header!
+  - **💡 Contextual Micro-Tooltips**: Hover explanations for energy meters, deck counts, graveyard trays, action buttons, and card types.
 
 - **🃏 Chess UNO Mode (New Game Mode)**:
   - **Mode Selection**: Switch anytime between **Standard Chess** and **Chess UNO Mode** via the toolbar mode selector.

@@ -44,6 +44,7 @@
       </div>
       <button id="sound-toggle" class="action-btn sound-btn" title="Toggle Move Sounds">🔊 Sound</button>
       <button id="mode-toggle-btn" class="action-btn mode-btn" title="Select Game Mode">♟ Standard</button>
+      <button id="help-btn" class="action-btn help-btn" title="How to Play & Game Rules">📖 Help</button>
     </div>
   </header>
 
@@ -105,7 +106,7 @@
       <div id="turn" class="status-banner">It's White's Turn!</div>
 
       <!-- UNO MODE: Black Player's Hand -->
-      <div id="uno-hand-black" class="player-hand-container uno-only">
+      <div id="uno-hand-black" class="player-hand-container uno-only" title="Black's Card Hand (Face-down during White's turn)">
         <div class="hand-header-bar">
           <span>♟ Black's Hand</span>
         </div>
@@ -119,12 +120,12 @@
           <h3 class="panel-title">UNO Deck & Energy</h3>
         </div>
 
-        <div class="deck-status-bar">
-          <div class="deck-pile-info">
+        <div class="deck-status-bar" title="Remaining draw pile and current top discard card">
+          <div class="deck-pile-info" title="Draw Pile: Auto-draws 1 card every 3 turns. Reshuffles automatically when empty.">
             <span>Deck:</span>
             <span id="deck-count-badge" class="pile-badge">108</span>
           </div>
-          <div class="discard-pile-info">
+          <div class="discard-pile-info" title="Discard Pile: Most recently played cards.">
             <span>Discard:</span>
             <span id="discard-count-badge" class="pile-badge">0</span>
             <div id="discard-top-display"></div>
@@ -132,15 +133,15 @@
         </div>
 
         <!-- Energy Meters -->
-        <div class="energy-tracker">
-          <div class="energy-row">
+        <div class="energy-tracker" title="Energy Points: Earned by playing Number Cards (0–20 maximum).">
+          <div class="energy-row" title="White's accumulated Energy (Max 20)">
             <span class="energy-player-tag">♙ White:</span>
             <div class="energy-meter">
               <div id="energy-white-fill" class="energy-fill"></div>
             </div>
             <span id="energy-white-val" class="energy-val">0 / 20</span>
           </div>
-          <div class="energy-row">
+          <div class="energy-row" title="Black's accumulated Energy (Max 20)">
             <span class="energy-player-tag">♟ Black:</span>
             <div class="energy-meter">
               <div id="energy-black-fill" class="energy-fill"></div>
@@ -151,17 +152,17 @@
 
         <!-- Energy Actions -->
         <div class="energy-actions">
-          <button id="energy-draw-btn" class="energy-action-btn" title="Spend 6 Energy to draw 1 card">
+          <button id="energy-draw-btn" class="energy-action-btn" title="Spend 6 Energy to draw 1 fresh card from the deck">
             ⚡ Draw (6E)
           </button>
-          <button id="energy-recycle-btn" class="energy-action-btn" title="Spend 3 Energy to replace 1 card">
+          <button id="energy-recycle-btn" class="energy-action-btn" title="Spend 3 Energy to discard 1 unwanted card and draw a fresh replacement">
             ♻️ Recycle (3E)
           </button>
         </div>
       </div>
 
       <!-- UNO MODE: White Player's Hand -->
-      <div id="uno-hand-white" class="player-hand-container uno-only">
+      <div id="uno-hand-white" class="player-hand-container uno-only" title="White's Card Hand (Click any card to play on your turn)">
         <div class="hand-header-bar">
           <span>♙ White's Hand</span>
         </div>
@@ -169,23 +170,23 @@
       </div>
 
       <!-- UNO MODE: Graveyard Trays -->
-      <div id="uno-graveyard-panel" class="panel-card graveyard-tray uno-only">
+      <div id="uno-graveyard-panel" class="panel-card graveyard-tray uno-only" title="Graveyard Pool: Captured pieces that can be revived using Draw Two (+2) or Wild Draw Four (★+4)">
         <div class="panel-header">
           <span class="panel-header-icon">⚰️</span>
           <h3 class="panel-title">Graveyard (Revival Pool)</h3>
         </div>
-        <div class="graveyard-row">
+        <div class="graveyard-row" title="Captured White pieces available for revival">
           <span class="graveyard-tag">White:</span>
           <div id="graveyard-white-pieces" class="graveyard-pieces-list"></div>
         </div>
-        <div class="graveyard-row">
+        <div class="graveyard-row" title="Captured Black pieces available for revival">
           <span class="graveyard-tag">Black:</span>
           <div id="graveyard-black-pieces" class="graveyard-pieces-list"></div>
         </div>
       </div>
 
       <!-- UNO MODE: Card Action Log -->
-      <div id="uno-card-log-panel" class="panel-card uno-only">
+      <div id="uno-card-log-panel" class="panel-card uno-only" title="Live log of all UNO card plays, energy spent, and pieces revived">
         <div class="panel-header">
           <span class="panel-header-icon">📋</span>
           <h3 class="panel-title">Card Action Log</h3>
@@ -194,7 +195,7 @@
       </div>
 
       <!-- Game Move History Card -->
-      <div id="history-panel" class="panel-card history-panel">
+      <div id="history-panel" class="panel-card history-panel" title="Standard Algebraic Notation (SAN) Chess Move Log">
         <div class="panel-header">
           <span class="panel-header-icon">📜</span>
           <h3 class="panel-title">Move History</h3>
@@ -205,8 +206,8 @@
       <!-- Tactical Controls Card -->
       <div class="panel-card controls-panel">
         <div id="btn-group">
-          <button id="undo-btn" class="action-btn" title="Undo Move">↺ Undo</button>
-          <button id="redo-btn" class="action-btn" title="Redo Move">↻ Redo</button>
+          <button id="undo-btn" class="action-btn" title="Undo Move & Card State">↺ Undo</button>
+          <button id="redo-btn" class="action-btn" title="Redo Move & Card State">↻ Redo</button>
           <button id="flip-btn" class="action-btn" title="Flip Board Orientation">⇄ Flip</button>
           <button id="reset-btn" class="action-btn" title="Reset Match">🔄 Reset</button>
         </div>
@@ -239,6 +240,331 @@
       </div>
     </div>
     <button id="close-mode-modal" class="action-btn" style="margin-top: 18px; width: 100%;">Close</button>
+  </div>
+</div>
+
+<!-- Help & Rules Modal (Board Game Rulebook) -->
+<div id="help-modal" class="modal-overlay">
+  <div class="modal-content help-modal-content">
+    <div class="help-modal-header">
+      <div class="help-title-badge">
+        <span class="help-title-icon">📖</span>
+        <h2 class="help-title">Chess UNO Rulebook</h2>
+      </div>
+      <div class="help-header-actions">
+        <button id="restart-tutorial-btn" class="action-btn tutorial-replay-btn" title="Launch Interactive Guided Tour">
+          🎓 Replay Tutorial
+        </button>
+        <button class="modal-close-icon" id="close-help-modal" title="Close Rulebook">&times;</button>
+      </div>
+    </div>
+
+    <!-- Rulebook Tabs Navigation -->
+    <div class="help-tabs-nav">
+      <button class="help-tab-btn active" data-tab="overview">
+        <span class="tab-icon">📜</span> Overview
+      </button>
+      <button class="help-tab-btn" data-tab="turnflow">
+        <span class="tab-icon">🔄</span> Turn Flow
+      </button>
+      <button class="help-tab-btn" data-tab="cards">
+        <span class="tab-icon">🃏</span> Card Guide
+      </button>
+      <button class="help-tab-btn" data-tab="energy">
+        <span class="tab-icon">⚡</span> Energy System
+      </button>
+      <button class="help-tab-btn" data-tab="graveyard">
+        <span class="tab-icon">⚰️</span> Graveyard & Revival
+      </button>
+      <button class="help-tab-btn" data-tab="faq">
+        <span class="tab-icon">❓</span> FAQ
+      </button>
+    </div>
+
+    <!-- Rulebook Tab Panels Content -->
+    <div class="help-tab-content-area">
+
+      <!-- 1. Overview Tab -->
+      <div id="help-tab-overview" class="help-tab-panel active">
+        <div class="rulebook-section-title">♟️ What is Chess UNO?</div>
+        <p class="rulebook-intro-p">
+          <b>Chess UNO</b> seamlessly marries traditional FIDE chess with the tactical dynamism of UNO cards. Chess remains the primary strategic battlefield—cards provide tactical maneuvers, piece revivals, and board control without breaking the sacred laws of chess.
+        </p>
+
+        <div class="rulebook-callout">
+          <b>Standard Chess Rules Always Apply:</b><br>
+          • Check & Checkmate<br>
+          • Stalemate & Draws (Threefold repetition, 50-move rule)<br>
+          • Kingside & Queenside Castling (<code>O-O</code>, <code>O-O-O</code>)<br>
+          • En Passant Captures & Pawn Promotion
+        </div>
+
+        <div class="rulebook-section-title">🏆 Winning the Match</div>
+        <p class="rulebook-intro-p">
+          The ultimate victory condition is identical to classical chess: <b>Checkmate the opponent's King</b>. Cards provide tactical momentum, but sound chess fundamentals will always decide the champion.
+        </p>
+      </div>
+
+      <!-- 2. Turn Flow Tab -->
+      <div id="help-tab-turnflow" class="help-tab-panel">
+        <div class="rulebook-section-title">🔄 Anatomy of a Turn</div>
+        <p class="rulebook-intro-p">
+          Every turn gives you the flexibility to play a card before or after your chess move. Cards are optional, but making a legal chess move is required.
+        </p>
+
+        <div class="turnflow-diagram">
+          <div class="turnflow-option">
+            <div class="turnflow-option-header">Sequence A: Card First, Then Move</div>
+            <div class="turnflow-steps">
+              <div class="step-chip">1. Start Turn</div>
+              <span class="step-arrow">➔</span>
+              <div class="step-chip step-optional">2. Play 1 Card (Optional)</div>
+              <span class="step-arrow">➔</span>
+              <div class="step-chip step-required">3. Make Chess Move</div>
+              <span class="step-arrow">➔</span>
+              <div class="step-chip">4. End Turn</div>
+            </div>
+          </div>
+
+          <div class="turnflow-option">
+            <div class="turnflow-option-header">Sequence B: Move First, Then Card</div>
+            <div class="turnflow-steps">
+              <div class="step-chip">1. Start Turn</div>
+              <span class="step-arrow">➔</span>
+              <div class="step-chip step-required">2. Make Chess Move</div>
+              <span class="step-arrow">➔</span>
+              <div class="step-chip step-optional">3. Play 1 Card (Optional)</div>
+              <span class="step-arrow">➔</span>
+              <div class="step-chip">4. End Turn</div>
+            </div>
+          </div>
+
+          <div class="turnflow-option">
+            <div class="turnflow-option-header">Sequence C: Wild Card Action</div>
+            <div class="turnflow-steps">
+              <div class="step-chip">1. Start Turn</div>
+              <span class="step-arrow">➔</span>
+              <div class="step-chip step-required">2. Play Wild Card (★)</div>
+              <span class="step-arrow">➔</span>
+              <div class="step-chip step-required">3. Chosen piece moves immediately</div>
+              <span class="step-arrow">➔</span>
+              <div class="step-chip">4. End Turn</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="rulebook-callout">
+          <b>Card Limits:</b> At most <b>1 card</b> may be played per turn. You automatically draw 1 card every 3 turns from the deck.
+        </div>
+      </div>
+
+      <!-- 3. Card Guide Tab -->
+      <div id="help-tab-cards" class="help-tab-panel">
+        <div class="rulebook-section-title">🃏 Complete Card Almanac</div>
+        <p class="rulebook-intro-p">
+          The deck contains 108 cards matching the warm parlor palette: Crimson Red, Slate Blue, Forest Green, and Amber Gold.
+        </p>
+
+        <div class="card-showcase-grid">
+          <!-- Number Cards -->
+          <div class="card-showcase-item">
+            <div class="showcase-card-preview">
+              <div class="uno-card card-green mini-card">
+                <div class="card-corner top-corner">7</div>
+                <div class="card-center">7</div>
+                <div class="card-type-label">ENERGY</div>
+              </div>
+            </div>
+            <div class="showcase-info">
+              <div class="showcase-title">Number Cards (0–9)</div>
+              <span class="showcase-badge">Energy Generator</span>
+              <div class="showcase-desc">Playing a Number card adds its face value directly to your Energy reserve (e.g. Card 7 = +7 Energy).</div>
+            </div>
+          </div>
+
+          <!-- Skip Card -->
+          <div class="card-showcase-item">
+            <div class="showcase-card-preview">
+              <div class="uno-card card-blue mini-card">
+                <div class="card-corner top-corner">⊘</div>
+                <div class="card-center">⊘</div>
+                <div class="card-type-label">SKIP</div>
+              </div>
+            </div>
+            <div class="showcase-info">
+              <div class="showcase-title">Skip (⊘)</div>
+              <span class="showcase-badge">Crowd Control</span>
+              <div class="showcase-desc">Freeze 1 enemy non-king piece so it cannot move on the opponent's next turn. Kings are immune.</div>
+            </div>
+          </div>
+
+          <!-- Reverse Card -->
+          <div class="card-showcase-item">
+            <div class="showcase-card-preview">
+              <div class="uno-card card-yellow mini-card">
+                <div class="card-corner top-corner">⇄</div>
+                <div class="card-center">⇄</div>
+                <div class="card-type-label">REVERSE</div>
+              </div>
+            </div>
+            <div class="showcase-info">
+              <div class="showcase-title">Reverse (⇄)</div>
+              <span class="showcase-badge">Position Swap</span>
+              <div class="showcase-desc">Swap the board positions of 2 friendly non-king pieces. Strictly prevents swaps that expose your King to check.</div>
+            </div>
+          </div>
+
+          <!-- Draw Two Card -->
+          <div class="card-showcase-item">
+            <div class="showcase-card-preview">
+              <div class="uno-card card-red mini-card">
+                <div class="card-corner top-corner">+2</div>
+                <div class="card-center">+2</div>
+                <div class="card-type-label">DRAW TWO</div>
+              </div>
+            </div>
+            <div class="showcase-info">
+              <div class="showcase-title">Draw Two (+2)</div>
+              <span class="showcase-badge">Pawn Revival</span>
+              <div class="showcase-desc">Revive 1 captured friendly pawn from your Graveyard back to its starting file (or nearest empty square).</div>
+            </div>
+          </div>
+
+          <!-- Wild Card -->
+          <div class="card-showcase-item">
+            <div class="showcase-card-preview">
+              <div class="uno-card card-wild mini-card">
+                <div class="card-corner top-corner">★</div>
+                <div class="card-center">★</div>
+                <div class="card-type-label">WILD</div>
+              </div>
+            </div>
+            <div class="showcase-info">
+              <div class="showcase-title">Wild (★)</div>
+              <span class="showcase-badge">Instant Move</span>
+              <div class="showcase-desc">Select any friendly piece to make an immediate legal chess move as your complete turn action.</div>
+            </div>
+          </div>
+
+          <!-- Wild Draw Four Card -->
+          <div class="card-showcase-item">
+            <div class="showcase-card-preview">
+              <div class="uno-card card-wild mini-card">
+                <div class="card-corner top-corner">★+4</div>
+                <div class="card-center">★+4</div>
+                <div class="card-type-label">WILD +4</div>
+              </div>
+            </div>
+            <div class="showcase-info">
+              <div class="showcase-title">Wild Draw Four (★+4)</div>
+              <span class="showcase-badge">Major Revival</span>
+              <div class="showcase-desc">Choose any captured non-king piece (Queen, Rook, Bishop, Knight, Pawn) from the Graveyard and place it on any empty legal square.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Energy System Tab -->
+      <div id="help-tab-energy" class="help-tab-panel">
+        <div class="rulebook-section-title">⚡ The Energy Economy</div>
+        <p class="rulebook-intro-p">
+          Energy is your personal tactical reserve, accumulated by converting Number cards in your hand. Each player stores up to <b>20 Energy</b>.
+        </p>
+
+        <div class="energy-showcase-row">
+          <div class="energy-box">
+            <div class="energy-box-title">⚡ Draw Card (Cost: 6 Energy)</div>
+            <p class="energy-box-p">
+              Spend 6 Energy on your turn to draw 1 extra card directly from the deck into your hand (subject to the 5-card hand maximum).
+            </p>
+          </div>
+
+          <div class="energy-box">
+            <div class="energy-box-title">♻️ Recycle Card (Cost: 3 Energy)</div>
+            <p class="energy-box-p">
+              Spend 3 Energy, select 1 unwanted card from your hand to discard, and instantly draw a fresh replacement card from the deck.
+            </p>
+          </div>
+        </div>
+
+        <div class="rulebook-callout" style="margin-top: 16px;">
+          <b>Pro Strategy:</b> Early in the opening, play high Number cards (7, 8, 9) to build an Energy reserve. Later in the game, spend energy to dig for Game-Winning special cards like Wild Draw Four or Skip!
+        </div>
+      </div>
+
+      <!-- 5. Graveyard & Revival Tab -->
+      <div id="help-tab-graveyard" class="help-tab-panel">
+        <div class="rulebook-section-title">⚰️ The Graveyard Pool & Revival Rules</div>
+        <p class="rulebook-intro-p">
+          Whenever a piece is captured on the board (by standard capture or En Passant), it is transferred to that player's <b>Graveyard</b>.
+        </p>
+
+        <div class="rulebook-callout">
+          <b>Piece Revival Rules:</b><br>
+          • <b>Draw Two (+2):</b> Revives 1 friendly Pawn to its original file column (Rank 2 for White, Rank 7 for Black), or nearest empty square.<br>
+          • <b>Wild Draw Four (★+4):</b> Opens a selection modal to pick any captured friendly Queen, Rook, Bishop, Knight, or Pawn, and place it on an empty square of your choice.<br>
+          • <b>Safety Check:</b> Placing a revived piece cannot leave your King in check.<br>
+          • <b>Pawns:</b> Cannot be revived onto Rank 1 or Rank 8.<br>
+          • <b>Kings:</b> Can <u>never</u> be captured, destroyed, or revived.
+        </div>
+      </div>
+
+      <!-- 6. FAQ Tab -->
+      <div id="help-tab-faq" class="help-tab-panel">
+        <div class="rulebook-section-title">❓ Frequently Asked Questions</div>
+
+        <div class="faq-list">
+          <div class="faq-card">
+            <div class="faq-q">❓ Can I ignore a Check on my King by playing a card?</div>
+            <div class="faq-a"><b>No.</b> Standard FIDE check rules are absolute. When your King is attacked, you must legally escape check on your turn. Skip cards cannot freeze an enemy piece if that piece is your opponent's only way out of check.</div>
+          </div>
+
+          <div class="faq-card">
+            <div class="faq-q">❓ Can I revive a King with Wild Draw Four?</div>
+            <div class="faq-a"><b>No.</b> Kings are permanent commanders and never enter the Graveyard. Only Pawns, Knights, Bishops, Rooks, and Queens can be revived.</div>
+          </div>
+
+          <div class="faq-card">
+            <div class="faq-q">❓ Can cards create illegal board positions?</div>
+            <div class="faq-a"><b>No.</b> Every card effect is validated by the chess engine before execution. If a Reverse swap or piece revival would leave your King in check, it is prevented and the card remains safely in your hand.</div>
+          </div>
+
+          <div class="faq-card">
+            <div class="faq-q">❓ How many cards can I play per turn?</div>
+            <div class="faq-a">You can play at most <b>1 card per turn</b>. Playing a card is always optional.</div>
+          </div>
+
+          <div class="faq-card">
+            <div class="faq-q">❓ What happens when the card deck runs out?</div>
+            <div class="faq-a">The discard pile is automatically shuffled back into a fresh 108-card draw deck with zero interruption to play.</div>
+          </div>
+
+          <div class="faq-card">
+            <div class="faq-q">❓ Does Undo and Redo work with cards?</div>
+            <div class="faq-a"><b>Yes!</b> The undo/redo engine saves complete immutable snapshots of the chessboard, card hands, energy levels, and graveyard. Undoing a move restores card state perfectly.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Interactive Onboarding Tutorial Elements -->
+<div id="uno-tutorial-overlay" class="tutorial-overlay" style="display:none;">
+  <div id="uno-tutorial-spotlight" class="tutorial-spotlight"></div>
+  <div id="uno-tutorial-box" class="tutorial-box">
+    <div class="tutorial-box-header">
+      <span id="tutorial-step-tag" class="tutorial-step-tag">Step 1 of 7</span>
+      <button id="tutorial-skip-btn" class="tutorial-skip-link">Skip Tour</button>
+    </div>
+    <h4 id="tutorial-step-title" class="tutorial-step-title">Welcome to Chess UNO</h4>
+    <p id="tutorial-step-desc" class="tutorial-step-desc">Explanation text goes here.</p>
+    <div class="tutorial-box-footer">
+      <button id="tutorial-prev-btn" class="action-btn tutorial-nav-btn">◀ Back</button>
+      <div class="tutorial-dots" id="tutorial-dots"></div>
+      <button id="tutorial-next-btn" class="action-btn tutorial-nav-btn tutorial-btn-primary">Next ▶</button>
+    </div>
   </div>
 </div>
 

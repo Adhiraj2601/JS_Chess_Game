@@ -359,7 +359,7 @@ function runTest(name, fn) {
   }
 }
 
-console.log('=== CHESS ADVANCED COMPREHENSIVE TEST SUITE (66 TESTS) ===\n');
+console.log('=== CHESS ADVANCED COMPREHENSIVE TEST SUITE (71 TESTS) ===\n');
 
 // 1 - 20: Full Regression Suite
 runTest('1. Initial Setup & Piece Count', () => {
@@ -1337,6 +1337,70 @@ runTest('66. Standard Chess Mode: Zero Card Interference', () => {
   assert.strictEqual(GameModeManager.activeMode, 'standard');
   let moves = main.methods.getLegalMoves('w_knight1');
   assert.strictEqual(moves.length, 2);
+});
+
+// ==========================================================
+// 67 - 71: HELP & ONBOARDING SYSTEM TESTS
+// ==========================================================
+runTest('67. Chess UNO: Help Modal & Tab Navigation (6 Tabs)', () => {
+  UnoMode.help.open('overview');
+  assert.ok(UnoMode.help, 'Help controller exists');
+
+  // Verify all 6 tabs can be switched
+  const tabs = ['overview', 'turnflow', 'cards', 'energy', 'graveyard', 'faq'];
+  tabs.forEach(tab => {
+    UnoMode.help.switchTab(tab);
+  });
+
+  UnoMode.help.close();
+});
+
+runTest('68. Chess UNO: Interactive Tutorial (7 Step Guided Tour)', () => {
+  UnoMode.tutorial.start(true);
+  assert.strictEqual(UnoMode.tutorial.active, true);
+  assert.strictEqual(UnoMode.tutorial.currentStep, 0);
+  assert.strictEqual(UnoMode.tutorial.steps.length, 7);
+
+  // Step through each of the 7 steps
+  for (let i = 0; i < 6; i++) {
+    UnoMode.tutorial.next();
+    assert.strictEqual(UnoMode.tutorial.currentStep, i + 1);
+  }
+
+  // Stepping back
+  UnoMode.tutorial.prev();
+  assert.strictEqual(UnoMode.tutorial.currentStep, 5);
+
+  // Finishing
+  UnoMode.tutorial.finish();
+  assert.strictEqual(UnoMode.tutorial.active, false);
+  assert.strictEqual(storage['chess_uno_tutorial_seen'], 'true');
+});
+
+runTest('69. Chess UNO: Tutorial Skip Updates LocalStorage', () => {
+  storage['chess_uno_tutorial_seen'] = 'false';
+  UnoMode.tutorial.start(true);
+  assert.strictEqual(UnoMode.tutorial.active, true);
+
+  UnoMode.tutorial.skip();
+  assert.strictEqual(UnoMode.tutorial.active, false);
+  assert.strictEqual(storage['chess_uno_tutorial_seen'], 'true');
+});
+
+runTest('70. Chess UNO: Replay Tutorial Trigger', () => {
+  storage['chess_uno_tutorial_seen'] = 'true';
+  // Force start via replay
+  UnoMode.tutorial.start(true);
+  assert.strictEqual(UnoMode.tutorial.active, true);
+  assert.strictEqual(UnoMode.tutorial.currentStep, 0);
+  UnoMode.tutorial.finish();
+});
+
+runTest('71. Chess UNO: First-Time Auto-Trigger Guard', () => {
+  storage['chess_uno_tutorial_seen'] = 'true';
+  // Normal start without force should not activate if already seen
+  UnoMode.tutorial.start(false);
+  assert.strictEqual(UnoMode.tutorial.active, false);
 });
 
 console.log('\n------------------------------------');

@@ -56,6 +56,19 @@
       }
       this.renderUI();
       this.logCard('system', 'Chess UNO Mode activated. Draw your cards and play!');
+
+      let tutorialSeen = false;
+      try {
+        tutorialSeen = (typeof localStorage !== 'undefined') && localStorage.getItem('chess_uno_tutorial_seen') === 'true';
+      } catch (e) {}
+
+      if (!tutorialSeen && typeof $ !== 'undefined') {
+        setTimeout(() => {
+          if (UnoMode.state.active) {
+            UnoMode.tutorial.start();
+          }
+        }, 400);
+      }
     },
 
     onDeactivate: function () {
@@ -1150,8 +1163,250 @@
           return;
         }
       });
+
+      // Help Modal triggers
+      $(document).on('click', '#help-btn', function () {
+        UnoMode.help.open('overview');
+      });
+
+      $(document).on('click', '#close-help-modal', function () {
+        UnoMode.help.close();
+      });
+
+      $(document).on('click', '#help-modal', function (e) {
+        if ($(e.target).is('#help-modal')) {
+          UnoMode.help.close();
+        }
+      });
+
+      $(document).on('click', '.help-tab-btn', function () {
+        let tab = $(this).data('tab');
+        if (tab) UnoMode.help.switchTab(tab);
+      });
+
+      $(document).on('click', '#restart-tutorial-btn', function () {
+        UnoMode.help.close();
+        UnoMode.tutorial.start(true);
+      });
+
+      // Tutorial Navigation
+      $(document).on('click', '#tutorial-next-btn', function () {
+        UnoMode.tutorial.next();
+      });
+
+      $(document).on('click', '#tutorial-prev-btn', function () {
+        UnoMode.tutorial.prev();
+      });
+
+      $(document).on('click', '#tutorial-skip-btn', function () {
+        UnoMode.tutorial.skip();
+      });
+    },
+
+    // ----------------------------------------------------------
+    // RULEBOOK & HELP MODAL CONTROLLER
+    // ----------------------------------------------------------
+    help: {
+      open: function (tabId) {
+        if (typeof $ === 'undefined') return;
+        this.switchTab(tabId || 'overview');
+        $('#help-modal').css('display', 'flex');
+      },
+      close: function () {
+        if (typeof $ === 'undefined') return;
+        $('#help-modal').css('display', 'none');
+      },
+      switchTab: function (tabId) {
+        if (typeof $ === 'undefined') return;
+        $('.help-tab-btn').removeClass('active');
+        $(`.help-tab-btn[data-tab="${tabId}"]`).addClass('active');
+        $('.help-tab-panel').removeClass('active');
+        $(`#help-tab-${tabId}`).addClass('active');
+      }
+    },
+
+    // ----------------------------------------------------------
+    // INTERACTIVE ONBOARDING TUTORIAL CONTROLLER
+    // ----------------------------------------------------------
+    tutorial: {
+      active: false,
+      currentStep: 0,
+      steps: [
+        {
+          target: '#board-stage',
+          title: 'Welcome to Chess UNO! ♟️🃏',
+          desc: 'Chess UNO combines classical FIDE chess with tactical UNO cards! All standard rules (Check, Checkmate, Castling, En Passant) remain fully in effect.',
+          placement: 'center'
+        },
+        {
+          target: '#uno-hand-white',
+          title: 'Your Card Hand 🎴',
+          desc: 'Each player starts with 3 cards (max 5). On your turn, you can optionally play 1 card before or after your chess move.',
+          placement: 'top'
+        },
+        {
+          target: '#uno-main-panel .deck-status-bar',
+          title: 'Draw Deck & Discard Pile 🗃️',
+          desc: 'You automatically draw 1 card every 3 turns. If the draw pile empties, the discard pile reshuffles into the deck automatically.',
+          placement: 'left'
+        },
+        {
+          target: '#uno-main-panel .energy-tracker',
+          title: 'Energy System (0–20) ⚡',
+          desc: 'Playing Number cards converts them into Energy. Spend 6 Energy to draw an extra card, or 3 Energy to recycle an unwanted card.',
+          placement: 'left'
+        },
+        {
+          target: '#uno-graveyard-panel',
+          title: 'The Graveyard Pool ⚰️',
+          desc: 'Captured pieces enter the Graveyard. Use special cards like Draw Two (+2) and Wild Draw Four (★+4) to revive fallen pieces back into battle!',
+          placement: 'left'
+        },
+        {
+          target: '#uno-card-log-panel',
+          title: 'Card Action Log 📋',
+          desc: 'Every card played, energy transaction, and piece revival is transparently tracked in this live action log.',
+          placement: 'left'
+        },
+        {
+          target: '#turn',
+          title: 'Victory Condition 🏆',
+          desc: 'Your objective is the same as classical chess: Checkmate the opponent King! Cards enhance your strategy—play smart and have fun!',
+          placement: 'bottom'
+        }
+      ],
+
+      start: function (force) {
+        if (typeof $ === 'undefined') return;
+        if (!force) {
+          try {
+            if (localStorage.getItem('chess_uno_tutorial_seen') === 'true') return;
+          } catch (e) {}
+        }
+
+        // Ensure UNO mode is active
+        if (typeof GameModeManager !== 'undefined' && GameModeManager.activeMode !== 'uno') {
+          GameModeManager.setMode('uno');
+        }
+
+        this.active = true;
+        this.currentStep = 0;
+        $('#uno-tutorial-overlay').css('display', 'block');
+        this.renderStep(0);
+      },
+
+      renderStep: function (idx) {
+        if (idx < 0 || idx >= this.steps.length) return;
+        this.currentStep = idx;
+        let step = this.steps[idx];
+
+        $('#tutorial-step-tag').text(`Step ${idx + 1} of ${this.steps.length}`);
+        $('#tutorial-step-title').text(step.title);
+        $('#tutorial-step-desc').text(step.desc);
+
+        // Progress dots
+        let dotsHtml = '';
+        for (let i = 0; i < this.steps.length; i++) {
+          dotsHtml += `<div class="tutorial-dot${i === idx ? ' active' : ''}"></div>`;
+        }
+        $('#tutorial-dots').html(dotsHtml);
+
+        // Nav buttons
+        $('#tutorial-prev-btn').prop('disabled', idx === 0);
+        $('#tutorial-next-btn').text(idx === this.steps.length - 1 ? 'Finish 🏁' : 'Next ▶');
+
+        // Position spotlight & box
+        let $target = $(step.target);
+        if ($target.length && $target.is(':visible')) {
+          let targetEl = $target[0];
+          if (targetEl && typeof targetEl.getBoundingClientRect === 'function') {
+            let rect = targetEl.getBoundingClientRect();
+            let pad = 8;
+            $('#uno-tutorial-spotlight').css({
+              display: 'block',
+              top: (rect.top - pad) + 'px',
+              left: (rect.left - pad) + 'px',
+              width: (rect.width + pad * 2) + 'px',
+              height: (rect.height + pad * 2) + 'px'
+            });
+
+            let boxWidth = 320;
+            let boxHeight = 180;
+            let boxTop = rect.top;
+            let boxLeft = rect.left + rect.width + 16;
+
+            if (step.placement === 'left') {
+              boxLeft = rect.left - boxWidth - 16;
+              boxTop = rect.top;
+            } else if (step.placement === 'top') {
+              boxTop = rect.top - boxHeight - 16;
+              boxLeft = rect.left + (rect.width / 2) - (boxWidth / 2);
+            } else if (step.placement === 'bottom') {
+              boxTop = rect.bottom + 16;
+              boxLeft = rect.left + (rect.width / 2) - (boxWidth / 2);
+            } else if (step.placement === 'center') {
+              boxTop = rect.top + (rect.height / 2) - (boxHeight / 2);
+              boxLeft = rect.left + (rect.width / 2) - (boxWidth / 2);
+            }
+
+            // Viewport clamping
+            if (typeof window !== 'undefined') {
+              let maxLeft = window.innerWidth - boxWidth - 16;
+              let maxTop = window.innerHeight - boxHeight - 16;
+              boxLeft = Math.max(16, Math.min(boxLeft, maxLeft));
+              boxTop = Math.max(16, Math.min(boxTop, maxTop));
+            }
+
+            $('#uno-tutorial-box').css({
+              top: boxTop + 'px',
+              left: boxLeft + 'px',
+              transform: 'none'
+            });
+            return;
+          }
+        }
+
+        // Fallback center positioning
+        $('#uno-tutorial-spotlight').css('display', 'none');
+        $('#uno-tutorial-box').css({
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)'
+        });
+      },
+
+      next: function () {
+        if (this.currentStep < this.steps.length - 1) {
+          this.renderStep(this.currentStep + 1);
+        } else {
+          this.finish();
+        }
+      },
+
+      prev: function () {
+        if (this.currentStep > 0) {
+          this.renderStep(this.currentStep - 1);
+        }
+      },
+
+      skip: function () {
+        this.finish();
+      },
+
+      finish: function () {
+        this.active = false;
+        if (typeof $ !== 'undefined') {
+          $('#uno-tutorial-overlay').css('display', 'none');
+        }
+        try {
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('chess_uno_tutorial_seen', 'true');
+          }
+        } catch (e) {}
+      }
     }
   };
 
   return UnoMode;
 });
+

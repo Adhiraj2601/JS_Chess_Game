@@ -549,3 +549,497 @@ body.mode-uno .standard-only {
 .gamecell.swap-selected {
   box-shadow: inset 0 0 0 3px #10b981, 0 0 14px rgba(16, 185, 129, 0.6) !important;
 }
+
+/* ==========================================================
+   HELP / RULEBOOK MODAL (BOARD GAME GUIDE)
+   ========================================================== */
+.help-btn {
+  background: linear-gradient(180deg, #3d2c1f 0%, #291b12 100%) !important;
+  border-color: rgba(240, 215, 185, 0.25) !important;
+  color: #f5eedc !important;
+  font-weight: 700 !important;
+}
+
+.help-btn:hover {
+  background: linear-gradient(180deg, #4d3828 0%, #352317 100%) !important;
+  border-color: #d4a359 !important;
+  box-shadow: 0 0 8px rgba(212, 163, 89, 0.35) !important;
+}
+
+.help-modal-content {
+  max-width: 720px;
+  width: 94%;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  background: linear-gradient(165deg, #2b1e16, #1c130d);
+  border: 1.5px solid rgba(212, 163, 89, 0.3);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(212, 163, 89, 0.15);
+  border-radius: 16px;
+}
+
+.help-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: rgba(0, 0, 0, 0.35);
+  border-bottom: 1px solid rgba(240, 215, 185, 0.12);
+}
+
+.help-title-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.help-title-icon {
+  font-size: 22px;
+}
+
+.help-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: #f5eedc;
+  margin: 0;
+}
+
+.help-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tutorial-replay-btn {
+  padding: 5px 12px !important;
+  font-size: 11.5px !important;
+  background: linear-gradient(180deg, #523b28 0%, #3a2719 100%) !important;
+  border: 1px solid #d4a359 !important;
+  color: #fff4db !important;
+}
+
+.modal-close-icon {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  transition: color 0.15s ease;
+}
+
+.modal-close-icon:hover {
+  color: #f5eedc;
+}
+
+/* Rulebook Tabs Bar */
+.help-tabs-nav {
+  display: flex;
+  gap: 4px;
+  padding: 8px 16px;
+  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid rgba(240, 215, 185, 0.08);
+  overflow-x: auto;
+}
+
+.help-tabs-nav::-webkit-scrollbar {
+  height: 3px;
+}
+.help-tabs-nav::-webkit-scrollbar-thumb {
+  background: rgba(240, 215, 185, 0.15);
+}
+
+.help-tab-btn {
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.help-tab-btn:hover {
+  color: #f5eedc;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.help-tab-btn.active {
+  color: #f5eedc;
+  background: #38271c;
+  border-color: rgba(212, 163, 89, 0.4);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  font-weight: 700;
+}
+
+/* Tab Panels Container */
+.help-tab-content-area {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.help-tab-panel {
+  display: none;
+  animation: fadeInHelp 0.2s ease-out forwards;
+}
+
+.help-tab-panel.active {
+  display: block;
+}
+
+@keyframes fadeInHelp {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Rulebook Typography & Components */
+.rulebook-section-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #d4a359;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rulebook-intro-p {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+}
+
+.rulebook-callout {
+  background: rgba(212, 163, 89, 0.08);
+  border-left: 3px solid #d4a359;
+  padding: 10px 14px;
+  border-radius: 0 8px 8px 0;
+  margin-bottom: 16px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #f5eedc;
+}
+
+/* Turn Flow Visual Diagram */
+.turnflow-diagram {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.turnflow-option {
+  background: #231811;
+  border: 1px solid rgba(240, 215, 185, 0.12);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.turnflow-option-header {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #d4a359;
+  margin-bottom: 8px;
+}
+
+.turnflow-steps {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.step-chip {
+  padding: 6px 10px;
+  background: #332318;
+  border: 1px solid rgba(240, 215, 185, 0.1);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #f5eedc;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.step-chip.step-required {
+  border-color: rgba(45, 106, 79, 0.5);
+  background: rgba(45, 106, 79, 0.25);
+  color: #a7f3d0;
+}
+
+.step-chip.step-optional {
+  border-color: rgba(212, 163, 89, 0.4);
+  background: rgba(212, 163, 89, 0.15);
+  color: #fde68a;
+}
+
+.step-arrow {
+  color: var(--text-muted);
+  font-size: 12px;
+  user-select: none;
+}
+
+/* Cards Showcase Grid */
+.card-showcase-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.card-showcase-item {
+  display: flex;
+  gap: 12px;
+  background: #231811;
+  border: 1px solid rgba(240, 215, 185, 0.1);
+  border-radius: 10px;
+  padding: 10px 12px;
+  align-items: center;
+}
+
+.showcase-card-preview {
+  flex-shrink: 0;
+}
+
+.showcase-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.showcase-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f5eedc;
+}
+
+.showcase-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #3b281b;
+  color: #d4a359;
+  width: fit-content;
+}
+
+.showcase-desc {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  line-height: 1.35;
+}
+
+/* Energy & Action Cards */
+.energy-showcase-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.energy-box {
+  background: #231811;
+  border: 1px solid rgba(240, 215, 185, 0.12);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.energy-box-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #d4a359;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.energy-box-p {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* FAQ Accordions */
+.faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.faq-card {
+  background: #231811;
+  border: 1px solid rgba(240, 215, 185, 0.1);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+
+.faq-q {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f5eedc;
+  margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.faq-a {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  padding-left: 20px;
+}
+
+/* ==========================================================
+   INTERACTIVE ONBOARDING TUTORIAL OVERLAY & TOOLTIP
+   ========================================================== */
+.tutorial-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(12, 9, 7, 0.72);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 99990;
+  pointer-events: auto;
+  transition: opacity 0.25s ease;
+}
+
+.tutorial-spotlight {
+  position: absolute;
+  border-radius: 12px;
+  box-shadow: 0 0 0 9999px rgba(10, 7, 5, 0.75), 0 0 20px rgba(212, 163, 89, 0.6);
+  border: 2px solid #d4a359;
+  pointer-events: none;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 99991;
+  animation: pulseSpotlight 2s infinite ease-in-out;
+}
+
+@keyframes pulseSpotlight {
+  0%, 100% { border-color: #d4a359; box-shadow: 0 0 0 9999px rgba(10, 7, 5, 0.75), 0 0 15px rgba(212, 163, 89, 0.5); }
+  50% { border-color: #f5b942; box-shadow: 0 0 0 9999px rgba(10, 7, 5, 0.75), 0 0 25px rgba(245, 185, 66, 0.8); }
+}
+
+.tutorial-box {
+  position: absolute;
+  width: 320px;
+  max-width: 90vw;
+  background: linear-gradient(165deg, #33241a, #20150e);
+  border: 1.5px solid #d4a359;
+  border-radius: 14px;
+  padding: 16px 18px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.7), 0 0 20px rgba(212, 163, 89, 0.2);
+  color: var(--text-primary);
+  z-index: 99995;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tutorial-box-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.tutorial-step-tag {
+  font-size: 11px;
+  font-weight: 700;
+  color: #d4a359;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.tutorial-skip-link {
+  background: transparent;
+  border: none;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px 4px;
+  transition: color 0.15s ease;
+  font-family: inherit;
+}
+
+.tutorial-skip-link:hover {
+  color: #f5eedc;
+  text-decoration: underline;
+}
+
+.tutorial-step-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #f5eedc;
+  margin-bottom: 6px;
+}
+
+.tutorial-step-desc {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin-bottom: 14px;
+}
+
+.tutorial-box-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tutorial-dots {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.tutorial-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(240, 215, 185, 0.2);
+  transition: all 0.2s ease;
+}
+
+.tutorial-dot.active {
+  width: 14px;
+  border-radius: 3px;
+  background: #d4a359;
+}
+
+.tutorial-nav-btn {
+  padding: 5px 12px !important;
+  font-size: 12px !important;
+}
+
+.tutorial-btn-primary {
+  background: linear-gradient(180deg, #533b29 0%, #3a2719 100%) !important;
+  border-color: #d4a359 !important;
+  color: #fff6e0 !important;
+  font-weight: 700 !important;
+}
+
