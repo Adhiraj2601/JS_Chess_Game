@@ -87,26 +87,30 @@
   <!-- Center Column: Board Stage -->
   <main id="board-stage">
 
-    <!-- Top (Black / Opponent) Player Bar -->
+    <!-- Top (Opponent) Player Bar - ALWAYS UP -->
     <div class="player-strip player-top">
       <div class="player-left">
-        <div class="avatar-circle" data-side="black" title="Opponent">
+        <div class="avatar-circle" id="top-avatar" title="Opponent">
           <img src="assets/avatars/opponent.png" alt="Opponent" class="avatar-img" />
         </div>
-        <div id="clock-black" class="clock-capsule">
-          <span class="clock-time" id="clock-black-time">—</span>
+        <div id="top-clock-slot">
+          <div id="clock-black" class="clock-capsule">
+            <span class="clock-time" id="clock-black-time">—</span>
+          </div>
         </div>
         <div class="player-identity-text">
           <div class="player-name-row">
-            <span class="player-name">Opponent</span>
-            <div id="material-group-black" class="material-group" style="display:none;">
-              <div id="captured-white" class="captured-tray" title="Pieces captured by Black">
-                <div class="captured-pieces-list"></div>
+            <span class="player-name" id="top-player-name">Opponent</span>
+            <div id="top-material-slot">
+              <div id="material-group-black" class="material-group" style="display:none;">
+                <div id="captured-white" class="captured-tray" title="Pieces captured by Black">
+                  <div class="captured-pieces-list"></div>
+                </div>
+                <span id="material-black" class="material-pill"></span>
               </div>
-              <span id="material-black" class="material-pill"></span>
             </div>
           </div>
-          <span class="player-meta">Black</span>
+          <span class="player-meta" id="top-player-meta">Black</span>
         </div>
       </div>
     </div>
@@ -127,26 +131,30 @@
     <!-- Centered Large Italic Serif Game Result -->
     <div id="game-result-banner" class="game-result-banner" style="display:none;"></div>
 
-    <!-- Bottom (White / Player) Player Bar -->
+    <!-- Bottom (You) Player Bar - ALWAYS DOWN -->
     <div class="player-strip player-bottom">
       <div class="player-left">
-        <div class="avatar-circle active-turn" data-side="white" title="Player">
+        <div class="avatar-circle active-turn" id="bottom-avatar" title="Player">
           <img src="assets/avatars/player.png" alt="Player" class="avatar-img" />
         </div>
-        <div id="clock-white" class="clock-capsule">
-          <span class="clock-time" id="clock-white-time">—</span>
+        <div id="bottom-clock-slot">
+          <div id="clock-white" class="clock-capsule">
+            <span class="clock-time" id="clock-white-time">—</span>
+          </div>
         </div>
         <div class="player-identity-text">
           <div class="player-name-row">
-            <span class="player-name">You</span>
-            <div id="material-group-white" class="material-group" style="display:none;">
-              <div id="captured-black" class="captured-tray" title="Pieces captured by White">
-                <div class="captured-pieces-list"></div>
+            <span class="player-name" id="bottom-player-name">You</span>
+            <div id="bottom-material-slot">
+              <div id="material-group-white" class="material-group" style="display:none;">
+                <div id="captured-black" class="captured-tray" title="Pieces captured by White">
+                  <div class="captured-pieces-list"></div>
+                </div>
+                <span id="material-white" class="material-pill"></span>
               </div>
-              <span id="material-white" class="material-pill"></span>
             </div>
           </div>
-          <span class="player-meta">White</span>
+          <span class="player-meta" id="bottom-player-meta">White</span>
         </div>
       </div>
     </div>

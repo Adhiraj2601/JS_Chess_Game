@@ -1330,42 +1330,34 @@ let main = {
     },
 
     updatePlayerBars: function () {
-      if (typeof document === 'undefined' || typeof document.querySelector !== 'function') return;
+      if (typeof document === 'undefined' || typeof document.getElementById !== 'function') return;
       let isWhite = main.variables.orientation === 'w';
 
-      // The top element visually (order 1) is always "Opponent" with opponent avatar (DUM cat)
-      // The bottom element visually (order 4) is always "You" with player avatar (Nerd cat)
-      let topEl = isWhite ? document.querySelector('.player-top') : document.querySelector('.player-bottom');
-      let botEl = isWhite ? document.querySelector('.player-bottom') : document.querySelector('.player-top');
+      let topMeta = document.getElementById('top-player-meta');
+      let botMeta = document.getElementById('bottom-player-meta');
+      let topClockSlot = document.getElementById('top-clock-slot');
+      let botClockSlot = document.getElementById('bottom-clock-slot');
+      let topMatSlot = document.getElementById('top-material-slot');
+      let botMatSlot = document.getElementById('bottom-material-slot');
+      let clockWhite = document.getElementById('clock-white');
+      let clockBlack = document.getElementById('clock-black');
+      let matWhite = document.getElementById('material-group-white');
+      let matBlack = document.getElementById('material-group-black');
 
-      if (topEl) {
-        let nameEl = topEl.querySelector('.player-name');
-        let metaEl = topEl.querySelector('.player-meta');
-        let imgEl = topEl.querySelector('.avatar-img');
-        let circleEl = topEl.querySelector('.avatar-circle');
-
-        if (nameEl) nameEl.textContent = 'Opponent';
-        if (metaEl) metaEl.textContent = isWhite ? 'Black' : 'White';
-        if (imgEl) {
-          imgEl.src = 'assets/avatars/opponent.png';
-          imgEl.alt = 'Opponent';
-        }
-        if (circleEl) circleEl.title = 'Opponent';
-      }
-
-      if (botEl) {
-        let nameEl = botEl.querySelector('.player-name');
-        let metaEl = botEl.querySelector('.player-meta');
-        let imgEl = botEl.querySelector('.avatar-img');
-        let circleEl = botEl.querySelector('.avatar-circle');
-
-        if (nameEl) nameEl.textContent = 'You';
-        if (metaEl) metaEl.textContent = isWhite ? 'White' : 'Black';
-        if (imgEl) {
-          imgEl.src = 'assets/avatars/player.png';
-          imgEl.alt = 'Player';
-        }
-        if (circleEl) circleEl.title = 'Player';
+      if (isWhite) {
+        if (topMeta) topMeta.textContent = 'Black';
+        if (botMeta) botMeta.textContent = 'White';
+        if (topClockSlot && clockBlack && clockBlack.parentNode !== topClockSlot) topClockSlot.appendChild(clockBlack);
+        if (botClockSlot && clockWhite && clockWhite.parentNode !== botClockSlot) botClockSlot.appendChild(clockWhite);
+        if (topMatSlot && matBlack && matBlack.parentNode !== topMatSlot) topMatSlot.appendChild(matBlack);
+        if (botMatSlot && matWhite && matWhite.parentNode !== botMatSlot) botMatSlot.appendChild(matWhite);
+      } else {
+        if (topMeta) topMeta.textContent = 'White';
+        if (botMeta) botMeta.textContent = 'Black';
+        if (topClockSlot && clockWhite && clockWhite.parentNode !== topClockSlot) topClockSlot.appendChild(clockWhite);
+        if (botClockSlot && clockBlack && clockBlack.parentNode !== botClockSlot) botClockSlot.appendChild(clockBlack);
+        if (topMatSlot && matWhite && matWhite.parentNode !== topMatSlot) topMatSlot.appendChild(matWhite);
+        if (botMatSlot && matBlack && matBlack.parentNode !== botMatSlot) botMatSlot.appendChild(matBlack);
       }
     },
 
@@ -1615,11 +1607,13 @@ let main = {
       }
 
       // 4. Update avatar active-turn ring on the side to move
-      $('.avatar-circle').removeClass('active-turn');
-      if (color === 'w') {
-        $('.avatar-circle[data-side="white"]').addClass('active-turn');
+      let isWhite = main.variables.orientation === 'w';
+      let isBottomTurn = (isWhite && color === 'w') || (!isWhite && color === 'b');
+      $('#top-avatar, #bottom-avatar, .avatar-circle').removeClass('active-turn');
+      if (isBottomTurn) {
+        $('#bottom-avatar').addClass('active-turn');
       } else {
-        $('.avatar-circle[data-side="black"]').addClass('active-turn');
+        $('#top-avatar').addClass('active-turn');
       }
 
       main.methods.updateLastMoveArrow();

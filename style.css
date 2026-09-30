@@ -240,40 +240,6 @@ html, body {
   width: 100%;
 }
 
-/* Default Player Bars & Board Layout Order */
-.player-top {
-  order: 1;
-}
-
-#board-wrapper {
-  order: 2;
-}
-
-.game-result-banner {
-  order: 3;
-}
-
-.player-bottom {
-  order: 4;
-}
-
-/* When board is flipped to Black orientation, swap player bars */
-#board-stage.orientation-black .player-top {
-  order: 4;
-}
-
-#board-stage.orientation-black #board-wrapper {
-  order: 2;
-}
-
-#board-stage.orientation-black .game-result-banner {
-  order: 3;
-}
-
-#board-stage.orientation-black .player-bottom {
-  order: 1;
-}
-
 /* Player Bar Strips */
 .player-strip {
   display: flex;
