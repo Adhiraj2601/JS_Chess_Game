@@ -1326,6 +1326,47 @@ let main = {
       main.methods.gamesetup();
       main.methods.updateVisualHighlights();
       main.methods.updateNavButtons();
+      main.methods.updatePlayerBars();
+    },
+
+    updatePlayerBars: function () {
+      if (typeof document === 'undefined' || typeof document.querySelector !== 'function') return;
+      let isWhite = main.variables.orientation === 'w';
+
+      // The top element visually (order 1) is always "Opponent" with opponent avatar (DUM cat)
+      // The bottom element visually (order 4) is always "You" with player avatar (Nerd cat)
+      let topEl = isWhite ? document.querySelector('.player-top') : document.querySelector('.player-bottom');
+      let botEl = isWhite ? document.querySelector('.player-bottom') : document.querySelector('.player-top');
+
+      if (topEl) {
+        let nameEl = topEl.querySelector('.player-name');
+        let metaEl = topEl.querySelector('.player-meta');
+        let imgEl = topEl.querySelector('.avatar-img');
+        let circleEl = topEl.querySelector('.avatar-circle');
+
+        if (nameEl) nameEl.textContent = 'Opponent';
+        if (metaEl) metaEl.textContent = isWhite ? 'Black' : 'White';
+        if (imgEl) {
+          imgEl.src = 'assets/avatars/opponent.png';
+          imgEl.alt = 'Opponent';
+        }
+        if (circleEl) circleEl.title = 'Opponent';
+      }
+
+      if (botEl) {
+        let nameEl = botEl.querySelector('.player-name');
+        let metaEl = botEl.querySelector('.player-meta');
+        let imgEl = botEl.querySelector('.avatar-img');
+        let circleEl = botEl.querySelector('.avatar-circle');
+
+        if (nameEl) nameEl.textContent = 'You';
+        if (metaEl) metaEl.textContent = isWhite ? 'White' : 'Black';
+        if (imgEl) {
+          imgEl.src = 'assets/avatars/player.png';
+          imgEl.alt = 'Player';
+        }
+        if (circleEl) circleEl.title = 'Player';
+      }
     },
 
     performCastle: function (kingKey, side) {
@@ -2057,6 +2098,7 @@ let main = {
       main.methods.gamesetup();
       main.methods.updateMoveHistoryUI();
       main.methods.updateNavButtons();
+      main.methods.updatePlayerBars();
 
       let initialKey = main.methods.getPositionKey(main.methods.getBoard(), 'w', null);
       main.variables.positionCounts[initialKey] = 1;
@@ -2089,6 +2131,7 @@ if (typeof $ !== 'undefined') {
     main.variables.positionHistory.push(initialKey);
     main.methods.updateNavButtons();
     main.methods.updateMoveHistoryUI();
+    main.methods.updatePlayerBars();
 
     // Click handler for Click-to-Move
     $(document).on('click', '.gamecell', function (e) {
