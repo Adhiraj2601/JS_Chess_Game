@@ -6,7 +6,7 @@
 body,
 body.theme-wood {
   /* Atmosphere & Surfaces */
-  --bg-primary: #171310;
+  --bg-primary: #002222;
   --bg-secondary: #211a15;
   --toolbar-bg: rgba(36, 27, 21, 0.92);
   --panel-bg: #271e18;
@@ -69,14 +69,32 @@ html, body {
   margin: 0;
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   background-color: var(--bg-primary);
-  background-image: 
-    radial-gradient(ellipse at 50% 10%, rgba(68, 48, 34, 0.35) 0%, transparent 65%),
-    radial-gradient(circle at 50% 90%, rgba(38, 26, 18, 0.4) 0%, transparent 70%);
-  background-attachment: fixed;
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   box-sizing: border-box;
+}
+
+/* Vanta.js Animated Topology Background */
+#vanta-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.vanta-canvas {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
 }
 
 *, *:before, *:after {
@@ -90,6 +108,8 @@ html, body {
    ========================================================== */
 
 #app-wrapper {
+  position: relative;
+  z-index: 1;
   width: 100%;
   max-width: 1080px;
   margin: 0 auto;

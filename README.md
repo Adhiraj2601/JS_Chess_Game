@@ -87,8 +87,8 @@ Players can use both **Click-to-Move** and **Drag-and-Drop** piece interactions 
 - **🔊 Web Audio API Procedural Sound Effects**:
   - Synthesized tones for standard moves, captures, check alerts, castling, victory fanfare, and timeout alarm.
   - Single shared `AudioContext` with mute toggle and `localStorage` persistence.
-- **🌲 Default Wood Theme**:
-  - Warm, permanent wood board aesthetic styled via clean CSS variables.
+- **🌲 Default Wood Theme & Topology Animated Background**:
+  - Warm, permanent wood board aesthetic paired with dynamic Vanta.js 3D topological contour mesh background in deep teal (`#002222`) and olive sage (`#89964e`).
 - **📍 Last-Move Highlighting**:
   - Translucent highlights for source (`.last-move-from`) and target (`.last-move-to`) squares preserved across all moves, undo, redo, and flips.
 - **📱 Responsive Mobile & Tablet Layout**:
@@ -115,14 +115,19 @@ Players can use both **Click-to-Move** and **Drag-and-Drop** piece interactions 
 | **CSS3** | CSS Variables, 3-Column Grid, Wood palette, Animations, Media Queries |
 | **JavaScript (ES6+)** | Core Chess Engine, Threat Detection, ClockManager, AudioManager, DragManager |
 | **jQuery (3.2.1)** | DOM manipulation, dynamic square injection, and event delegation |
+| **Vanta.js & P5.js** | Interactive 3D topological background contour animation |
 
 ```text
 JS_Chess_Game/
-├── index.html          # Semantic 3-column layout structure & modal overlays
-├── style.css          # Wood theme stylesheet, CSS variables, Workspace Grid, Threat Glow, Media Queries
-├── script.js          # Core Engine, Threat Detection, ClockManager, AudioManager, DragManager
-├── test_runner.js     # 54 Automated tests verifying rules, engine, clocks, threats, coordinates
-└── README.md          # Documentation & Technical Specifications
+├── index.html              # Semantic 3-column layout structure & modal overlays
+├── style.css              # Wood theme stylesheet, CSS variables, Workspace Grid, Threat Glow, Media Queries
+├── script.js              # Core Engine, Threat Detection, ClockManager, AudioManager, DragManager
+├── uno_mode.js            # Chess UNO mode card engine, energy economy & revival powers
+├── uno_mode.css           # Chess UNO theme styling, card decks, meters & tutorial
+├── vanta.topology.min.js  # Vanta.js 3D Topology animated contour background effect
+├── p5.min.js              # P5.js rendering library for procedural topology canvas
+├── test_runner.js         # Automated test suite (71 passing tests)
+└── README.md              # Documentation & Technical Specifications
 ```
 
 ---

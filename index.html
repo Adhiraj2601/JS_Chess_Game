@@ -12,6 +12,9 @@
 </head>
 <body class="theme-wood">
 
+<!-- Vanta.js Animated Topology Background -->
+<div id="vanta-bg"></div>
+
 <div id="app-wrapper">
 
   <!-- Top Navigation Header -->
@@ -580,6 +583,25 @@
 <div id="drag-ghost" aria-hidden="true"></div>
 
 <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js'></script>
+<script src="./p5.min.js"></script>
+<script>if(typeof p5==="undefined"){document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.1.9/p5.min.js"><\/script>');}</script>
+<script src="./vanta.topology.min.js"></script>
+<script>
+  if (typeof VANTA !== 'undefined' && typeof VANTA.TOPOLOGY === 'function') {
+    window.vantaTopology = VANTA.TOPOLOGY({
+      el: "#vanta-bg",
+      mouseControls: true,
+      touchControls: true,
+      gyroControls: false,
+      minHeight: 200.00,
+      minWidth: 200.00,
+      scale: 1.00,
+      scaleMobile: 1.00,
+      color: 0x89964e,
+      backgroundColor: 0x2222
+    });
+  }
+</script>
 <script src="./uno_mode.js"></script>
 <script src="./script.js"></script>
 
