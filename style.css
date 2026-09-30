@@ -7,20 +7,10 @@
 body,
 body.theme-wood {
   /* Surfaces & Backgrounds */
-  --bg-page: #161514;
-  --bg-gradient: radial-gradient(ellipse at 50% 40%, #3a3836 0%, #222120 60%, #161514 100%);
+  --bg-page: #000000;
   --bg-surface: #1e1e1e;
   --bg-surface-elevated: #262626;
   --bg-surface-hover: #2c2c2c;
-
-  /* Isometric Background & Floating Illustration System */
-  --bg-cube-dark: #141413;
-  --bg-cube-light: #2a2927;
-  --bg-cube-base: #181716;
-  --bg-accent-coral: #ff6b6b;
-  --bg-accent-blue: #5b9bb5;
-  --bg-accent-offwhite: #d9d5cc;
-  --bg-tile-offwhite: #e8e4dc;
 
   /* Hairlines & Borders */
   --border-hairline: #2b2b2b;
@@ -82,144 +72,74 @@ html, body {
 }
 
 /* ==========================================================
-   BACKGROUND SYSTEM: 3-LAYER SUBTLE EDITORIAL TEXTURE
+   BACKGROUND SYSTEM: ISOMETRIC CUBES WITH GOLDEN INSET VIGNETTE
    ========================================================== */
 
-/* LAYER 1: Isometric Cube Texture (body::before, z-index: -3) */
-body::before {
-  content: "";
+.container {
   position: fixed;
   inset: 0;
-  z-index: -3;
-  pointer-events: none;
-  background:
-    linear-gradient(30deg,  var(--bg-cube-dark, #141413) 12%, transparent 12.5%, transparent 87%, var(--bg-cube-dark, #141413) 87.5%, var(--bg-cube-dark, #141413)),
-    linear-gradient(150deg, var(--bg-cube-dark, #141413) 12%, transparent 12.5%, transparent 87%, var(--bg-cube-dark, #141413) 87.5%, var(--bg-cube-dark, #141413)),
-    linear-gradient(30deg,  var(--bg-cube-dark, #141413) 12%, transparent 12.5%, transparent 87%, var(--bg-cube-dark, #141413) 87.5%, var(--bg-cube-dark, #141413)),
-    linear-gradient(150deg, var(--bg-cube-dark, #141413) 12%, transparent 12.5%, transparent 87%, var(--bg-cube-dark, #141413) 87.5%, var(--bg-cube-dark, #141413)),
-    linear-gradient(60deg, #2a292755 25%, transparent 25.5%, transparent 75%, #2a292755 75%, #2a292755),
-    linear-gradient(60deg, #2a292755 25%, transparent 25.5%, transparent 75%, #2a292755 75%, #2a292755);
-  background-color: var(--bg-cube-base, #181716);
-  background-size: 80px 140px;
-  background-position: 0 0, 0 0, 40px 70px, 40px 70px, 0 0, 40px 70px;
-}
-
-/* LAYER 2: Vignette Overlay (body::after, z-index: -2) */
-body::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -2;
-  pointer-events: none;
-  background: radial-gradient(ellipse at 50% 40%, rgba(22, 21, 20, 0.15) 0%, rgba(22, 21, 20, 0.75) 70%, #0f0f0e 100%);
-}
-
-/* LAYER 3: Floating Chess Elements (z-index: -1) */
-.bg-floating-elements {
-  position: fixed;
-  inset: 0;
+  width: 100%;
+  height: 100%;
   z-index: -1;
   pointer-events: none;
-  overflow: hidden;
-  opacity: 0.55;
-}
-
-.float-item {
-  pointer-events: none;
-  user-select: none;
-  will-change: transform;
-}
-
-@keyframes float-drift-1 {
-  0%   { transform: translate(0, 0) rotate(0deg); }
-  100% { transform: translate(2px, -8px) rotate(1.5deg); }
-}
-
-@keyframes float-drift-2 {
-  0%   { transform: translate(0, 0) rotate(0deg); }
-  100% { transform: translate(-3px, 7px) rotate(-1.8deg); }
-}
-
-@keyframes float-drift-3 {
-  0%   { transform: translate(0, 0) rotate(0deg); }
-  100% { transform: translate(3px, -9px) rotate(-1.2deg); }
-}
-
-@keyframes float-drift-4 {
-  0%   { transform: translate(0, 0) rotate(0deg); }
-  100% { transform: translate(-2px, 8px) rotate(2deg); }
-}
-
-.float-tr-tile1 {
-  animation: float-drift-1 9s ease-in-out infinite alternate;
-  animation-delay: -2s;
-}
-
-.float-tr-pawn {
-  animation: float-drift-3 12s ease-in-out infinite alternate;
-  animation-delay: -5s;
-}
-
-.float-tr-rook {
-  animation: float-drift-2 14s ease-in-out infinite alternate;
-  animation-delay: -1s;
-}
-
-.float-tr-tile2 {
-  animation: float-drift-4 10s ease-in-out infinite alternate;
-  animation-delay: -7s;
-}
-
-.float-mr-tile {
-  animation: float-drift-1 13s ease-in-out infinite alternate;
-  animation-delay: -4s;
-}
-
-.float-mr-pawn {
-  animation: float-drift-3 11s ease-in-out infinite alternate;
-  animation-delay: -6s;
-}
-
-.float-mr-tile2 {
-  animation: float-drift-2 8s ease-in-out infinite alternate;
-  animation-delay: -3s;
-}
-
-.float-bl-tile1 {
-  animation: float-drift-4 12s ease-in-out infinite alternate;
-  animation-delay: -2s;
-}
-
-.float-bl-fallen-pawn {
-  animation: float-drift-1 14s ease-in-out infinite alternate;
-  animation-delay: -8s;
-}
-
-.float-bl-tile2 {
-  animation: float-drift-3 10s ease-in-out infinite alternate;
-  animation-delay: -5s;
-}
-
-.float-bl-tile3 {
-  animation: float-drift-2 9s ease-in-out infinite alternate;
-  animation-delay: -1s;
-}
-
-.float-tl-tile {
-  animation: float-drift-4 11s ease-in-out infinite alternate;
-  animation-delay: -3s;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .float-item {
-    animation: none !important;
-  }
-}
-
-@media (max-width: 900px) {
-  .bg-floating-elements {
-    display: none !important;
-  }
+  background: linear-gradient(
+      30deg,
+      #111111 12%,
+      transparent 12.5%,
+      transparent 87%,
+      #111111 87.5%,
+      #111111
+    ),
+    linear-gradient(
+      150deg,
+      #111111 12%,
+      transparent 12.5%,
+      transparent 87%,
+      #111111 87.5%,
+      #111111
+    ),
+    linear-gradient(
+      30deg,
+      #111111 12%,
+      transparent 12.5%,
+      transparent 87%,
+      #111111 87.5%,
+      #111111
+    ),
+    linear-gradient(
+      150deg,
+      #111111 12%,
+      transparent 12.5%,
+      transparent 87%,
+      #111111 87.5%,
+      #111111
+    ),
+    linear-gradient(
+      60deg,
+      #77777777 25%,
+      transparent 25.5%,
+      transparent 75%,
+      #77777777 75%,
+      #77777777
+    ),
+    linear-gradient(
+      60deg,
+      #77777777 25%,
+      transparent 25.5%,
+      transparent 75%,
+      #77777777 75%,
+      #77777777
+    );
+  background-position:
+    0 0,
+    0 0,
+    40px 70px,
+    40px 70px,
+    0 0,
+    40px 70px;
+  background-color: #000000;
+  background-size: 80px 140px;
+  box-shadow: inset 0 0 100px rgba(255, 215, 0, 0.1);
 }
 
 /* ==========================================================
