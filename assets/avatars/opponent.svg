@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <defs>
+    <clipPath id="circle-clip-opp">
+      <circle cx="50" cy="50" r="48" />
+    </clipPath>
+    <linearGradient id="bg-opp" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4a5568"/>
+      <stop offset="100%" stop-color="#2d3748"/>
+    </linearGradient>
+    <linearGradient id="skin-opp" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fbd38d"/>
+      <stop offset="100%" stop-color="#f6ad55"/>
+    </linearGradient>
+  </defs>
+  <g clip-path="url(#circle-clip-opp)">
+    <circle cx="50" cy="50" r="50" fill="url(#bg-opp)" />
+    <!-- Shoulders / Shirt -->
+    <path d="M15 95 C15 75 30 68 50 68 C70 68 85 75 85 95 Z" fill="#e2e8f0" />
+    <path d="M42 68 L50 78 L58 68 Z" fill="#cbd5e0" />
+    <!-- Neck -->
+    <rect x="42" y="52" width="16" height="20" fill="url(#skin-opp)" rx="2" />
+    <!-- Head -->
+    <ellipse cx="50" cy="42" rx="19" ry="22" fill="url(#skin-opp)" />
+    <!-- Hair -->
+    <path d="M30 38 C30 22 42 16 54 18 C64 20 70 26 70 36 C66 32 60 30 52 30 C42 30 35 34 30 38 Z" fill="#744210" />
+    <!-- Eyes -->
+    <circle cx="43" cy="42" r="2.2" fill="#2d3748" />
+    <circle cx="57" cy="42" r="2.2" fill="#2d3748" />
+    <!-- Eyebrows -->
+    <path d="M39 37 Q43 35 47 37" stroke="#744210" stroke-width="1.8" stroke-linecap="round" fill="none" />
+    <path d="M53 37 Q57 35 61 37" stroke="#744210" stroke-width="1.8" stroke-linecap="round" fill="none" />
+    <!-- Smile -->
+    <path d="M45 52 Q50 56 55 52" stroke="#c05621" stroke-width="1.6" stroke-linecap="round" fill="none" />
+  </g>
+  <circle cx="50" cy="50" r="48" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="2" />
+</svg>

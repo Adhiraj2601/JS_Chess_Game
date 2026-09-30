@@ -228,6 +228,11 @@ const ClockManager = {
     const winner = timedOutColor === 'w' ? 'Black' : 'White';
     $('#turn').addClass('turnhighlight').text(`TIME OUT — ${winner.toUpperCase()} WINS!`);
 
+    let resEl = $('#game-result-banner');
+    if (typeof resEl.text === 'function') resEl.text('Time out');
+    if (typeof resEl.css === 'function') resEl.css('display', 'block');
+    $('#rematch-btn').addClass('highlight-rematch');
+
     AudioManager.playTimeout();
     main.methods.updateNavButtons();
   },
@@ -255,8 +260,13 @@ const ClockManager = {
   updateDisplay: function () {
     if (typeof $ === 'undefined') return;
 
-    const wText = this.formatTime(this.state.whiteMs);
-    const bText = this.formatTime(this.state.blackMs);
+    let wText = this.formatTime(this.state.whiteMs);
+    let bText = this.formatTime(this.state.blackMs);
+
+    if (!this.state.isTimed) {
+      wText = '—';
+      bText = '—';
+    }
 
     $('#clock-white-time').text(wText);
     $('#clock-black-time').text(bText);
@@ -267,6 +277,11 @@ const ClockManager = {
       if (this.state.running) {
         if (this.state.activeColor === 'w') $('#clock-white').addClass('active');
         if (this.state.activeColor === 'b') $('#clock-black').addClass('active');
+      } else {
+        if (typeof main !== 'undefined' && main.variables) {
+          if (main.variables.turn === 'w') $('#clock-white').addClass('active');
+          else $('#clock-black').addClass('active');
+        }
       }
 
       if (this.state.whiteMs <= 10000 && this.state.whiteMs > 0) {
@@ -279,6 +294,11 @@ const ClockManager = {
         $('#clock-black').addClass('critical');
       } else if (this.state.blackMs <= 30000 && this.state.blackMs > 0) {
         $('#clock-black').addClass('warning');
+      }
+    } else {
+      if (typeof main !== 'undefined' && main.variables) {
+        if (main.variables.turn === 'w') $('#clock-white').addClass('active');
+        else $('#clock-black').addClass('active');
       }
     }
   }
@@ -531,40 +551,55 @@ let main = {
 
   methods: {
     getInitialPieces: function () {
-      return {
-        w_king:    { position: '5_1', img: '&#9812;', type: 'w_king',   moved: false, captured: false },
-        w_queen:   { position: '4_1', img: '&#9813;', type: 'w_queen',  moved: false, captured: false },
-        w_rook1:   { position: '1_1', img: '&#9814;', type: 'w_rook',   moved: false, captured: false },
-        w_rook2:   { position: '8_1', img: '&#9814;', type: 'w_rook',   moved: false, captured: false },
-        w_bishop1: { position: '3_1', img: '&#9815;', type: 'w_bishop', moved: false, captured: false },
-        w_bishop2: { position: '6_1', img: '&#9815;', type: 'w_bishop', moved: false, captured: false },
-        w_knight1: { position: '2_1', img: '&#9816;', type: 'w_knight', moved: false, captured: false },
-        w_knight2: { position: '7_1', img: '&#9816;', type: 'w_knight', moved: false, captured: false },
-        w_pawn1:   { position: '1_2', img: '&#9817;', type: 'w_pawn',   moved: false, captured: false },
-        w_pawn2:   { position: '2_2', img: '&#9817;', type: 'w_pawn',   moved: false, captured: false },
-        w_pawn3:   { position: '3_2', img: '&#9817;', type: 'w_pawn',   moved: false, captured: false },
-        w_pawn4:   { position: '4_2', img: '&#9817;', type: 'w_pawn',   moved: false, captured: false },
-        w_pawn5:   { position: '5_2', img: '&#9817;', type: 'w_pawn',   moved: false, captured: false },
-        w_pawn6:   { position: '6_2', img: '&#9817;', type: 'w_pawn',   moved: false, captured: false },
-        w_pawn7:   { position: '7_2', img: '&#9817;', type: 'w_pawn',   moved: false, captured: false },
-        w_pawn8:   { position: '8_2', img: '&#9817;', type: 'w_pawn',   moved: false, captured: false },
+      const pSvg = {
+        w_king:    '<img class="chess-piece" src="./assets/pieces/wK.svg" alt="White King">',
+        w_queen:   '<img class="chess-piece" src="./assets/pieces/wQ.svg" alt="White Queen">',
+        w_rook:    '<img class="chess-piece" src="./assets/pieces/wR.svg" alt="White Rook">',
+        w_bishop:  '<img class="chess-piece" src="./assets/pieces/wB.svg" alt="White Bishop">',
+        w_knight:  '<img class="chess-piece" src="./assets/pieces/wN.svg" alt="White Knight">',
+        w_pawn:    '<img class="chess-piece" src="./assets/pieces/wP.svg" alt="White Pawn">',
+        b_king:    '<img class="chess-piece" src="./assets/pieces/bK.svg" alt="Black King">',
+        b_queen:   '<img class="chess-piece" src="./assets/pieces/bQ.svg" alt="Black Queen">',
+        b_rook:    '<img class="chess-piece" src="./assets/pieces/bR.svg" alt="Black Rook">',
+        b_bishop:  '<img class="chess-piece" src="./assets/pieces/bB.svg" alt="Black Bishop">',
+        b_knight:  '<img class="chess-piece" src="./assets/pieces/bN.svg" alt="Black Knight">',
+        b_pawn:    '<img class="chess-piece" src="./assets/pieces/bP.svg" alt="Black Pawn">'
+      };
 
-        b_king:    { position: '5_8', img: '&#9818;', type: 'b_king',   moved: false, captured: false },
-        b_queen:   { position: '4_8', img: '&#9819;', type: 'b_queen',  moved: false, captured: false },
-        b_rook1:   { position: '1_8', img: '&#9820;', type: 'b_rook',   moved: false, captured: false },
-        b_rook2:   { position: '8_8', img: '&#9820;', type: 'b_rook',   moved: false, captured: false },
-        b_bishop1: { position: '3_8', img: '&#9821;', type: 'b_bishop', moved: false, captured: false },
-        b_bishop2: { position: '6_8', img: '&#9821;', type: 'b_bishop', moved: false, captured: false },
-        b_knight1: { position: '2_8', img: '&#9822;', type: 'b_knight', moved: false, captured: false },
-        b_knight2: { position: '7_8', img: '&#9822;', type: 'b_knight', moved: false, captured: false },
-        b_pawn1:   { position: '1_7', img: '&#9823;', type: 'b_pawn',   moved: false, captured: false },
-        b_pawn2:   { position: '2_7', img: '&#9823;', type: 'b_pawn',   moved: false, captured: false },
-        b_pawn3:   { position: '3_7', img: '&#9823;', type: 'b_pawn',   moved: false, captured: false },
-        b_pawn4:   { position: '4_7', img: '&#9823;', type: 'b_pawn',   moved: false, captured: false },
-        b_pawn5:   { position: '5_7', img: '&#9823;', type: 'b_pawn',   moved: false, captured: false },
-        b_pawn6:   { position: '6_7', img: '&#9823;', type: 'b_pawn',   moved: false, captured: false },
-        b_pawn7:   { position: '7_7', img: '&#9823;', type: 'b_pawn',   moved: false, captured: false },
-        b_pawn8:   { position: '8_7', img: '&#9823;', type: 'b_pawn',   moved: false, captured: false }
+      return {
+        w_king:    { position: '5_1', img: pSvg.w_king,   type: 'w_king',   moved: false, captured: false },
+        w_queen:   { position: '4_1', img: pSvg.w_queen,  type: 'w_queen',  moved: false, captured: false },
+        w_rook1:   { position: '1_1', img: pSvg.w_rook,   type: 'w_rook',   moved: false, captured: false },
+        w_rook2:   { position: '8_1', img: pSvg.w_rook,   type: 'w_rook',   moved: false, captured: false },
+        w_bishop1: { position: '3_1', img: pSvg.w_bishop, type: 'w_bishop', moved: false, captured: false },
+        w_bishop2: { position: '6_1', img: pSvg.w_bishop, type: 'w_bishop', moved: false, captured: false },
+        w_knight1: { position: '2_1', img: pSvg.w_knight, type: 'w_knight', moved: false, captured: false },
+        w_knight2: { position: '7_1', img: pSvg.w_knight, type: 'w_knight', moved: false, captured: false },
+        w_pawn1:   { position: '1_2', img: pSvg.w_pawn,   type: 'w_pawn',   moved: false, captured: false },
+        w_pawn2:   { position: '2_2', img: pSvg.w_pawn,   type: 'w_pawn',   moved: false, captured: false },
+        w_pawn3:   { position: '3_2', img: pSvg.w_pawn,   type: 'w_pawn',   moved: false, captured: false },
+        w_pawn4:   { position: '4_2', img: pSvg.w_pawn,   type: 'w_pawn',   moved: false, captured: false },
+        w_pawn5:   { position: '5_2', img: pSvg.w_pawn,   type: 'w_pawn',   moved: false, captured: false },
+        w_pawn6:   { position: '6_2', img: pSvg.w_pawn,   type: 'w_pawn',   moved: false, captured: false },
+        w_pawn7:   { position: '7_2', img: pSvg.w_pawn,   type: 'w_pawn',   moved: false, captured: false },
+        w_pawn8:   { position: '8_2', img: pSvg.w_pawn,   type: 'w_pawn',   moved: false, captured: false },
+
+        b_king:    { position: '5_8', img: pSvg.b_king,   type: 'b_king',   moved: false, captured: false },
+        b_queen:   { position: '4_8', img: pSvg.b_queen,  type: 'b_queen',  moved: false, captured: false },
+        b_rook1:   { position: '1_8', img: pSvg.b_rook,   type: 'b_rook',   moved: false, captured: false },
+        b_rook2:   { position: '8_8', img: pSvg.b_rook,   type: 'b_rook',   moved: false, captured: false },
+        b_bishop1: { position: '3_8', img: pSvg.b_bishop, type: 'b_bishop', moved: false, captured: false },
+        b_bishop2: { position: '6_8', img: pSvg.b_bishop, type: 'b_bishop', moved: false, captured: false },
+        b_knight1: { position: '2_8', img: pSvg.b_knight, type: 'b_knight', moved: false, captured: false },
+        b_knight2: { position: '7_8', img: pSvg.b_knight, type: 'b_knight', moved: false, captured: false },
+        b_pawn1:   { position: '1_7', img: pSvg.b_pawn,   type: 'b_pawn',   moved: false, captured: false },
+        b_pawn2:   { position: '2_7', img: pSvg.b_pawn,   type: 'b_pawn',   moved: false, captured: false },
+        b_pawn3:   { position: '3_7', img: pSvg.b_pawn,   type: 'b_pawn',   moved: false, captured: false },
+        b_pawn4:   { position: '4_7', img: pSvg.b_pawn,   type: 'b_pawn',   moved: false, captured: false },
+        b_pawn5:   { position: '5_7', img: pSvg.b_pawn,   type: 'b_pawn',   moved: false, captured: false },
+        b_pawn6:   { position: '6_7', img: pSvg.b_pawn,   type: 'b_pawn',   moved: false, captured: false },
+        b_pawn7:   { position: '7_7', img: pSvg.b_pawn,   type: 'b_pawn',   moved: false, captured: false },
+        b_pawn8:   { position: '8_7', img: pSvg.b_pawn,   type: 'b_pawn',   moved: false, captured: false }
       };
     },
 
@@ -1043,6 +1078,10 @@ let main = {
         main.variables.gameOver = true;
         ClockManager.stop();
         $('#turn').addClass('turnhighlight').text('DRAW BY 50-MOVE RULE');
+        let resEl = $('#game-result-banner');
+        if (typeof resEl.text === 'function') resEl.text('Draw');
+        if (typeof resEl.css === 'function') resEl.css('display', 'block');
+        $('#rematch-btn').addClass('highlight-rematch');
         AudioManager.playGameOver();
         return true;
       }
@@ -1056,6 +1095,10 @@ let main = {
         main.variables.gameOver = true;
         ClockManager.stop();
         $('#turn').addClass('turnhighlight').text('DRAW BY THREEFOLD REPETITION');
+        let resEl = $('#game-result-banner');
+        if (typeof resEl.text === 'function') resEl.text('Draw');
+        if (typeof resEl.css === 'function') resEl.css('display', 'block');
+        $('#rematch-btn').addClass('highlight-rematch');
         AudioManager.playGameOver();
         return true;
       }
@@ -1121,6 +1164,23 @@ let main = {
         $('#turn').removeClass('turnhighlight').text(snap.statusText);
       }
 
+      let resEl = $('#game-result-banner');
+      if (snap.gameOver) {
+        let t = snap.statusText || '';
+        let bannerText = 'Checkmate!';
+        if (t.includes('Checkmate')) bannerText = 'Checkmate!';
+        else if (t.includes('Stalemate')) bannerText = 'Stalemate';
+        else if (t.includes('TIME OUT') || t.includes('Time out')) bannerText = 'Time out';
+        else if (t.includes('DRAW') || t.includes('draw')) bannerText = 'Draw';
+        if (typeof resEl.text === 'function') resEl.text(bannerText);
+        if (typeof resEl.css === 'function') resEl.css('display', 'block');
+        $('#rematch-btn').addClass('highlight-rematch');
+      } else {
+        if (typeof resEl.text === 'function') resEl.text('');
+        if (typeof resEl.css === 'function') resEl.css('display', 'none');
+        $('#rematch-btn').removeClass('highlight-rematch');
+      }
+
       main.methods.updateVisualHighlights();
       main.methods.updateMoveHistoryUI();
       main.methods.updateNavButtons();
@@ -1152,6 +1212,37 @@ let main = {
     },
 
     // ---------- Move History UI & PGN Export ----------
+    formatSANWithIcon: function (san, color) {
+      if (!san) return '';
+      let pieceSymbol = '';
+      let rest = san;
+
+      if (san.startsWith('N')) {
+        pieceSymbol = color === 'w' ? '♞' : '♘';
+        rest = san.slice(1);
+      } else if (san.startsWith('B')) {
+        pieceSymbol = color === 'w' ? '♝' : '♗';
+        rest = san.slice(1);
+      } else if (san.startsWith('R')) {
+        pieceSymbol = color === 'w' ? '♜' : '♖';
+        rest = san.slice(1);
+      } else if (san.startsWith('Q')) {
+        pieceSymbol = color === 'w' ? '♛' : '♕';
+        rest = san.slice(1);
+      } else if (san.startsWith('K')) {
+        pieceSymbol = color === 'w' ? '♚' : '♔';
+        rest = san.slice(1);
+      } else if (san === 'O-O' || san === 'O-O-O') {
+        pieceSymbol = '';
+        rest = san;
+      } else {
+        pieceSymbol = color === 'w' ? '♟' : '♙';
+        rest = san;
+      }
+
+      return `<span class="move-glyph">${pieceSymbol}</span><span class="move-text">${rest}</span>`;
+    },
+
     updateMoveHistoryUI: function () {
       let html = '<table class="history-table"><tbody>';
       let history = main.variables.moveHistory;
@@ -1164,11 +1255,14 @@ let main = {
         let isLatestWhite = i === history.length - 1;
         let isLatestBlack = (i + 1) === history.length - 1;
 
+        let whiteFormatted = history[i] ? main.methods.formatSANWithIcon(history[i].san, 'w') : '';
+        let blackFormatted = history[i + 1] ? main.methods.formatSANWithIcon(history[i + 1].san, 'b') : '';
+
         html += `
           <tr>
-            <td class="hist-num">${moveNum}.</td>
-            <td class="hist-san ${isLatestWhite ? 'active-move' : ''}">${whiteMove}</td>
-            <td class="hist-san ${isLatestBlack ? 'active-move' : ''}">${blackMove}</td>
+            <td class="hist-num">${moveNum}</td>
+            <td class="hist-san ${isLatestWhite ? 'active-move' : ''}">${whiteFormatted}</td>
+            <td class="hist-san ${isLatestBlack ? 'active-move' : ''}">${blackFormatted}</td>
           </tr>
         `;
       }
@@ -1177,6 +1271,19 @@ let main = {
       $('#move-history-list').html(html);
       let listEl = (typeof document !== 'undefined') ? document.getElementById('move-history-list') : null;
       if (listEl) listEl.scrollTop = listEl.scrollHeight;
+
+      if (main.variables.gameOver) {
+        let text = $('#turn').text();
+        if (text.includes('White wins') || text.includes('WHITE WINS')) {
+          $('#history-result').text('1–0');
+        } else if (text.includes('Black wins') || text.includes('BLACK WINS')) {
+          $('#history-result').text('0–1');
+        } else {
+          $('#history-result').text('½–½');
+        }
+      } else {
+        $('#history-result').text('*');
+      }
     },
 
     exportPGN: function () {
@@ -1227,6 +1334,7 @@ let main = {
       let kingObj = main.variables.pieces[kingKey];
       let rookObj = main.variables.pieces[rookKey];
       let fromCell = kingObj.position;
+      let rookFrom = rookObj.position;
 
       main.variables.historyStack.push(main.methods.createSnapshot());
       main.variables.redoStack = [];
@@ -1241,6 +1349,9 @@ let main = {
       kingObj.moved = true;
       rookObj.position = rookTarget;
       rookObj.moved = true;
+
+      main.methods.animatePieceSlide(fromCell, kingTarget);
+      main.methods.animatePieceSlide(rookFrom, rookTarget);
 
       main.variables.lastMove = { from: fromCell, to: kingTarget };
       main.variables.halfmoveClock += 1;
@@ -1301,6 +1412,8 @@ let main = {
 
       pieceObj.position = targetCellId;
       pieceObj.moved = true;
+
+      main.methods.animatePieceSlide(fromCell, targetCellId);
 
       if (typeof GameModeManager !== 'undefined') {
         GameModeManager.onMove(fromCell, targetCellId, selectedKey, true);
@@ -1456,6 +1569,134 @@ let main = {
           $('#' + kingCell).addClass('red in-check');
         }
       }
+
+      main.methods.updateLastMoveArrow();
+      main.methods.updateMaterialAdvantage();
+    },
+
+    updateLastMoveArrow: function () {
+      if (typeof document === 'undefined') return;
+      let arrow = document.getElementById('last-move-arrow');
+      if (!arrow) return;
+
+      if (!main.variables.lastMove || !main.variables.lastMove.from || !main.variables.lastMove.to) {
+        arrow.style.display = 'none';
+        return;
+      }
+
+      let fromEl = document.getElementById(main.variables.lastMove.from);
+      let toEl = document.getElementById(main.variables.lastMove.to);
+      let wrapperEl = document.getElementById('board-wrapper');
+
+      if (!fromEl || !toEl || !wrapperEl) {
+        arrow.style.display = 'none';
+        return;
+      }
+
+      let wrapRect = wrapperEl.getBoundingClientRect();
+      let fromRect = fromEl.getBoundingClientRect();
+      let toRect = toEl.getBoundingClientRect();
+
+      if (wrapRect.width === 0 || wrapRect.height === 0) {
+        arrow.style.display = 'none';
+        return;
+      }
+
+      let overlaySvg = document.getElementById('board-arrow-overlay');
+      if (overlaySvg) {
+        overlaySvg.setAttribute('viewBox', `0 0 ${wrapRect.width} ${wrapRect.height}`);
+      }
+
+      let x1 = fromRect.left + fromRect.width / 2 - wrapRect.left;
+      let y1 = fromRect.top + fromRect.height / 2 - wrapRect.top;
+      let x2 = toRect.left + toRect.width / 2 - wrapRect.left;
+      let y2 = toRect.top + toRect.height / 2 - wrapRect.top;
+
+      let dx = x2 - x1;
+      let dy = y2 - y1;
+      let dist = Math.hypot(dx, dy);
+
+      if (dist < 8) {
+        arrow.style.display = 'none';
+        return;
+      }
+
+      let shorten = Math.min(18, dist * 0.22);
+      let arrowX2 = x2 - (dx / dist) * shorten;
+      let arrowY2 = y2 - (dy / dist) * shorten;
+
+      arrow.setAttribute('x1', x1);
+      arrow.setAttribute('y1', y1);
+      arrow.setAttribute('x2', arrowX2);
+      arrow.setAttribute('y2', arrowY2);
+      arrow.style.display = 'block';
+    },
+
+    updateMaterialAdvantage: function () {
+      if (typeof $ === 'undefined') return;
+      let pieceValues = { pawn: 1, knight: 3, bishop: 3, rook: 5, queen: 9 };
+      let whiteScore = 0;
+      let blackScore = 0;
+
+      for (let key in main.variables.pieces) {
+        let p = main.variables.pieces[key];
+        if (p.captured) {
+          let type = p.type.split('_')[1];
+          let val = pieceValues[type] || 0;
+          if (p.type.startsWith('b_')) {
+            whiteScore += val;
+          } else if (p.type.startsWith('w_')) {
+            blackScore += val;
+          }
+        }
+      }
+
+      let whiteAdv = whiteScore - blackScore;
+      let blackAdv = blackScore - whiteScore;
+
+      if (whiteAdv > 0) {
+        let elW = $('#material-white');
+        elW.text('+' + whiteAdv);
+        elW.css('display', 'inline-flex');
+        let elB = $('#material-black');
+        elB.css('display', 'none');
+      } else if (blackAdv > 0) {
+        let elB = $('#material-black');
+        elB.text('+' + blackAdv);
+        elB.css('display', 'inline-flex');
+        let elW = $('#material-white');
+        elW.css('display', 'none');
+      } else {
+        $('#material-white').css('display', 'none');
+        $('#material-black').css('display', 'none');
+      }
+    },
+
+    animatePieceSlide: function (fromCellId, toCellId) {
+      if (typeof document === 'undefined' || typeof window === 'undefined') return;
+      if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+      let fromEl = document.getElementById(fromCellId);
+      let toEl = document.getElementById(toCellId);
+      if (!fromEl || !toEl) return;
+
+      let fromRect = fromEl.getBoundingClientRect();
+      let toRect = toEl.getBoundingClientRect();
+      if (!fromRect.left || !toRect.left) return;
+
+      let pieceImg = toEl.querySelector('.chess-piece');
+      if (!pieceImg) return;
+
+      let dx = fromRect.left - toRect.left;
+      let dy = fromRect.top - toRect.top;
+
+      pieceImg.style.transform = `translate(${dx}px, ${dy}px)`;
+      pieceImg.style.transition = 'none';
+
+      requestAnimationFrame(() => {
+        pieceImg.style.transition = 'transform 180ms cubic-bezier(0.2, 0, 0.2, 1)';
+        pieceImg.style.transform = 'translate(0, 0)';
+      });
     },
 
     flashInvalid: function (cellId) {
@@ -1510,6 +1751,8 @@ let main = {
 
       pieceObj.position = target.id;
       pieceObj.moved = true;
+
+      main.methods.animatePieceSlide(fromCell, target.id);
 
       if (typeof GameModeManager !== 'undefined') {
         GameModeManager.onMove(fromCell, target.id, selectedpiece, false);
@@ -1588,6 +1831,8 @@ let main = {
       pieceObj.position = target.id;
       pieceObj.moved = true;
 
+      main.methods.animatePieceSlide(fromCell, target.id);
+
       if (capturedPieceObj) {
         capturedPieceObj.captured = true;
         capturedPieceObj.moved = true;
@@ -1663,17 +1908,17 @@ let main = {
 
       if (isWhite) {
         optionsHtml = `
-          <div class="promo-choice" data-type="w_queen">&#9813;</div>
-          <div class="promo-choice" data-type="w_rook">&#9814;</div>
-          <div class="promo-choice" data-type="w_bishop">&#9815;</div>
-          <div class="promo-choice" data-type="w_knight">&#9816;</div>
+          <div class="promo-choice" data-type="w_queen"><img class="chess-piece" src="./assets/pieces/wQ.svg" alt="Queen"></div>
+          <div class="promo-choice" data-type="w_rook"><img class="chess-piece" src="./assets/pieces/wR.svg" alt="Rook"></div>
+          <div class="promo-choice" data-type="w_bishop"><img class="chess-piece" src="./assets/pieces/wB.svg" alt="Bishop"></div>
+          <div class="promo-choice" data-type="w_knight"><img class="chess-piece" src="./assets/pieces/wN.svg" alt="Knight"></div>
         `;
       } else {
         optionsHtml = `
-          <div class="promo-choice" data-type="b_queen">&#9819;</div>
-          <div class="promo-choice" data-type="b_rook">&#9820;</div>
-          <div class="promo-choice" data-type="b_bishop">&#9821;</div>
-          <div class="promo-choice" data-type="b_knight">&#9822;</div>
+          <div class="promo-choice" data-type="b_queen"><img class="chess-piece" src="./assets/pieces/bQ.svg" alt="Queen"></div>
+          <div class="promo-choice" data-type="b_rook"><img class="chess-piece" src="./assets/pieces/bR.svg" alt="Rook"></div>
+          <div class="promo-choice" data-type="b_bishop"><img class="chess-piece" src="./assets/pieces/bB.svg" alt="Bishop"></div>
+          <div class="promo-choice" data-type="b_knight"><img class="chess-piece" src="./assets/pieces/bN.svg" alt="Knight"></div>
         `;
       }
 
@@ -1718,11 +1963,19 @@ let main = {
         ClockManager.stop();
         let winner = color === 'w' ? 'Black' : 'White';
         $('#turn').addClass('turnhighlight').text('Checkmate! ' + winner + ' wins!');
+        let resEl = $('#game-result-banner');
+        if (typeof resEl.text === 'function') resEl.text('Checkmate!');
+        if (typeof resEl.css === 'function') resEl.css('display', 'block');
+        $('#rematch-btn').addClass('highlight-rematch');
         AudioManager.playGameOver();
       } else if (!inCheck && !hasMoves) {
         main.variables.gameOver = true;
         ClockManager.stop();
         $('#turn').addClass('turnhighlight').text("Stalemate! It's a draw.");
+        let resEl = $('#game-result-banner');
+        if (typeof resEl.text === 'function') resEl.text('Stalemate');
+        if (typeof resEl.css === 'function') resEl.css('display', 'block');
+        $('#rematch-btn').addClass('highlight-rematch');
         AudioManager.playGameOver();
       } else if (main.methods.checkDrawConditions(color)) {
         // Draw handled inside checkDrawConditions
@@ -1748,6 +2001,7 @@ let main = {
 
     resetGame: function () {
       main.variables.turn = 'w';
+      main.variables.orientation = 'w';
       main.variables.selectedpiece = '';
       main.variables.highlighted = [];
       main.variables.gameOver = false;
@@ -1769,6 +2023,11 @@ let main = {
       $('.gamecell').removeClass('green yellow red last-move-from last-move-to');
       $('#turn').removeClass('turnhighlight').text("It's White's Turn!");
       $('#board-stage').removeClass('orientation-black');
+
+      let resEl = $('#game-result-banner');
+      if (typeof resEl.text === 'function') resEl.text('');
+      if (typeof resEl.css === 'function') resEl.css('display', 'none');
+      $('#rematch-btn').removeClass('highlight-rematch');
 
       ClockManager.reset();
 
@@ -1924,6 +2183,62 @@ if (typeof $ !== 'undefined') {
       main.methods.resetGame();
       $('#mode-select-modal').css('display', 'none');
     });
+
+    // Rematch button
+    $(document).on('click', '#rematch-btn', function () {
+      main.methods.resetGame();
+    });
+
+    // Settings modal
+    $(document).on('click', '#settings-btn', function () {
+      $('#settings-modal').css('display', 'flex');
+    });
+
+    $(document).on('click', '#close-settings-modal, #settings-modal .modal-close-btn', function () {
+      $('#settings-modal').css('display', 'none');
+    });
+
+    // Copy PGN
+    $(document).on('click', '#copy-pgn-btn', function () {
+      let pgn = main.methods.exportPGN();
+      let btn = $(this);
+      if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(pgn).then(() => {
+          let orig = btn.html();
+          btn.html('<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> Copied!');
+          setTimeout(() => btn.html(orig), 1500);
+        });
+      }
+    });
+
+    // Share Game Link
+    $(document).on('click', '#share-btn', function () {
+      if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+        let url = (typeof window !== 'undefined' && window.location) ? window.location.href : '';
+        navigator.clipboard.writeText(url).then(() => {
+          let orig = $('#share-btn-label').text();
+          $('#share-btn-label').text('Copied!');
+          setTimeout(() => $('#share-btn-label').text(orig), 1500);
+        });
+      }
+    });
+
+    // Keyboard shortcut [F] to flip board
+    $(document).on('keydown', function (e) {
+      if (e.key === 'f' || e.key === 'F') {
+        let tag = (document.activeElement && document.activeElement.tagName) ? document.activeElement.tagName.toLowerCase() : '';
+        if (tag !== 'input' && tag !== 'textarea' && tag !== 'select') {
+          main.methods.flipBoard();
+        }
+      }
+    });
+
+    // Resize listener for arrow repositioning
+    if (typeof window !== 'undefined') {
+      $(window).on('resize', function () {
+        main.methods.updateLastMoveArrow();
+      });
+    }
 
     // Initialize UNO Plugin if available
     if (typeof UnoMode !== 'undefined') {
