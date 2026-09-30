@@ -24,13 +24,6 @@
   <!-- Left Column: Slim Vertical Action Bar -->
   <aside id="action-sidebar">
     <div class="action-top">
-      <div class="action-brand" title="Minimal JS Chess">
-        <svg class="brand-chess-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 2a4 4 0 0 0-4 4c0 1.5.8 2.8 2 3.5V11H8v2h2v3H8v2h8v-2h-2v-3h2v-2h-2V9.5c1.2-.7 2-2 2-3.5a4 4 0 0 0-4-4z"/>
-          <path d="M6 21h12"/>
-        </svg>
-      </div>
-
       <button id="reset-btn" class="nav-tile-btn" title="Start a new game">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 5v14M5 12h14"/>
@@ -50,7 +43,7 @@
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M7 16V4M7 4L3 8M7 4L11 8M17 8V20M17 20L21 16M17 20L13 16"/>
         </svg>
-        <span>Flip board [F]</span>
+        <span>Flip board <kbd class="kbd-badge">F</kbd></span>
       </button>
 
       <button id="share-btn" class="nav-tile-btn" title="Share game link">
@@ -97,19 +90,23 @@
     <!-- Top (Black / Opponent) Player Bar -->
     <div class="player-strip player-top">
       <div class="player-left">
-        <img class="player-avatar" src="./assets/avatars/opponent.svg" alt="Opponent">
+        <div class="avatar-circle" data-side="black" title="Opponent">
+          <img src="assets/avatars/opponent.png" alt="Opponent" class="avatar-img" />
+        </div>
         <div id="clock-black" class="clock-capsule">
           <span class="clock-time" id="clock-black-time">—</span>
         </div>
         <div class="player-identity-text">
-          <span class="player-name">Opponent</span>
-          <span class="player-meta">Black · 1500</span>
-        </div>
-      </div>
-      <div class="player-right">
-        <span id="material-black" class="material-pill" style="display:none;"></span>
-        <div id="captured-white" class="captured-tray" title="Pieces captured by Black">
-          <div class="captured-pieces-list"></div>
+          <div class="player-name-row">
+            <span class="player-name">Opponent</span>
+            <div id="material-group-black" class="material-group" style="display:none;">
+              <div id="captured-white" class="captured-tray" title="Pieces captured by Black">
+                <div class="captured-pieces-list"></div>
+              </div>
+              <span id="material-black" class="material-pill"></span>
+            </div>
+          </div>
+          <span class="player-meta">Black</span>
         </div>
       </div>
     </div>
@@ -119,11 +116,11 @@
       <div id="game"></div>
       <svg id="board-arrow-overlay" class="board-arrow-overlay" viewBox="0 0 100 100" preserveAspectRatio="none">
         <defs>
-          <marker id="arrowhead" markerWidth="6" markerHeight="6" refX="4" refY="3" orient="auto">
-            <polygon points="0 0, 6 3, 0 6" fill="#ffffff" opacity="0.85"/>
+          <marker id="arrowhead" markerWidth="3.5" markerHeight="3.5" refX="2" refY="1.75" orient="auto">
+            <polygon points="0 0, 3.5 1.75, 0 3.5" fill="#ffffff" fill-opacity="0.7"/>
           </marker>
         </defs>
-        <line id="last-move-arrow" x1="0" y1="0" x2="0" y2="0" stroke="#ffffff" stroke-width="2.2" stroke-opacity="0.85" stroke-linecap="round" marker-end="url(#arrowhead)" style="display:none;" />
+        <line id="last-move-arrow" x1="0" y1="0" x2="0" y2="0" stroke="#ffffff" stroke-width="6" stroke-opacity="0.7" stroke-linecap="round" marker-end="url(#arrowhead)" style="display:none;" />
       </svg>
     </div>
 
@@ -133,19 +130,23 @@
     <!-- Bottom (White / Player) Player Bar -->
     <div class="player-strip player-bottom">
       <div class="player-left">
-        <img class="player-avatar" src="./assets/avatars/player.svg" alt="Player">
+        <div class="avatar-circle active-turn" data-side="white" title="Player">
+          <img src="assets/avatars/player.png" alt="Player" class="avatar-img" />
+        </div>
         <div id="clock-white" class="clock-capsule">
           <span class="clock-time" id="clock-white-time">—</span>
         </div>
         <div class="player-identity-text">
-          <span class="player-name">You</span>
-          <span class="player-meta">White · 1500</span>
-        </div>
-      </div>
-      <div class="player-right">
-        <span id="material-white" class="material-pill" style="display:none;"></span>
-        <div id="captured-black" class="captured-tray" title="Pieces captured by White">
-          <div class="captured-pieces-list"></div>
+          <div class="player-name-row">
+            <span class="player-name">You</span>
+            <div id="material-group-white" class="material-group" style="display:none;">
+              <div id="captured-black" class="captured-tray" title="Pieces captured by White">
+                <div class="captured-pieces-list"></div>
+              </div>
+              <span id="material-white" class="material-pill"></span>
+            </div>
+          </div>
+          <span class="player-meta">White</span>
         </div>
       </div>
     </div>
@@ -155,8 +156,8 @@
   <!-- Right Column: Move History Table & Match Controls -->
   <aside id="game-sidebar">
 
-    <!-- Turn Status Banner -->
-    <div id="turn" class="status-banner">It's White's Turn!</div>
+    <!-- Turn Status Banner (Hidden visually, preserved for engine text/status) -->
+    <div id="turn" class="status-banner" style="display:none;">It's White's Turn!</div>
 
     <!-- UNO MODE Elements (visible only in UNO mode) -->
     <div id="uno-prompt-banner" class="uno-only">
@@ -233,21 +234,16 @@
 
     <!-- Move History Table -->
     <div id="history-panel" class="history-panel">
-      <div class="history-table-header">
-        <span class="hist-th num-th">#</span>
-        <span class="hist-th move-th">White</span>
-        <span class="hist-th move-th">Black</span>
-      </div>
       <div id="move-history-list" class="history-scroll-box"></div>
       <div id="history-footer" class="history-footer">
-        <span id="history-result" class="history-result-badge">*</span>
+        <span id="history-result" class="history-result-badge" style="display:none;"></span>
         <button id="copy-pgn-btn" class="pgn-link-btn" title="Copy standard PGN">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
             <polyline points="7 10 12 15 17 10"/>
             <line x1="12" y1="15" x2="12" y2="3"/>
           </svg>
-          PGN
+          <span>PGN</span>
         </button>
       </div>
     </div>

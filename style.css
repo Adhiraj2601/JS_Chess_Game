@@ -7,15 +7,15 @@
 body,
 body.theme-wood {
   /* Surfaces & Backgrounds */
-  --bg-page: #181818;
-  --bg-gradient: radial-gradient(circle at 50% 45%, #242424 0%, #171717 65%, #101010 100%);
+  --bg-page: #161514;
+  --bg-gradient: radial-gradient(ellipse at 50% 40%, #3a3836 0%, #222120 60%, #161514 100%);
   --bg-surface: #1e1e1e;
   --bg-surface-elevated: #262626;
   --bg-surface-hover: #2c2c2c;
 
   /* Hairlines & Borders */
   --border-hairline: #2b2b2b;
-  --border-subtle: #363636;
+  --border-subtle: #333333;
   --border-active: #4a4a4a;
 
   /* Typography */
@@ -40,8 +40,8 @@ body.theme-wood {
   --clock-inactive: #777777;
   --clock-active: #ffffff;
 
-  /* Geometry & Scaling */
-  --board-dimension: min(78vh, 78vw, 680px);
+  /* Geometry & Scaling: never scroll on desktop */
+  --board-dimension: min(90vw, calc(100dvh - 220px));
   --radius-xs: 2px;
   --radius-sm: 4px;
   --radius-md: 6px;
@@ -82,12 +82,13 @@ html, body {
 
 #app-wrapper {
   display: grid;
-  grid-template-columns: 140px minmax(360px, auto) 280px;
+  grid-template-columns: 180px minmax(360px, auto) 240px;
   justify-content: center;
   align-items: start;
   min-height: 100vh;
-  padding: 32px 24px;
-  gap: 36px;
+  box-sizing: border-box;
+  padding: 18px 24px;
+  gap: 32px;
   max-width: 1440px;
   margin: 0 auto;
 }
@@ -99,23 +100,14 @@ html, body {
 #action-sidebar {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding-top: 8px;
+  width: 180px;
+  margin-top: 54px; /* Top-aligned with top of chessboard */
 }
 
 .action-top {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.action-brand {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  padding: 12px 0 16px;
-  color: #777777;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
 }
 
 .nav-tile-btn {
@@ -126,8 +118,8 @@ html, body {
   gap: 6px;
   background: transparent;
   border: 1px solid transparent;
-  color: var(--text-secondary);
-  padding: 12px 6px;
+  color: #aaaaaa;
+  padding: 10px 4px;
   border-radius: var(--radius-md);
   cursor: pointer;
   font-family: var(--font-ui);
@@ -135,12 +127,12 @@ html, body {
   font-weight: 400;
   letter-spacing: 0.2px;
   text-align: center;
-  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
+  transition: background-color 150ms ease, color 150ms ease;
   user-select: none;
 }
 
 .nav-tile-btn svg {
-  stroke: #8a8a8a;
+  stroke: #aaaaaa;
   stroke-width: 1.5px;
   transition: stroke 150ms ease;
 }
@@ -154,6 +146,26 @@ html, body {
   stroke: #ffffff;
 }
 
+.kbd-badge {
+  display: inline-block;
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 500;
+  color: #aaaaaa;
+  background: #2b2b2b;
+  border: 1px solid #3a3a3a;
+  border-radius: 3px;
+  padding: 1px 4px;
+  margin-left: 3px;
+  vertical-align: 1px;
+  line-height: 1.1;
+}
+
+.nav-tile-btn:hover .kbd-badge {
+  color: #ffffff;
+  border-color: #555555;
+}
+
 .nav-tile-btn:active {
   transform: translateY(1px);
 }
@@ -165,12 +177,14 @@ html, body {
 }
 
 .action-divider {
+  grid-column: 1 / -1;
   height: 1px;
   background-color: var(--border-hairline);
-  margin: 6px 4px;
+  margin: 4px 0;
 }
 
 .undo-redo-row {
+  grid-column: 1 / -1;
   display: flex;
   gap: 6px;
   width: 100%;
@@ -184,6 +198,7 @@ html, body {
 
 /* Rematch Button (Yellow accent, visible when game ends) */
 .rematch-btn {
+  grid-column: 1 / -1;
   display: none;
   background-color: var(--accent-yellow);
   color: #121212;
@@ -195,7 +210,7 @@ html, body {
   border: none;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  margin-top: 10px;
+  margin-top: 6px;
   text-align: center;
   transition: background-color 150ms ease, transform 100ms ease;
   box-shadow: 0 4px 14px rgba(245, 196, 0, 0.2);
@@ -231,7 +246,7 @@ html, body {
   justify-content: space-between;
   align-items: center;
   width: var(--board-dimension);
-  padding: 2px 0;
+  padding: 2px 0 2px 22px; /* Align with board left edge, skipping coordinate labels */
   box-sizing: border-box;
 }
 
@@ -241,17 +256,42 @@ html, body {
   gap: 14px;
 }
 
-.player-avatar {
+.avatar-circle {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  object-fit: cover;
-  background-color: #242424;
+  background-color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  transition: box-shadow 150ms ease, border-color 150ms ease;
 }
 
-/* Thin Large Tabular Clock */
+.avatar-circle .avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.avatar-circle svg {
+  width: 20px;
+  height: 20px;
+  fill: #888888;
+}
+
+.avatar-circle.active-turn {
+  box-shadow: 0 0 0 2px #222120, 0 0 0 4px #ffffff;
+  border-color: #ffffff;
+}
+
+/* Dominant Tabular Clock */
 .clock-capsule {
   display: flex;
   align-items: baseline;
@@ -259,20 +299,19 @@ html, body {
 
 .clock-time {
   font-family: var(--font-ui);
-  font-size: 38px;
+  font-size: 40px;
   font-weight: 300;
   line-height: 1;
   letter-spacing: -1px;
   font-feature-settings: "tnum" 1;
   font-variant-numeric: tabular-nums;
-  color: var(--clock-inactive);
-  transition: color 180ms ease, font-weight 180ms ease;
+  color: #777777;
+  transition: color 150ms ease;
   user-select: none;
 }
 
 .clock-capsule.active .clock-time {
-  color: var(--clock-active);
-  font-weight: 400;
+  color: #ffffff;
 }
 
 .player-identity-text {
@@ -281,23 +320,29 @@ html, body {
   justify-content: center;
 }
 
+.player-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .player-name {
-  font-size: 13.5px;
-  font-weight: 500;
-  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 400;
+  color: #cccccc;
   line-height: 1.25;
 }
 
 .player-meta {
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 400;
-  color: var(--text-dimmed);
+  color: #777777;
 }
 
-.player-right {
-  display: flex;
+.material-group {
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 5px;
 }
 
 /* Material Advantage Pill */
@@ -305,36 +350,49 @@ html, body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--bg-surface-elevated);
-  color: #d8d8d8;
+  background-color: #2b2b2b;
+  color: #e0e0e0;
   font-family: var(--font-ui);
-  font-size: 11.5px;
-  font-weight: 600;
-  padding: 2px 7px;
-  border-radius: 10px;
-  border: 1px solid var(--border-subtle);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 1px 6px;
+  border-radius: 4px;
+  line-height: 1.2;
   user-select: none;
 }
 
 .captured-tray {
-  display: flex;
+  display: inline-flex;
   align-items: center;
 }
 
 .captured-pieces-list {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 2px;
-  max-width: 140px;
+  gap: 1px;
 }
 
-.captured-pieces-list span,
+.captured-pieces-list span {
+  display: inline-flex;
+  align-items: center;
+}
+
+.captured-pieces-list img,
 .captured-pieces-list .chess-piece {
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  opacity: 0.75;
+  display: block;
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+}
+
+#captured-black .captured-pieces-list img,
+#captured-black .captured-pieces-list .chess-piece {
+  filter: invert(0.9) brightness(1.2);
+}
+
+#captured-white .captured-pieces-list img,
+#captured-white .captured-pieces-list .chess-piece {
+  filter: brightness(1.2);
 }
 
 /* ==========================================================
@@ -477,8 +535,8 @@ html, body {
 
 #last-move-arrow {
   stroke: #ffffff;
-  stroke-width: 2.2;
-  stroke-opacity: 0.85;
+  stroke-width: 6;
+  stroke-opacity: 0.7;
   stroke-linecap: round;
 }
 
@@ -502,48 +560,27 @@ html, body {
 #game-sidebar {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  width: 100%;
+  width: 240px;
+  margin-top: 54px; /* Top-aligned with the top of the chessboard */
 }
 
-/* Discreet Turn Status Banner */
+/* Discreet Turn Status Banner (Hidden visually) */
 .status-banner {
-  font-size: 12px;
-  color: var(--text-dimmed);
-  padding: 6px 2px;
-  border-bottom: 1px solid var(--border-hairline);
-  font-weight: 400;
-  letter-spacing: 0.2px;
+  display: none;
 }
 
-.status-banner.turnhighlight {
-  color: var(--accent-yellow);
-  font-weight: 500;
-}
-
-/* Move History Panel */
+/* Move History Panel (~240px wide, 1px #333 border, no radius, no card background) */
 .history-panel {
   background: transparent;
-  border: 1px solid var(--border-hairline);
-  border-radius: var(--radius-md);
+  border: 1px solid #333333;
+  border-radius: 0;
   display: flex;
   flex-direction: column;
+  width: 240px;
   height: var(--board-dimension);
   max-height: var(--board-dimension);
   overflow: hidden;
-}
-
-.history-table-header {
-  display: grid;
-  grid-template-columns: 38px 1fr 1fr;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--border-hairline);
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text-dimmed);
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  user-select: none;
+  box-sizing: border-box;
 }
 
 .history-scroll-box {
@@ -555,23 +592,23 @@ html, body {
 }
 
 .history-scroll-box::-webkit-scrollbar {
-  width: 5px;
+  width: 4px;
 }
 
 .history-scroll-box::-webkit-scrollbar-thumb {
   background-color: #333333;
-  border-radius: 4px;
 }
 
 .history-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13.5px;
+  font-size: 13px;
   table-layout: fixed;
 }
 
 .history-table tr {
-  border-bottom: 1px solid #222222;
+  border-bottom: 1px solid #282828;
+  height: 24px;
   transition: background-color 100ms ease;
 }
 
@@ -580,40 +617,53 @@ html, body {
 }
 
 .hist-num {
-  width: 38px;
-  padding: 6px 12px;
-  color: var(--text-dimmed);
-  font-size: 12px;
+  width: 32px;
+  padding: 2px 6px;
+  color: #666666;
+  font-size: 11px;
   font-feature-settings: "tnum" 1;
   font-variant-numeric: tabular-nums;
   user-select: none;
 }
 
 .hist-san {
-  padding: 6px 10px;
-  color: #cfcfcf;
+  padding: 2px 6px;
+  color: #cccccc;
+  font-size: 13px;
   font-weight: 400;
   cursor: pointer;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   user-select: none;
+  vertical-align: middle;
 }
 
-.hist-san.active-move {
-  background-color: var(--bg-surface-elevated);
+.hist-san.current-move {
+  background-color: #2f2f2f;
   color: #ffffff;
-  font-weight: 500;
-  border-radius: var(--radius-xs);
+  border-radius: 2px;
 }
 
 .hist-piece-icon {
   display: inline-block;
-  width: 13px;
-  height: 13px;
+  width: 14px;
+  height: 14px;
+  vertical-align: middle;
   margin-right: 3px;
-  vertical-align: -2px;
-  opacity: 0.85;
+  flex-shrink: 0;
+}
+
+.hist-piece-icon.icon-black {
+  filter: drop-shadow(0 0 0.8px rgba(255, 255, 255, 0.85));
+}
+
+.hist-piece-icon.icon-white {
+  filter: brightness(1.2);
+}
+
+.move-text {
+  vertical-align: middle;
 }
 
 /* History Footer: Result & PGN Link */
@@ -621,38 +671,43 @@ html, body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 12px;
-  border-top: 1px solid var(--border-hairline);
-  background-color: #141414;
+  padding: 6px 10px;
+  border-top: 1px solid #333333;
+  background-color: transparent;
   user-select: none;
+  min-height: 28px;
 }
 
 .history-result-badge {
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 600;
-  color: var(--text-secondary);
+  color: #cccccc;
 }
 
 .pgn-link-btn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   background: transparent;
-  border: 1px solid var(--border-subtle);
-  color: var(--text-secondary);
+  border: none;
+  color: #888888;
   font-family: var(--font-ui);
-  font-size: 11.5px;
-  font-weight: 500;
-  padding: 4px 8px;
-  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 400;
+  padding: 0;
   cursor: pointer;
-  transition: all 120ms ease;
+  margin-left: auto;
+  transition: color 150ms ease;
+}
+
+.pgn-link-btn svg {
+  stroke: currentColor;
 }
 
 .pgn-link-btn:hover {
-  background-color: var(--bg-surface-elevated);
+  background: transparent;
+  border: none;
   color: #ffffff;
-  border-color: #555555;
 }
 
 /* ==========================================================
@@ -924,6 +979,7 @@ body.mode-uno .uno-only {
     order: 3;
     width: 100%;
     max-width: var(--board-dimension);
+    margin-top: 0;
   }
 
   .history-panel {

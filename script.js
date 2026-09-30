@@ -234,6 +234,7 @@ const ClockManager = {
     $('#rematch-btn').addClass('highlight-rematch');
 
     AudioManager.playTimeout();
+    main.methods.updateMoveHistoryUI();
     main.methods.updateNavButtons();
   },
 
@@ -260,46 +261,41 @@ const ClockManager = {
   updateDisplay: function () {
     if (typeof $ === 'undefined') return;
 
+    if (!this.state.isTimed) {
+      $('#clock-white, #clock-black').css('display', 'none');
+      return;
+    }
+
+    $('#clock-white, #clock-black').css('display', 'flex');
+
     let wText = this.formatTime(this.state.whiteMs);
     let bText = this.formatTime(this.state.blackMs);
-
-    if (!this.state.isTimed) {
-      wText = '—';
-      bText = '—';
-    }
 
     $('#clock-white-time').text(wText);
     $('#clock-black-time').text(bText);
 
     $('#clock-white, #clock-black').removeClass('active warning critical');
 
-    if (this.state.isTimed) {
-      if (this.state.running) {
-        if (this.state.activeColor === 'w') $('#clock-white').addClass('active');
-        if (this.state.activeColor === 'b') $('#clock-black').addClass('active');
-      } else {
-        if (typeof main !== 'undefined' && main.variables) {
-          if (main.variables.turn === 'w') $('#clock-white').addClass('active');
-          else $('#clock-black').addClass('active');
-        }
-      }
-
-      if (this.state.whiteMs <= 10000 && this.state.whiteMs > 0) {
-        $('#clock-white').addClass('critical');
-      } else if (this.state.whiteMs <= 30000 && this.state.whiteMs > 0) {
-        $('#clock-white').addClass('warning');
-      }
-
-      if (this.state.blackMs <= 10000 && this.state.blackMs > 0) {
-        $('#clock-black').addClass('critical');
-      } else if (this.state.blackMs <= 30000 && this.state.blackMs > 0) {
-        $('#clock-black').addClass('warning');
-      }
+    if (this.state.running) {
+      if (this.state.activeColor === 'w') $('#clock-white').addClass('active');
+      if (this.state.activeColor === 'b') $('#clock-black').addClass('active');
     } else {
       if (typeof main !== 'undefined' && main.variables) {
         if (main.variables.turn === 'w') $('#clock-white').addClass('active');
         else $('#clock-black').addClass('active');
       }
+    }
+
+    if (this.state.whiteMs <= 10000 && this.state.whiteMs > 0) {
+      $('#clock-white').addClass('critical');
+    } else if (this.state.whiteMs <= 30000 && this.state.whiteMs > 0) {
+      $('#clock-white').addClass('warning');
+    }
+
+    if (this.state.blackMs <= 10000 && this.state.blackMs > 0) {
+      $('#clock-black').addClass('critical');
+    } else if (this.state.blackMs <= 30000 && this.state.blackMs > 0) {
+      $('#clock-black').addClass('warning');
     }
   }
 };
@@ -1082,6 +1078,7 @@ let main = {
         if (typeof resEl.text === 'function') resEl.text('Draw');
         if (typeof resEl.css === 'function') resEl.css('display', 'block');
         $('#rematch-btn').addClass('highlight-rematch');
+        main.methods.updateMoveHistoryUI();
         AudioManager.playGameOver();
         return true;
       }
@@ -1099,6 +1096,7 @@ let main = {
         if (typeof resEl.text === 'function') resEl.text('Draw');
         if (typeof resEl.css === 'function') resEl.css('display', 'block');
         $('#rematch-btn').addClass('highlight-rematch');
+        main.methods.updateMoveHistoryUI();
         AudioManager.playGameOver();
         return true;
       }
@@ -1214,33 +1212,38 @@ let main = {
     // ---------- Move History UI & PGN Export ----------
     formatSANWithIcon: function (san, color) {
       if (!san) return '';
-      let pieceSymbol = '';
+      let pieceFile = '';
       let rest = san;
+      let prefix = color === 'w' ? 'w' : 'b';
 
       if (san.startsWith('N')) {
-        pieceSymbol = color === 'w' ? '♞' : '♘';
+        pieceFile = prefix + 'N.svg';
         rest = san.slice(1);
       } else if (san.startsWith('B')) {
-        pieceSymbol = color === 'w' ? '♝' : '♗';
+        pieceFile = prefix + 'B.svg';
         rest = san.slice(1);
       } else if (san.startsWith('R')) {
-        pieceSymbol = color === 'w' ? '♜' : '♖';
+        pieceFile = prefix + 'R.svg';
         rest = san.slice(1);
       } else if (san.startsWith('Q')) {
-        pieceSymbol = color === 'w' ? '♛' : '♕';
+        pieceFile = prefix + 'Q.svg';
         rest = san.slice(1);
       } else if (san.startsWith('K')) {
-        pieceSymbol = color === 'w' ? '♚' : '♔';
+        pieceFile = prefix + 'K.svg';
         rest = san.slice(1);
       } else if (san === 'O-O' || san === 'O-O-O') {
-        pieceSymbol = '';
+        pieceFile = '';
         rest = san;
       } else {
-        pieceSymbol = color === 'w' ? '♟' : '♙';
+        pieceFile = '';
         rest = san;
       }
 
-      return `<span class="move-glyph">${pieceSymbol}</span><span class="move-text">${rest}</span>`;
+      if (pieceFile) {
+        let iconClass = color === 'w' ? 'hist-piece-icon icon-white' : 'hist-piece-icon icon-black';
+        return `<img class="${iconClass}" src="./assets/pieces/${pieceFile}" alt="" /><span class="move-text">${rest}</span>`;
+      }
+      return `<span class="move-text">${rest}</span>`;
     },
 
     updateMoveHistoryUI: function () {
@@ -1249,9 +1252,6 @@ let main = {
 
       for (let i = 0; i < history.length; i += 2) {
         let moveNum = Math.floor(i / 2) + 1;
-        let whiteMove = history[i] ? history[i].san : '';
-        let blackMove = history[i + 1] ? history[i + 1].san : '';
-
         let isLatestWhite = i === history.length - 1;
         let isLatestBlack = (i + 1) === history.length - 1;
 
@@ -1261,8 +1261,8 @@ let main = {
         html += `
           <tr>
             <td class="hist-num">${moveNum}</td>
-            <td class="hist-san ${isLatestWhite ? 'active-move' : ''}">${whiteFormatted}</td>
-            <td class="hist-san ${isLatestBlack ? 'active-move' : ''}">${blackFormatted}</td>
+            <td class="hist-san ${isLatestWhite ? 'current-move' : ''}">${whiteFormatted}</td>
+            <td class="hist-san ${isLatestBlack ? 'current-move' : ''}">${blackFormatted}</td>
           </tr>
         `;
       }
@@ -1272,17 +1272,20 @@ let main = {
       let listEl = (typeof document !== 'undefined') ? document.getElementById('move-history-list') : null;
       if (listEl) listEl.scrollTop = listEl.scrollHeight;
 
+      let resEl = $('#history-result');
       if (main.variables.gameOver) {
         let text = $('#turn').text();
+        let res = '½–½';
         if (text.includes('White wins') || text.includes('WHITE WINS')) {
-          $('#history-result').text('1–0');
+          res = '1–0';
         } else if (text.includes('Black wins') || text.includes('BLACK WINS')) {
-          $('#history-result').text('0–1');
-        } else {
-          $('#history-result').text('½–½');
+          res = '0–1';
         }
+        resEl.text(res);
+        if (typeof resEl.css === 'function') resEl.css('display', 'inline-block');
       } else {
-        $('#history-result').text('*');
+        resEl.text('');
+        if (typeof resEl.css === 'function') resEl.css('display', 'none');
       }
     },
 
@@ -1570,6 +1573,14 @@ let main = {
         }
       }
 
+      // 4. Update avatar active-turn ring on the side to move
+      $('.avatar-circle').removeClass('active-turn');
+      if (color === 'w') {
+        $('.avatar-circle[data-side="white"]').addClass('active-turn');
+      } else {
+        $('.avatar-circle[data-side="black"]').addClass('active-turn');
+      }
+
       main.methods.updateLastMoveArrow();
       main.methods.updateMaterialAdvantage();
     },
@@ -1621,7 +1632,9 @@ let main = {
         return;
       }
 
-      let shorten = Math.min(18, dist * 0.22);
+      // Shorten so arrowhead stops at destination square edge and does not cover piece
+      let sqRadius = toRect.width * 0.48;
+      let shorten = Math.min(dist * 0.45, sqRadius + 4);
       let arrowX2 = x2 - (dx / dist) * shorten;
       let arrowY2 = y2 - (dy / dist) * shorten;
 
@@ -1657,18 +1670,18 @@ let main = {
       if (whiteAdv > 0) {
         let elW = $('#material-white');
         elW.text('+' + whiteAdv);
-        elW.css('display', 'inline-flex');
-        let elB = $('#material-black');
-        elB.css('display', 'none');
+        if (typeof elW.css === 'function') elW.css('display', 'inline-flex');
+        $('#material-group-white').css('display', 'inline-flex');
+        $('#material-group-black').css('display', 'none');
       } else if (blackAdv > 0) {
         let elB = $('#material-black');
         elB.text('+' + blackAdv);
-        elB.css('display', 'inline-flex');
-        let elW = $('#material-white');
-        elW.css('display', 'none');
+        if (typeof elB.css === 'function') elB.css('display', 'inline-flex');
+        $('#material-group-black').css('display', 'inline-flex');
+        $('#material-group-white').css('display', 'none');
       } else {
-        $('#material-white').css('display', 'none');
-        $('#material-black').css('display', 'none');
+        $('#material-group-white').css('display', 'none');
+        $('#material-group-black').css('display', 'none');
       }
     },
 
@@ -1967,6 +1980,7 @@ let main = {
         if (typeof resEl.text === 'function') resEl.text('Checkmate!');
         if (typeof resEl.css === 'function') resEl.css('display', 'block');
         $('#rematch-btn').addClass('highlight-rematch');
+        main.methods.updateMoveHistoryUI();
         AudioManager.playGameOver();
       } else if (!inCheck && !hasMoves) {
         main.variables.gameOver = true;
@@ -1976,6 +1990,7 @@ let main = {
         if (typeof resEl.text === 'function') resEl.text('Stalemate');
         if (typeof resEl.css === 'function') resEl.css('display', 'block');
         $('#rematch-btn').addClass('highlight-rematch');
+        main.methods.updateMoveHistoryUI();
         AudioManager.playGameOver();
       } else if (main.methods.checkDrawConditions(color)) {
         // Draw handled inside checkDrawConditions
@@ -2019,6 +2034,13 @@ let main = {
 
       $('#captured-black .captured-pieces-list').empty();
       $('#captured-white .captured-pieces-list').empty();
+      $('#material-group-white, #material-group-black').css('display', 'none');
+      let matW = $('#material-white');
+      let matB = $('#material-black');
+      matW.text('');
+      matB.text('');
+      if (typeof matW.css === 'function') matW.css('display', 'none');
+      if (typeof matB.css === 'function') matB.css('display', 'none');
       $('#promotion-modal').css('display', 'none');
       $('.gamecell').removeClass('green yellow red last-move-from last-move-to');
       $('#turn').removeClass('turnhighlight').text("It's White's Turn!");
