@@ -75,6 +75,9 @@
       this.state.active = false;
       this.clearPendingEffect();
       this.clearSkipHighlight();
+      if (this.help && typeof this.help.close === 'function') {
+        this.help.close();
+      }
     },
 
     resetState: function () {
