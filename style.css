@@ -17,6 +17,12 @@ body.theme-wood {
   --bg-cube-light: #2a2927;
   --bg-cube-base: #181716;
 
+  /* Chess Pieces (Two-tone vector set) */
+  --piece-w: #f4f4f2;
+  --piece-w-shade: #d3d5d5;
+  --piece-b: #2b2b2b;
+  --piece-b-shade: #151515;
+
   /* Hairlines & Borders */
   --border-hairline: #2b2b2b;
   --border-subtle: #333333;
@@ -423,13 +429,17 @@ body::after {
   object-fit: contain;
 }
 
-#captured-black .captured-pieces-list img,
-#captured-black .captured-pieces-list .chess-piece {
+/* Small variant: clean silhouettes at 14px without facet clutter */
+.captured-pieces-list .piece-shade,
+.hist-piece-icon.no-facet .piece-shade {
+  display: none;
+}
+
+#captured-black .captured-pieces-list img {
   filter: invert(0.9) brightness(1.2);
 }
 
-#captured-white .captured-pieces-list img,
-#captured-white .captured-pieces-list .chess-piece {
+#captured-white .captured-pieces-list img {
   filter: brightness(1.2);
 }
 
@@ -555,6 +565,17 @@ body::after {
   margin: auto;
   z-index: 2;
   will-change: transform;
+}
+
+/* Piece Contrast Filters (Drop shadows for all square combinations) */
+.chess-piece.piece-white,
+.hist-piece-icon.icon-white {
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+}
+
+.chess-piece.piece-black,
+.hist-piece-icon.icon-black {
+  filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.25));
 }
 
 .gamecell:active .chess-piece {

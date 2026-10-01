@@ -522,6 +522,122 @@ const GameModeManager = {
 };
 
 // ==========================================================
+// PIECE SET CONFIGURATION & UNIFIED GRAPHIC LOOKUP
+// Single switchable constant to toggle between 'new' (vector set) and 'old' (original set)
+// ==========================================================
+const PIECE_SET = 'new'; // 'new' | 'old'
+
+const PIECE_GEOMETRY = {
+  P: {
+    sil: "M 25.00 100.00 L 75.00 100.00 L 75.00 86.80 L 63.80 86.80 L 56.50 63.00 L 57.17 59.74 L 59.58 57.53 L 61.33 54.78 L 62.31 51.67 L 62.45 48.41 L 61.75 45.22 L 60.24 42.33 L 58.03 39.92 L 55.28 38.17 L 52.17 37.19 L 48.91 37.05 L 45.72 37.75 L 42.83 39.26 L 40.42 41.47 L 38.67 44.22 L 37.69 47.33 L 37.55 50.59 L 38.25 53.78 L 39.76 56.67 L 41.97 59.08 L 43.50 63.00 L 36.20 86.80 L 25.00 86.80 Z",
+    shades: [
+      "M 58.50 100.00 L 75.00 100.00 L 75.00 86.80 L 63.80 86.80 L 56.50 63.00 L 57.17 59.74 L 59.58 57.53 L 61.33 54.78 L 62.31 51.67 L 62.45 48.41 L 61.75 45.22 L 60.24 42.33 L 43.50 63.00 L 51.50 70.00 L 53.80 86.80 L 58.50 86.80 Z"
+    ]
+  },
+  R: {
+    sil: "M 25.00 100.00 L 75.00 100.00 L 75.00 86.80 L 65.00 86.80 L 61.50 56.00 L 70.00 50.50 L 70.00 29.30 L 62.50 29.30 L 62.50 36.00 L 55.50 36.00 L 55.50 29.30 L 44.50 29.30 L 44.50 36.00 L 37.50 36.00 L 37.50 29.30 L 30.00 29.30 L 30.00 50.50 L 38.50 56.00 L 35.00 86.80 L 25.00 86.80 Z",
+    shades: [
+      "M 58.50 100.00 L 75.00 100.00 L 75.00 86.80 L 65.00 86.80 L 61.50 56.00 L 70.00 50.50 L 70.00 29.30 L 62.50 29.30 L 62.50 36.00 L 59.00 36.00 L 59.00 50.50 L 52.50 65.00 L 53.80 86.80 L 58.50 86.80 Z",
+      "M 50.00 29.30 L 55.50 29.30 L 55.50 36.00 L 50.00 36.00 Z"
+    ]
+  },
+  N: {
+    sil: "M 25.00 100.00 L 75.00 100.00 L 75.00 86.80 L 62.40 86.80 L 72.00 76.50 L 66.70 70.40 L 73.30 57.40 L 72.80 45.20 L 68.00 35.60 L 57.50 27.40 L 27.60 46.50 L 34.10 55.20 L 40.20 52.20 L 49.80 54.80 L 28.50 76.50 L 38.00 85.20 L 25.00 86.80 Z",
+    shades: [
+      "M 56.70 48.70 L 50.60 53.90 L 44.50 61.30 L 56.30 60.90 Z",
+      "M 55.80 100.00 L 75.00 100.00 L 75.00 86.80 L 62.40 86.80 L 72.00 76.50 L 66.70 70.40 L 73.30 57.40 L 72.80 45.20 L 68.00 35.60 L 57.50 27.40 L 66.30 40.00 L 67.20 56.10 L 56.70 71.70 L 42.40 76.50 L 45.40 86.50 L 55.80 86.80 Z"
+    ]
+  },
+  B: {
+    sil: "M 25.00 100.00 L 75.00 100.00 L 75.00 86.80 L 65.50 86.80 L 57.30 52.60 L 67.70 39.20 L 50.00 16.80 L 44.00 23.70 L 46.50 28.90 L 41.40 34.50 L 38.40 31.50 L 32.30 38.80 L 42.20 53.50 L 34.00 86.80 L 25.00 86.80 Z",
+    shades: [
+      "M 58.50 100.00 L 75.00 100.00 L 75.00 86.80 L 65.50 86.80 L 57.30 52.60 L 67.70 39.20 L 53.00 39.20 L 42.20 53.50 L 51.30 60.30 L 53.50 86.20 L 58.50 86.80 Z",
+      "M 46.50 28.90 L 49.10 32.30 L 47.40 35.30 L 42.20 35.30 L 41.40 34.50 Z"
+    ]
+  },
+  Q: {
+    sil: "M 25.00 100.00 L 75.00 100.00 L 75.00 86.80 L 65.80 86.80 L 59.40 52.60 L 73.30 20.00 L 67.20 21.70 L 59.40 35.60 L 62.00 18.30 L 58.50 11.70 L 49.80 33.90 L 40.60 11.70 L 37.20 18.70 L 40.60 23.00 L 39.80 35.60 L 31.50 21.30 L 25.80 20.00 L 39.80 53.00 L 33.30 86.80 L 25.00 86.80 Z",
+    shades: [
+      "M 58.50 100.00 L 75.00 100.00 L 75.00 86.80 L 65.80 86.80 L 59.40 52.60 L 73.30 20.00 L 67.20 21.70 L 67.20 27.80 L 58.50 36.10 L 58.50 23.00 L 61.50 20.00 L 58.50 12.20 L 50.60 51.30 L 40.20 51.30 L 40.60 53.90 L 51.10 59.60 L 53.30 86.10 L 58.50 86.80 Z",
+      "M 40.60 11.70 L 45.40 17.40 L 44.10 23.50 L 49.40 34.40 L 46.30 41.70 Z"
+    ]
+  },
+  K: {
+    sil: "M 25.00 100.00 L 75.00 100.00 L 75.00 86.80 L 66.40 86.80 L 57.30 57.80 L 67.20 37.10 L 52.50 26.50 L 52.50 17.50 L 57.50 17.50 L 57.50 12.50 L 52.50 12.50 L 52.50 7.80 L 47.50 7.80 L 47.50 12.50 L 42.50 12.50 L 42.50 17.50 L 47.50 17.50 L 47.50 26.50 L 32.80 37.10 L 41.80 59.50 L 33.60 86.80 L 25.00 86.80 Z",
+    shades: [
+      "M 58.50 100.00 L 75.00 100.00 L 75.00 86.80 L 66.40 86.80 L 57.30 57.80 L 67.20 37.10 L 53.90 36.60 L 49.60 56.50 L 42.70 56.50 L 42.70 59.10 L 51.30 65.50 L 53.50 85.00 L 58.50 86.80 Z",
+      "M 50.00 7.80 L 52.50 7.80 L 52.50 12.50 L 57.50 12.50 L 57.50 17.50 L 52.50 17.50 L 52.50 26.50 L 50.00 26.50 Z"
+    ]
+  }
+};
+
+const PIECE_META = {
+  w_king:   { code: 'wK', alt: 'White King' },
+  w_queen:  { code: 'wQ', alt: 'White Queen' },
+  w_rook:   { code: 'wR', alt: 'White Rook' },
+  w_bishop: { code: 'wB', alt: 'White Bishop' },
+  w_knight: { code: 'wN', alt: 'White Knight' },
+  w_pawn:   { code: 'wP', alt: 'White Pawn' },
+  b_king:   { code: 'bK', alt: 'Black King' },
+  b_queen:  { code: 'bQ', alt: 'Black Queen' },
+  b_rook:   { code: 'bR', alt: 'Black Rook' },
+  b_bishop: { code: 'bB', alt: 'Black Bishop' },
+  b_knight: { code: 'bN', alt: 'Black Knight' },
+  b_pawn:   { code: 'bP', alt: 'Black Pawn' },
+  wK: { code: 'wK', alt: 'White King' },
+  wQ: { code: 'wQ', alt: 'White Queen' },
+  wR: { code: 'wR', alt: 'White Rook' },
+  wB: { code: 'wB', alt: 'White Bishop' },
+  wN: { code: 'wN', alt: 'White Knight' },
+  wP: { code: 'wP', alt: 'White Pawn' },
+  bK: { code: 'bK', alt: 'Black King' },
+  bQ: { code: 'bQ', alt: 'Black Queen' },
+  bR: { code: 'bR', alt: 'Black Rook' },
+  bB: { code: 'bB', alt: 'Black Bishop' },
+  bN: { code: 'bN', alt: 'Black Knight' },
+  bP: { code: 'bP', alt: 'Black Pawn' }
+};
+
+/**
+ * Unified lookup function for all chess piece artwork across the application.
+ * All piece rendering routes through this single function.
+ *
+ * @param {string} pieceKey - e.g. 'w_king', 'wK', 'b_pawn', 'bP'
+ * @param {object} [options] - Optional rendering settings { className, alt, noFacet }
+ * @returns {string} Markup string (SVG or IMG)
+ */
+function getPieceGraphic(pieceKey, options = {}) {
+  const meta = PIECE_META[pieceKey] || { code: pieceKey, alt: pieceKey };
+  const code = meta.code;
+  const isWhite = code.startsWith('w');
+  const typeChar = code.charAt(1).toUpperCase();
+  const alt = options.alt || meta.alt;
+  const baseClass = options.className || 'chess-piece';
+  const colorClass = isWhite ? 'piece-white' : 'piece-black';
+
+  if (PIECE_SET === 'old') {
+    return `<img class="${baseClass} ${colorClass}" src="./assets/pieces-old/${code}.svg" alt="${alt}">`;
+  }
+
+  const geom = PIECE_GEOMETRY[typeChar];
+  if (!geom) {
+    return `<img class="${baseClass} ${colorClass}" src="./assets/pieces/${code}.svg" alt="${alt}">`;
+  }
+
+  const mainFill = isWhite ? 'var(--piece-w, #f4f4f2)' : 'var(--piece-b, #2b2b2b)';
+  const shadeFill = isWhite ? 'var(--piece-w-shade, #d3d5d5)' : 'var(--piece-b-shade, #151515)';
+
+  let shadesHtml = '';
+  if (!options.noFacet && geom.shades) {
+    for (let s of geom.shades) {
+      shadesHtml += `<path class="piece-shade" d="${s}" fill="${shadeFill}" />`;
+    }
+  }
+
+  return `<svg class="${baseClass} ${colorClass}" viewBox="0 0 100 100" role="img" aria-label="${alt}"><path class="piece-main" d="${geom.sil}" fill="${mainFill}" />${shadesHtml}</svg>`;
+}
+
+// ==========================================================
 // MAIN CHESS GAME OBJECT
 // ==========================================================
 let main = {
@@ -546,20 +662,22 @@ let main = {
   },
 
   methods: {
+    getPieceGraphic: getPieceGraphic,
+
     getInitialPieces: function () {
       const pSvg = {
-        w_king:    '<img class="chess-piece" src="./assets/pieces/wK.svg" alt="White King">',
-        w_queen:   '<img class="chess-piece" src="./assets/pieces/wQ.svg" alt="White Queen">',
-        w_rook:    '<img class="chess-piece" src="./assets/pieces/wR.svg" alt="White Rook">',
-        w_bishop:  '<img class="chess-piece" src="./assets/pieces/wB.svg" alt="White Bishop">',
-        w_knight:  '<img class="chess-piece" src="./assets/pieces/wN.svg" alt="White Knight">',
-        w_pawn:    '<img class="chess-piece" src="./assets/pieces/wP.svg" alt="White Pawn">',
-        b_king:    '<img class="chess-piece" src="./assets/pieces/bK.svg" alt="Black King">',
-        b_queen:   '<img class="chess-piece" src="./assets/pieces/bQ.svg" alt="Black Queen">',
-        b_rook:    '<img class="chess-piece" src="./assets/pieces/bR.svg" alt="Black Rook">',
-        b_bishop:  '<img class="chess-piece" src="./assets/pieces/bB.svg" alt="Black Bishop">',
-        b_knight:  '<img class="chess-piece" src="./assets/pieces/bN.svg" alt="Black Knight">',
-        b_pawn:    '<img class="chess-piece" src="./assets/pieces/bP.svg" alt="Black Pawn">'
+        w_king:    this.getPieceGraphic('w_king'),
+        w_queen:   this.getPieceGraphic('w_queen'),
+        w_rook:    this.getPieceGraphic('w_rook'),
+        w_bishop:  this.getPieceGraphic('w_bishop'),
+        w_knight:  this.getPieceGraphic('w_knight'),
+        w_pawn:    this.getPieceGraphic('w_pawn'),
+        b_king:    this.getPieceGraphic('b_king'),
+        b_queen:   this.getPieceGraphic('b_queen'),
+        b_rook:    this.getPieceGraphic('b_rook'),
+        b_bishop:  this.getPieceGraphic('b_bishop'),
+        b_knight:  this.getPieceGraphic('b_knight'),
+        b_pawn:    this.getPieceGraphic('b_pawn')
       };
 
       return {
@@ -1212,36 +1330,36 @@ let main = {
     // ---------- Move History UI & PGN Export ----------
     formatSANWithIcon: function (san, color) {
       if (!san) return '';
-      let pieceFile = '';
       let rest = san;
       let prefix = color === 'w' ? 'w' : 'b';
+      let pieceLetter = '';
 
       if (san.startsWith('N')) {
-        pieceFile = prefix + 'N.svg';
+        pieceLetter = 'N';
         rest = san.slice(1);
       } else if (san.startsWith('B')) {
-        pieceFile = prefix + 'B.svg';
+        pieceLetter = 'B';
         rest = san.slice(1);
       } else if (san.startsWith('R')) {
-        pieceFile = prefix + 'R.svg';
+        pieceLetter = 'R';
         rest = san.slice(1);
       } else if (san.startsWith('Q')) {
-        pieceFile = prefix + 'Q.svg';
+        pieceLetter = 'Q';
         rest = san.slice(1);
       } else if (san.startsWith('K')) {
-        pieceFile = prefix + 'K.svg';
+        pieceLetter = 'K';
         rest = san.slice(1);
-      } else if (san === 'O-O' || san === 'O-O-O') {
-        pieceFile = '';
-        rest = san;
       } else {
-        pieceFile = '';
+        pieceLetter = '';
         rest = san;
       }
 
-      if (pieceFile) {
-        let iconClass = color === 'w' ? 'hist-piece-icon icon-white' : 'hist-piece-icon icon-black';
-        return `<img class="${iconClass}" src="./assets/pieces/${pieceFile}" alt="" /><span class="move-text">${rest}</span>`;
+      if (pieceLetter) {
+        let iconHtml = this.getPieceGraphic(prefix + pieceLetter, {
+          className: 'hist-piece-icon ' + (color === 'w' ? 'icon-white' : 'icon-black') + ' no-facet',
+          noFacet: true
+        });
+        return `${iconHtml}<span class="move-text">${rest}</span>`;
       }
       return `<span class="move-text">${rest}</span>`;
     },
@@ -1952,23 +2070,18 @@ let main = {
     handlePromotion: function (pieceObj, targetCell, callback) {
       main.variables.isPromoting = true;
       let isWhite = pieceObj.type.startsWith('w_');
-      let optionsHtml = '';
+      let prefix = isWhite ? 'w_' : 'b_';
+      let qImg = this.getPieceGraphic(prefix + 'queen');
+      let rImg = this.getPieceGraphic(prefix + 'rook');
+      let bImg = this.getPieceGraphic(prefix + 'bishop');
+      let nImg = this.getPieceGraphic(prefix + 'knight');
 
-      if (isWhite) {
-        optionsHtml = `
-          <div class="promo-choice" data-type="w_queen"><img class="chess-piece" src="./assets/pieces/wQ.svg" alt="Queen"></div>
-          <div class="promo-choice" data-type="w_rook"><img class="chess-piece" src="./assets/pieces/wR.svg" alt="Rook"></div>
-          <div class="promo-choice" data-type="w_bishop"><img class="chess-piece" src="./assets/pieces/wB.svg" alt="Bishop"></div>
-          <div class="promo-choice" data-type="w_knight"><img class="chess-piece" src="./assets/pieces/wN.svg" alt="Knight"></div>
-        `;
-      } else {
-        optionsHtml = `
-          <div class="promo-choice" data-type="b_queen"><img class="chess-piece" src="./assets/pieces/bQ.svg" alt="Queen"></div>
-          <div class="promo-choice" data-type="b_rook"><img class="chess-piece" src="./assets/pieces/bR.svg" alt="Rook"></div>
-          <div class="promo-choice" data-type="b_bishop"><img class="chess-piece" src="./assets/pieces/bB.svg" alt="Bishop"></div>
-          <div class="promo-choice" data-type="b_knight"><img class="chess-piece" src="./assets/pieces/bN.svg" alt="Knight"></div>
-        `;
-      }
+      let optionsHtml = `
+        <div class="promo-choice" data-type="${prefix}queen">${qImg}</div>
+        <div class="promo-choice" data-type="${prefix}rook">${rImg}</div>
+        <div class="promo-choice" data-type="${prefix}bishop">${bImg}</div>
+        <div class="promo-choice" data-type="${prefix}knight">${nImg}</div>
+      `;
 
       $('#promotion-options').html(optionsHtml);
       $('#promotion-modal').css('display', 'flex');
