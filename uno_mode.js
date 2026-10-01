@@ -57,15 +57,15 @@
       this.renderUI();
       this.logCard('system', 'Chess UNO Mode activated. Draw your cards and play!');
 
-      let tutorialSeen = false;
+      let tutorialPromptSeen = false;
       try {
-        tutorialSeen = (typeof localStorage !== 'undefined') && localStorage.getItem('chess_uno_tutorial_seen') === 'true';
+        tutorialPromptSeen = (typeof localStorage !== 'undefined') && localStorage.getItem('chess_uno_tutorial_prompt_seen') === 'true';
       } catch (e) {}
 
-      if (!tutorialSeen && typeof $ !== 'undefined') {
+      if (!tutorialPromptSeen && typeof $ !== 'undefined') {
         setTimeout(() => {
           if (UnoMode.state.active) {
-            UnoMode.tutorial.start();
+            UnoMode.showTutorialPrompt();
           }
         }, 400);
       }
@@ -825,6 +825,59 @@
     hidePromptBanner: function () {
       if (typeof $ === 'undefined') return;
       $('#uno-prompt-banner').removeClass('active');
+    },
+
+    // ----------------------------------------------------------
+    // UNO MODE TUTORIAL PROMPT
+    // ----------------------------------------------------------
+    showTutorialPrompt: function () {
+      if (typeof $ === 'undefined' || typeof document === 'undefined') return;
+      // Avoid duplicate prompts
+      if ($('#uno-tutorial-prompt').length) return;
+      const promptHtml = `
+        <div id="uno-tutorial-prompt" class="uno-tutorial-prompt">
+          <p>Welcome to UNO mode! Would you like a quick tutorial?</p>
+          <div class="uno-tutorial-buttons">
+            <button class="uno-tutorial-yes">Yes</button>
+            <button class="uno-tutorial-no">No</button>
+          </div>
+          <label class="uno-tutorial-dont"><input type="checkbox" id="uno-tutorial-dont-show"> Don't remind me again</label>
+        </div>`;
+      const $prompt = $(promptHtml);
+      $('body').append($prompt);
+      // Inline styling for simplicity
+      $prompt.css({
+        position: 'fixed',
+        top: '20%',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        'z-index': 1000,
+        padding: '15px',
+        'background-color': 'rgba(30,30,30,0.95)',
+        color: '#f4f4f2',
+        'border-radius': '8px',
+        'box-shadow': '0 0 12px rgba(255,215,0,0.2)',
+        'max-width': '280px',
+        'text-align': 'center'
+      });
+      // Button handlers
+      $prompt.find('.uno-tutorial-yes').on('click', () => {
+        if (UnoMode.tutorial && typeof UnoMode.tutorial.start === 'function') {
+          UnoMode.tutorial.start();
+        }
+        this._handleTutorialDismiss($prompt);
+      });
+      $prompt.find('.uno-tutorial-no').on('click', () => {
+        this._handleTutorialDismiss($prompt);
+      });
+    },
+
+    _handleTutorialDismiss: function ($el) {
+      const dontShow = $el.find('#uno-tutorial-dont-show').is(':checked');
+      if (dontShow) {
+        try { localStorage.setItem('chess_uno_tutorial_prompt_seen', 'true'); } catch (e) {}
+      }
+      $el.remove();
     },
 
     showToast: function (msg) {
