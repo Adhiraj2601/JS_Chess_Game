@@ -858,7 +858,7 @@
       $('body').append($prompt);
       $prompt.find('.uno-tutorial-yes').on('click', () => {
         if (UnoMode.tutorial && typeof UnoMode.tutorial.start === 'function') {
-          UnoMode.tutorial.start();
+          UnoMode.tutorial.start(true);
         }
         UnoMode._handleTutorialDismiss($prompt);
       });
