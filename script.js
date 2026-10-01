@@ -108,6 +108,133 @@ const AudioManager = {
 
 
 // ==========================================================
+// BOARD STATUS OVERLAY COMPONENT (<BoardStatusOverlay />)
+// Displays frosted-glass centered status card over the chessboard
+// ==========================================================
+const BoardStatusOverlay = {
+  transientTimer: null,
+  currentMessage: '',
+  currentSubtitle: '',
+
+  /**
+   * Show a status message in the center board frosted-glass overlay
+   * @param {string} message - Primary title string (e.g. "Time out", "Checkmate!", "Check", "Draw", "Stalemate")
+   * @param {string} [subtitle] - Optional descriptive subtitle (e.g. "White ran out of time", "Black wins by checkmate")
+   * @param {object} [options] - Options: { isGameOver, transient, durationMs }
+   */
+  show: function (message, subtitle = '', options = {}) {
+    if (!message || typeof message !== 'string' || message.trim() === '') {
+      this.hide();
+      return;
+    }
+
+    if (this.transientTimer) {
+      clearTimeout(this.transientTimer);
+      this.transientTimer = null;
+    }
+
+    if (typeof $ === 'undefined') return;
+
+    const $overlay = $('#board-status-overlay');
+    const $title = $('#board-status-title');
+    const $subtitle = $('#board-status-subtitle');
+
+    if (!$overlay.length || !$title.length) return;
+
+    const isGameOver = options.isGameOver !== undefined
+      ? options.isGameOver
+      : (typeof main !== 'undefined' && main.variables && main.variables.gameOver);
+    const isTransient = options.transient !== undefined ? options.transient : !isGameOver;
+
+    const isAlreadyActive = $overlay.hasClass('active');
+    const textChanged = (this.currentMessage !== message || this.currentSubtitle !== subtitle);
+
+    this.currentMessage = message;
+    this.currentSubtitle = subtitle || '';
+
+    const applyContent = () => {
+      if (typeof $title.text === 'function') $title.text(message);
+      if (subtitle) {
+        if (typeof $subtitle.text === 'function') $subtitle.text(subtitle);
+        if (typeof $subtitle.css === 'function') $subtitle.css('display', 'block');
+      } else {
+        if (typeof $subtitle.text === 'function') $subtitle.text('');
+        if (typeof $subtitle.css === 'function') $subtitle.css('display', 'none');
+      }
+      if (typeof $title.css === 'function') $title.css('opacity', '1');
+      if (typeof $subtitle.css === 'function') $subtitle.css('opacity', '1');
+    };
+
+    if (isAlreadyActive && textChanged) {
+      if (typeof $title.css === 'function') $title.css('opacity', '0');
+      if (typeof $subtitle.css === 'function') $subtitle.css('opacity', '0');
+      setTimeout(applyContent, 150);
+    } else {
+      applyContent();
+    }
+
+    if (typeof $overlay.css === 'function') $overlay.css('display', 'flex');
+
+    if (isTransient) {
+      if (typeof $overlay.addClass === 'function') {
+        $overlay.addClass('transient').removeClass('has-scrim');
+      }
+      if ($overlay[0] && typeof $overlay[0].offsetWidth !== 'undefined') {
+        void $overlay[0].offsetWidth; // Force layout
+      }
+      if (typeof $overlay.addClass === 'function') {
+        $overlay.addClass('active');
+      }
+
+      const duration = options.durationMs || 1500;
+      this.transientTimer = setTimeout(() => {
+        BoardStatusOverlay.hide();
+      }, duration);
+    } else {
+      if (typeof $overlay.addClass === 'function') {
+        $overlay.removeClass('transient').addClass('has-scrim');
+      }
+      if ($overlay[0] && typeof $overlay[0].offsetWidth !== 'undefined') {
+        void $overlay[0].offsetWidth; // Force layout
+      }
+      if (typeof $overlay.addClass === 'function') {
+        $overlay.addClass('active');
+      }
+    }
+  },
+
+  hide: function () {
+    if (this.transientTimer) {
+      clearTimeout(this.transientTimer);
+      this.transientTimer = null;
+    }
+    this.currentMessage = '';
+    this.currentSubtitle = '';
+
+    if (typeof $ === 'undefined') return;
+    const $overlay = $('#board-status-overlay');
+    if (!$overlay.length) return;
+
+    if (typeof $overlay.removeClass === 'function') {
+      $overlay.removeClass('active');
+    }
+
+    setTimeout(() => {
+      if (!$overlay.hasClass || !$overlay.hasClass('active')) {
+        if (typeof $overlay.css === 'function') $overlay.css('display', 'none');
+        if (typeof $overlay.removeClass === 'function') $overlay.removeClass('has-scrim transient');
+        const $title = $('#board-status-title');
+        const $subtitle = $('#board-status-subtitle');
+        if (typeof $title.text === 'function') $title.text('');
+        if (typeof $subtitle.text === 'function') $subtitle.text('');
+        if (typeof $subtitle.css === 'function') $subtitle.css('display', 'none');
+      }
+    }, 250);
+  }
+};
+
+
+// ==========================================================
 // CHESS CLOCK MANAGER (Drift-free timestamp timing)
 // ==========================================================
 const ClockManager = {
@@ -240,11 +367,10 @@ const ClockManager = {
 
     main.variables.gameOver = true;
     const winner = timedOutColor === 'w' ? 'Black' : 'White';
+    const loser = timedOutColor === 'w' ? 'White' : 'Black';
     $('#turn').addClass('turnhighlight').text(`TIME OUT — ${winner.toUpperCase()} WINS!`);
 
-    let resEl = $('#game-result-banner');
-    if (typeof resEl.text === 'function') resEl.text('Time out');
-    if (typeof resEl.css === 'function') resEl.css('display', 'block');
+    BoardStatusOverlay.show('Time out', `${loser} ran out of time`, { isGameOver: true });
     $('#rematch-btn').addClass('highlight-rematch');
 
     AudioManager.playTimeout();
@@ -1713,9 +1839,7 @@ let main = {
         main.variables.gameOver = true;
         ClockManager.stop();
         $('#turn').addClass('turnhighlight').text('DRAW BY 50-MOVE RULE');
-        let resEl = $('#game-result-banner');
-        if (typeof resEl.text === 'function') resEl.text('Draw');
-        if (typeof resEl.css === 'function') resEl.css('display', 'block');
+        BoardStatusOverlay.show('Draw', '50-move rule', { isGameOver: true });
         $('#rematch-btn').addClass('highlight-rematch');
         main.methods.updateMoveHistoryUI();
         AudioManager.playGameOver();
@@ -1731,9 +1855,7 @@ let main = {
         main.variables.gameOver = true;
         ClockManager.stop();
         $('#turn').addClass('turnhighlight').text('DRAW BY THREEFOLD REPETITION');
-        let resEl = $('#game-result-banner');
-        if (typeof resEl.text === 'function') resEl.text('Draw');
-        if (typeof resEl.css === 'function') resEl.css('display', 'block');
+        BoardStatusOverlay.show('Draw', 'Threefold repetition', { isGameOver: true });
         $('#rematch-btn').addClass('highlight-rematch');
         main.methods.updateMoveHistoryUI();
         AudioManager.playGameOver();
@@ -1801,20 +1923,33 @@ let main = {
         $('#turn').removeClass('turnhighlight').text(snap.statusText);
       }
 
-      let resEl = $('#game-result-banner');
       if (snap.gameOver) {
         let t = snap.statusText || '';
         let bannerText = 'Checkmate!';
-        if (t.includes('Checkmate')) bannerText = 'Checkmate!';
-        else if (t.includes('Stalemate')) bannerText = 'Stalemate';
-        else if (t.includes('TIME OUT') || t.includes('Time out')) bannerText = 'Time out';
-        else if (t.includes('DRAW') || t.includes('draw')) bannerText = 'Draw';
-        if (typeof resEl.text === 'function') resEl.text(bannerText);
-        if (typeof resEl.css === 'function') resEl.css('display', 'block');
+        let subText = '';
+        if (t.includes('Checkmate')) {
+          bannerText = 'Checkmate!';
+          subText = t.replace('Checkmate!', '').trim() || 'Wins by checkmate';
+        } else if (t.includes('Stalemate')) {
+          bannerText = 'Stalemate';
+          subText = "Draw by stalemate";
+        } else if (t.includes('TIME OUT') || t.includes('Time out')) {
+          bannerText = 'Time out';
+          subText = t.replace('TIME OUT —', '').trim();
+        } else if (t.includes('DRAW') || t.includes('draw')) {
+          bannerText = 'Draw';
+          subText = t.replace('DRAW BY', '').trim();
+        } else if (t.includes('Resign') || t.includes('resign')) {
+          bannerText = 'Resigned';
+          subText = t;
+        } else {
+          bannerText = 'Game over';
+          subText = t;
+        }
+        BoardStatusOverlay.show(bannerText, subText, { isGameOver: true });
         $('#rematch-btn').addClass('highlight-rematch');
       } else {
-        if (typeof resEl.text === 'function') resEl.text('');
-        if (typeof resEl.css === 'function') resEl.css('display', 'none');
+        BoardStatusOverlay.hide();
         $('#rematch-btn').removeClass('highlight-rematch');
       }
 
@@ -2645,9 +2780,7 @@ let main = {
         ClockManager.stop();
         let winner = color === 'w' ? 'Black' : 'White';
         $('#turn').addClass('turnhighlight').text('Checkmate! ' + winner + ' wins!');
-        let resEl = $('#game-result-banner');
-        if (typeof resEl.text === 'function') resEl.text('Checkmate!');
-        if (typeof resEl.css === 'function') resEl.css('display', 'block');
+        BoardStatusOverlay.show('Checkmate!', `${winner} wins by checkmate`, { isGameOver: true });
         $('#rematch-btn').addClass('highlight-rematch');
         main.methods.updateMoveHistoryUI();
         AudioManager.playGameOver();
@@ -2655,9 +2788,7 @@ let main = {
         main.variables.gameOver = true;
         ClockManager.stop();
         $('#turn').addClass('turnhighlight').text("Stalemate! It's a draw.");
-        let resEl = $('#game-result-banner');
-        if (typeof resEl.text === 'function') resEl.text('Stalemate');
-        if (typeof resEl.css === 'function') resEl.css('display', 'block');
+        BoardStatusOverlay.show('Stalemate', "Draw by stalemate", { isGameOver: true });
         $('#rematch-btn').addClass('highlight-rematch');
         main.methods.updateMoveHistoryUI();
         AudioManager.playGameOver();
@@ -2665,6 +2796,7 @@ let main = {
         // Draw handled inside checkDrawConditions
       } else if (inCheck) {
         $('#turn').removeClass('turnhighlight').text((color === 'w' ? "White" : "Black") + "'s turn \u2014 Check!");
+        BoardStatusOverlay.show('Check', `${color === 'w' ? 'White' : 'Black'} King is under attack`, { transient: true, durationMs: 1500 });
         AudioManager.playCheck();
         ClockManager.onMoveMade(previousColor, color);
       } else {
@@ -2716,9 +2848,7 @@ let main = {
       $('#turn').removeClass('turnhighlight').text("It's White's Turn!");
       $('#board-stage').removeClass('orientation-black');
 
-      let resEl = $('#game-result-banner');
-      if (typeof resEl.text === 'function') resEl.text('');
-      if (typeof resEl.css === 'function') resEl.css('display', 'none');
+      BoardStatusOverlay.hide();
       $('#rematch-btn').removeClass('highlight-rematch');
 
       ClockManager.reset();

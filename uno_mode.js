@@ -858,16 +858,20 @@
           </div>
         </div>`;
       const $prompt = $(promptHtml);
-      $('body').append($prompt);
-      $prompt.find('.uno-tutorial-yes').on('click', () => {
-        if (UnoMode.tutorial && typeof UnoMode.tutorial.start === 'function') {
-          UnoMode.tutorial.start(true);
-        }
-        UnoMode._handleTutorialDismiss($prompt);
-      });
-      $prompt.find('.uno-tutorial-no').on('click', () => {
-        UnoMode._handleTutorialDismiss($prompt);
-      });
+      if ($('body') && typeof $('body').append === 'function') {
+        $('body').append($prompt);
+      }
+      if ($prompt && typeof $prompt.find === 'function') {
+        $prompt.find('.uno-tutorial-yes').on('click', () => {
+          if (UnoMode.tutorial && typeof UnoMode.tutorial.start === 'function') {
+            UnoMode.tutorial.start(true);
+          }
+          UnoMode._handleTutorialDismiss($prompt);
+        });
+        $prompt.find('.uno-tutorial-no').on('click', () => {
+          UnoMode._handleTutorialDismiss($prompt);
+        });
+      }
     },
 
     _handleTutorialDismiss: function ($el) {

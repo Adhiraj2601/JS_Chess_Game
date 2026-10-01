@@ -465,10 +465,16 @@
         </defs>
         <line id="last-move-arrow" x1="0" y1="0" x2="0" y2="0" stroke="#ffffff" stroke-width="6" stroke-opacity="0.7" stroke-linecap="round" marker-end="url(#arrowhead)" style="display:none;" />
       </svg>
-    </div>
 
-    <!-- Centered Large Italic Serif Game Result -->
-    <div id="game-result-banner" class="game-result-banner" style="display:none;"></div>
+      <!-- Centered Frosted-Glass Board Status Overlay -->
+      <div id="board-status-overlay" class="board-status-overlay" role="status" aria-live="polite" style="display:none;">
+        <div class="board-status-scrim" id="board-status-scrim"></div>
+        <div class="board-status-card" id="board-status-card">
+          <div class="board-status-title" id="board-status-title"></div>
+          <div class="board-status-subtitle" id="board-status-subtitle" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
 
     <!-- Bottom (You) Player Bar - ALWAYS DOWN -->
     <div class="player-strip player-bottom">
