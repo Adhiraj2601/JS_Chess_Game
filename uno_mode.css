@@ -509,6 +509,20 @@ body.mode-uno .standard-only {
 }
 
 /* ----------------------------------------------------------
+   UNO LAYOUT & SIDEBAR COMPONENT SPACING
+   ---------------------------------------------------------- */
+body.mode-uno #game-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+#left-sidebar #uno-graveyard-panel {
+  margin-top: auto;
+  width: 100%;
+}
+
+/* ----------------------------------------------------------
    INTERACTION BANNERS & SKIPPED PIECE OVERLAY
    ---------------------------------------------------------- */
 /* Floating Card Action Banner */

@@ -1309,20 +1309,20 @@
         {
           target: '#uno-main-panel .energy-tracker',
           title: 'Energy System (0–20)',
-          desc: 'Playing Number cards converts them into Energy. Spend 6 Energy to draw an extra card, or 3 Energy to recycle an unwanted card.',
+          desc: 'Playing Number cards converts them into Energy. Track your reserves to activate special powers on your turn.',
+          placement: 'left'
+        },
+        {
+          target: '#uno-main-panel .energy-actions',
+          title: 'Energy Actions',
+          desc: 'Spend 6 Energy to draw an extra tactical card, or spend 3 Energy to recycle an unwanted card into the deck.',
           placement: 'left'
         },
         {
           target: '#uno-graveyard-panel',
           title: 'The Graveyard Pool',
           desc: 'Captured pieces enter the Graveyard. Use special cards like Draw Two (+2) and Wild Draw Four (★+4) to revive fallen pieces back into battle!',
-          placement: 'left'
-        },
-        {
-          target: '#uno-card-log-panel',
-          title: 'Card Action Log',
-          desc: 'Every card played, energy transaction, and piece revival is transparently tracked in this live action log.',
-          placement: 'left'
+          placement: 'right'
         },
         {
           target: '#turn',
