@@ -2699,6 +2699,7 @@ let main = {
       main.variables.historyStack = [];
       main.variables.redoStack = [];
       main.variables.lastMove = null;
+      main.methods.updateLastMoveArrow(); // hide the SVG arrow immediately
       main.variables.pieces = main.methods.getInitialPieces();
 
       $('#captured-black .captured-pieces-list').empty();
