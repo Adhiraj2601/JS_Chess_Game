@@ -828,47 +828,42 @@
     },
 
     // ----------------------------------------------------------
-    // UNO MODE TUTORIAL PROMPT
+    // UNO MODE TUTORIAL PROMPT (brutalist card style)
     // ----------------------------------------------------------
     showTutorialPrompt: function () {
       if (typeof $ === 'undefined' || typeof document === 'undefined') return;
-      // Avoid duplicate prompts
       if ($('#uno-tutorial-prompt').length) return;
       const promptHtml = `
-        <div id="uno-tutorial-prompt" class="uno-tutorial-prompt">
-          <p>Welcome to UNO mode! Would you like a quick tutorial?</p>
-          <div class="uno-tutorial-buttons">
-            <button class="uno-tutorial-yes">Yes</button>
-            <button class="uno-tutorial-no">No</button>
+        <div id="uno-tutorial-prompt" class="brutalist-card">
+          <div class="brutalist-card__header">
+            <div class="brutalist-card__icon">
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+              </svg>
+            </div>
+            <div class="brutalist-card__alert">UNO Mode</div>
           </div>
-          <label class="uno-tutorial-dont"><input type="checkbox" id="uno-tutorial-dont-show"> Don't remind me again</label>
+          <div class="brutalist-card__message">
+            New to Chess UNO? Would you like a quick tutorial to learn the card mechanics?
+          </div>
+          <div class="brutalist-card__actions">
+            <label class="brutalist-card__dont-show">
+              <input type="checkbox" id="uno-tutorial-dont-show"> Don't remind me again
+            </label>
+            <button class="brutalist-card__button brutalist-card__button--yes uno-tutorial-yes">Yes, show me!</button>
+            <button class="brutalist-card__button brutalist-card__button--no uno-tutorial-no">No thanks</button>
+          </div>
         </div>`;
       const $prompt = $(promptHtml);
       $('body').append($prompt);
-      // Inline styling for simplicity
-      $prompt.css({
-        position: 'fixed',
-        top: '20%',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        'z-index': 1000,
-        padding: '15px',
-        'background-color': 'rgba(30,30,30,0.95)',
-        color: '#f4f4f2',
-        'border-radius': '8px',
-        'box-shadow': '0 0 12px rgba(255,215,0,0.2)',
-        'max-width': '280px',
-        'text-align': 'center'
-      });
-      // Button handlers
       $prompt.find('.uno-tutorial-yes').on('click', () => {
         if (UnoMode.tutorial && typeof UnoMode.tutorial.start === 'function') {
           UnoMode.tutorial.start();
         }
-        this._handleTutorialDismiss($prompt);
+        UnoMode._handleTutorialDismiss($prompt);
       });
       $prompt.find('.uno-tutorial-no').on('click', () => {
-        this._handleTutorialDismiss($prompt);
+        UnoMode._handleTutorialDismiss($prompt);
       });
     },
 
