@@ -16,6 +16,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@1,500;1,600;1,700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css">
   <link rel="stylesheet" href="./uno_mode.css">
+  <link rel="stylesheet" href="./pothole_mode.css">
 </head>
 <body class="theme-wood">
 
@@ -674,6 +675,17 @@
         <span>Rulebook</span>
       </button>
     </div>
+
+    <div class="settings-group pothole-only" style="display:none;">
+      <label class="settings-label">Pothole Rules</label>
+      <button id="help-pothole-btn" class="action-btn help-btn" title="How to Play Pothole Chess">
+        <svg class="btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9"/>
+          <circle cx="12" cy="12" r="3.5" fill="currentColor"/>
+        </svg>
+        <span>Rules (R1–R11)</span>
+      </button>
+    </div>
   </div>
 </div>
 
@@ -704,6 +716,17 @@
         </div>
         <div class="mode-card-title">Chess UNO Mode</div>
         <div class="mode-card-desc">Chess enhanced with tactical UNO card powers & energy.</div>
+      </div>
+      <div class="mode-card-btn" data-mode="pothole">
+        <div class="mode-card-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"/>
+            <circle cx="12" cy="12" r="3.5" fill="currentColor"/>
+          </svg>
+        </div>
+        <div class="mode-card-title">Pothole Chess</div>
+        <div class="mode-card-desc">Dice rolls spawn hazard potholes that swallow pieces & freeze kings.</div>
+        <button type="button" class="mode-card-help-btn" id="pothole-rules-trigger" title="How Pothole Chess Works">How it works</button>
       </div>
     </div>
     <button id="close-mode-modal" class="action-btn" style="margin-top: 18px; width: 100%;">Close</button>
@@ -1165,6 +1188,7 @@
 
 <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js'></script>
 <script src="./uno_mode.js"></script>
+<script src="./pothole_mode.js"></script>
 <script src="./script.js"></script>
 
 </body>

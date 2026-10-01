@@ -972,6 +972,7 @@ const DragManager = {
 
   handlePointerDown: function (e, cellEl) {
     if (main.variables.gameOver || main.variables.isPromoting) return;
+    if (typeof GameModeManager !== 'undefined' && GameModeManager.isActionBlocked()) return;
 
     let cellId = $(cellEl).attr('id');
     let chessPiece = $(cellEl).attr('chess');
@@ -1090,7 +1091,10 @@ const GameModeManager = {
   getModeToggleBtnHtml: function (modeName) {
     const pawnSvg = `<svg class="btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="3"/><path d="M9 8.5h6l-1 4.5h-4z"/><path d="M7.5 17.5l1.5-4.5h6l1.5 4.5z"/><path d="M6 21h12v-2a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1v2z"/></svg>`;
     const cardsSvg = `<svg class="btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="12" height="15" rx="2"/><path d="M7 6V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2h-2"/></svg>`;
-    return modeName === 'uno' ? `${cardsSvg} <span>Chess UNO</span>` : `${pawnSvg} <span>Classic</span>`;
+    const potholeSvg = `<svg class="btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.5" fill="currentColor"/></svg>`;
+    if (modeName === 'uno') return `${cardsSvg} <span>Chess UNO</span>`;
+    if (modeName === 'pothole') return `${potholeSvg} <span>Pothole</span>`;
+    return `${pawnSvg} <span>Classic</span>`;
   },
 
   setMode: function (modeName) {
@@ -1107,13 +1111,45 @@ const GameModeManager = {
 
     if (typeof $ !== 'undefined') {
       $('#mode-toggle-btn').html(this.getModeToggleBtnHtml(modeName));
+      $('body').removeClass('mode-uno mode-pothole');
       if (modeName === 'uno') {
         $('body').addClass('mode-uno');
-      } else {
-        $('body').removeClass('mode-uno');
+      } else if (modeName === 'pothole') {
+        $('body').addClass('mode-pothole');
       }
     }
     return true;
+  },
+
+  isPothole: function (cellId) {
+    let mode = this.modes[this.activeMode];
+    if (mode && mode.isPothole) {
+      return mode.isPothole(cellId);
+    }
+    return false;
+  },
+
+  isKingFrozen: function (color) {
+    let mode = this.modes[this.activeMode];
+    if (mode && mode.isKingFrozen) {
+      return mode.isKingFrozen(color);
+    }
+    return false;
+  },
+
+  isActionBlocked: function () {
+    let mode = this.modes[this.activeMode];
+    if (mode && mode.isActionBlocked) {
+      return mode.isActionBlocked();
+    }
+    return false;
+  },
+
+  onTurnStart: function (player) {
+    let mode = this.modes[this.activeMode];
+    if (mode && mode.onTurnStart) {
+      mode.onTurnStart(player);
+    }
   },
 
   filterLegalMoves: function (pieceKey, moves) {
@@ -1486,7 +1522,7 @@ let main = {
           while (main.methods.inBounds(c, r)) {
             let id = main.methods.cellId(c, r);
             attacks.push(id);
-            if (board[id]) break;
+            if (board[id] || (typeof GameModeManager !== 'undefined' && GameModeManager.isPothole(id))) break;
             c += dc; r += dr;
           }
         });
@@ -1506,6 +1542,7 @@ let main = {
     },
 
     getPseudoMoves: function (pieceKey, board) {
+      if (!board) board = main.methods.getBoard();
       let obj = main.variables.pieces[pieceKey];
       if (!obj || obj.captured || !obj.position) return [];
 
@@ -1513,16 +1550,17 @@ let main = {
       let type = main.methods.pieceTypeOf(pieceKey);
       let { col, row } = main.methods.parseCell(obj.position);
       let moves = [];
+      let isPothole = (id) => (typeof GameModeManager !== 'undefined' && GameModeManager.isPothole(id));
 
       if (type === 'pawn') {
         let dir = color === 'w' ? 1 : -1;
         let startRow = color === 'w' ? 2 : 7;
 
         let oneStep = main.methods.cellId(col, row + dir);
-        if (main.methods.inBounds(col, row + dir) && !board[oneStep]) {
+        if (main.methods.inBounds(col, row + dir) && !board[oneStep] && !isPothole(oneStep)) {
           moves.push(oneStep);
           let twoStep = main.methods.cellId(col, row + 2 * dir);
-          if (row === startRow && !board[twoStep]) {
+          if (row === startRow && !board[twoStep] && !isPothole(twoStep)) {
             moves.push(twoStep);
           }
         }
@@ -1530,7 +1568,7 @@ let main = {
         [[col - 1, row + dir], [col + 1, row + dir]].forEach(([c, r]) => {
           if (main.methods.inBounds(c, r)) {
             let id = main.methods.cellId(c, r);
-            if (board[id] && main.methods.pieceColor(board[id]) !== color) {
+            if (board[id] && main.methods.pieceColor(board[id]) !== color && !isPothole(id)) {
               moves.push(id);
             }
           }
@@ -1541,7 +1579,7 @@ let main = {
           let epRow = color === 'w' ? 5 : 4;
           if (row === epRow && (col - 1 === ep.col || col + 1 === ep.col)) {
             let epDest = main.methods.cellId(ep.col, row + dir);
-            if (epDest === ep.cell) {
+            if (epDest === ep.cell && !isPothole(epDest)) {
               moves.push(epDest + '_ep');
             }
           }
@@ -1552,19 +1590,23 @@ let main = {
           let c = col + dc, r = row + dr;
           if (main.methods.inBounds(c, r)) {
             let id = main.methods.cellId(c, r);
-            if (!board[id] || main.methods.pieceColor(board[id]) !== color) {
+            if ((!board[id] || main.methods.pieceColor(board[id]) !== color) && !isPothole(id)) {
               moves.push(id);
             }
           }
         });
       } else if (type === 'king') {
+        if (typeof GameModeManager !== 'undefined' && GameModeManager.isKingFrozen(color)) {
+          return [];
+        }
+
         for (let dc = -1; dc <= 1; dc++) {
           for (let dr = -1; dr <= 1; dr++) {
             if (dc === 0 && dr === 0) continue;
             let c = col + dc, r = row + dr;
             if (main.methods.inBounds(c, r)) {
               let id = main.methods.cellId(c, r);
-              if (!board[id] || main.methods.pieceColor(board[id]) !== color) {
+              if ((!board[id] || main.methods.pieceColor(board[id]) !== color) && !isPothole(id)) {
                 moves.push(id);
               }
             }
@@ -1576,13 +1618,13 @@ let main = {
           let rank = color === 'w' ? 1 : 8;
           let kingStart = main.methods.cellId(5, rank);
 
-          if (board[kingStart] === pieceKey && !main.methods.isSquareAttacked(kingStart, oppColor, board)) {
+          if (board[kingStart] === pieceKey && !isPothole(kingStart) && !main.methods.isSquareAttacked(kingStart, oppColor, board)) {
             let rookKSKey = color + '_rook2';
             let rookKS = main.variables.pieces[rookKSKey];
-            if (rookKS && !rookKS.moved && !rookKS.captured && board[main.methods.cellId(8, rank)] === rookKSKey) {
+            if (rookKS && !rookKS.moved && !rookKS.captured && board[main.methods.cellId(8, rank)] === rookKSKey && !isPothole(main.methods.cellId(8, rank))) {
               let f = main.methods.cellId(6, rank);
               let g = main.methods.cellId(7, rank);
-              if (!board[f] && !board[g] &&
+              if (!board[f] && !board[g] && !isPothole(f) && !isPothole(g) &&
                   !main.methods.isSquareAttacked(f, oppColor, board) &&
                   !main.methods.isSquareAttacked(g, oppColor, board)) {
                 moves.push(g + '_castleKS');
@@ -1591,11 +1633,11 @@ let main = {
 
             let rookQSKey = color + '_rook1';
             let rookQS = main.variables.pieces[rookQSKey];
-            if (rookQS && !rookQS.moved && !rookQS.captured && board[main.methods.cellId(1, rank)] === rookQSKey) {
+            if (rookQS && !rookQS.moved && !rookQS.captured && board[main.methods.cellId(1, rank)] === rookQSKey && !isPothole(main.methods.cellId(1, rank))) {
               let d = main.methods.cellId(4, rank);
               let c = main.methods.cellId(3, rank);
               let b = main.methods.cellId(2, rank);
-              if (!board[d] && !board[c] && !board[b] &&
+              if (!board[d] && !board[c] && !board[b] && !isPothole(d) && !isPothole(c) && !isPothole(b) &&
                   !main.methods.isSquareAttacked(d, oppColor, board) &&
                   !main.methods.isSquareAttacked(c, oppColor, board)) {
                 moves.push(c + '_castleQS');
@@ -1611,6 +1653,7 @@ let main = {
           let c = col + dc, r = row + dr;
           while (main.methods.inBounds(c, r)) {
             let id = main.methods.cellId(c, r);
+            if (isPothole(id)) break;
             if (!board[id]) {
               moves.push(id);
             } else {
@@ -2812,6 +2855,9 @@ let main = {
 
       if (typeof GameModeManager !== 'undefined') {
         GameModeManager.onTurnEnd(previousColor, color);
+        if (!main.variables.gameOver) {
+          GameModeManager.onTurnStart(color);
+        }
       }
     },
 
@@ -2865,6 +2911,9 @@ let main = {
 
       if (typeof GameModeManager !== 'undefined') {
         GameModeManager.onReset();
+        if (!main.variables.gameOver) {
+          GameModeManager.onTurnStart('w');
+        }
       }
     }
   }
@@ -2895,6 +2944,7 @@ if (typeof $ !== 'undefined') {
     // Click handler for Click-to-Move
     $(document).on('click', '.gamecell', function (e) {
       if (main.variables.gameOver || main.variables.isPromoting) return;
+      if (typeof GameModeManager !== 'undefined' && GameModeManager.isActionBlocked()) return;
       if (DragManager.justDropped) return; // Ignore synthetic click immediately following a drop
 
       let cellId = $(this).attr('id');
@@ -3136,6 +3186,12 @@ if (typeof $ !== 'undefined') {
     if (typeof UnoMode !== 'undefined') {
       GameModeManager.register('uno', UnoMode);
       UnoMode.init();
+    }
+
+    // Initialize Pothole Plugin if available
+    if (typeof PotholeMode !== 'undefined') {
+      GameModeManager.register('pothole', PotholeMode);
+      PotholeMode.init();
     }
   });
 }

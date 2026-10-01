@@ -1,0 +1,529 @@
+/* ==========================================================
+   POTHOLE CHESS MODE — TABLETOP HAZARD STYLING (R1–R11)
+   ========================================================== */
+
+/* Mode-specific visibility controls */
+body:not(.mode-pothole) .pothole-only {
+  display: none !important;
+}
+
+body.mode-pothole .standard-only {
+  /* Analog clock and other standard components remain available or can adapt */
+}
+
+/* Adjust mode options grid for 3 cards */
+.mode-modal {
+  max-width: 560px !important;
+}
+
+.mode-options-grid {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
+  gap: 12px !important;
+}
+
+/* Mode card help link */
+.mode-card-help-btn {
+  margin-top: 6px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  color: var(--accent-yellow, #f5c400);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mode-card-help-btn:hover {
+  background: rgba(245, 196, 0, 0.15);
+  border-color: var(--accent-yellow, #f5c400);
+}
+
+/* ----------------------------------------------------------
+   POTHOLE BOARD MARKER (R5, R6, R7, R8)
+   ---------------------------------------------------------- */
+.gamecell.has-pothole {
+  position: relative;
+}
+
+.pothole-marker {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 6; /* Below piece (z-index: 10) so a frozen king stands on top */
+  animation: potholeAppear 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes potholeAppear {
+  0% {
+    transform: scale(0.2);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* The dark abyss of the pothole */
+.pothole-hole {
+  position: absolute;
+  width: 68%;
+  height: 68%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%, #050505 0%, #0d0d0d 65%, #181716 100%);
+  box-shadow: 
+    inset 0 4px 10px rgba(0, 0, 0, 0.95),
+    inset 0 0 14px rgba(0, 0, 0, 0.8),
+    0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+/* Owner Ring around the pothole */
+.pothole-ring {
+  position: absolute;
+  width: 74%;
+  height: 74%;
+  border-radius: 50%;
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+}
+
+/* White Owner Pothole: Light ring with subtle ivory/gold glow */
+.pothole-w .pothole-ring {
+  border: 2px solid #f4f4f2;
+  box-shadow: 
+    0 0 8px rgba(255, 255, 255, 0.6),
+    inset 0 0 4px rgba(255, 255, 255, 0.3);
+}
+
+/* Black Owner Pothole: Dark ring with silver/charcoal outline */
+.pothole-b .pothole-ring {
+  border: 2px solid #222222;
+  box-shadow: 
+    0 0 0 1.5px rgba(210, 210, 215, 0.65),
+    0 0 8px rgba(0, 0, 0, 0.7),
+    inset 0 0 3px rgba(0, 0, 0, 0.9);
+}
+
+/* Owner badge chip in corner */
+.pothole-badge {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  font-size: 9px;
+  font-weight: 700;
+  font-family: var(--font-ui, sans-serif);
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: 3px;
+  letter-spacing: 0.5px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  z-index: 7;
+}
+
+.pothole-w .pothole-badge {
+  background: #f4f4f2;
+  color: #141413;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+.pothole-b .pothole-badge {
+  background: #1c1b1a;
+  color: #eeeeee;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* ----------------------------------------------------------
+   FROZEN KING VISUAL (R9)
+   ---------------------------------------------------------- */
+.gamecell.has-frozen-king {
+  position: relative;
+}
+
+.gamecell.has-frozen-king .chess-piece {
+  filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.8)) brightness(1.05);
+  animation: frozenPulse 2.4s ease-in-out infinite alternate;
+}
+
+@keyframes frozenPulse {
+  0% {
+    filter: drop-shadow(0 0 4px rgba(56, 189, 248, 0.6)) brightness(1.0);
+  }
+  100% {
+    filter: drop-shadow(0 0 9px rgba(56, 189, 248, 0.95)) brightness(1.1);
+  }
+}
+
+.frozen-king-badge {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 22px;
+  height: 22px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1.5px solid #38bdf8;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #38bdf8;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6), 0 0 8px rgba(56, 189, 248, 0.5);
+  z-index: 12;
+  pointer-events: none;
+  animation: lockBounce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes lockBounce {
+  0% { transform: scale(0.3); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* ----------------------------------------------------------
+   PIECE SINKING INTO POTHOLE ANIMATION (R6)
+   ---------------------------------------------------------- */
+.piece-falling {
+  pointer-events: none !important;
+  animation: pieceSink 0.35s cubic-bezier(0.55, 0.055, 0.675, 0.19) forwards !important;
+}
+
+@keyframes pieceSink {
+  0% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+    filter: none;
+  }
+  50% {
+    transform: scale(0.65) translateY(14px);
+    opacity: 0.8;
+    filter: brightness(0.6);
+  }
+  100% {
+    transform: scale(0.15) translateY(36px);
+    opacity: 0;
+    filter: brightness(0);
+  }
+}
+
+/* ----------------------------------------------------------
+   DICE ROLL OVERLAY (R2, R3, UI Requirement 2)
+   ---------------------------------------------------------- */
+.pothole-dice-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 14, 13, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 120;
+  border-radius: 8px;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.pothole-dice-card {
+  width: 90%;
+  max-width: 320px;
+  background: rgba(28, 27, 26, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  box-shadow: 
+    0 16px 36px rgba(0, 0, 0, 0.7),
+    0 0 24px rgba(245, 196, 0, 0.12);
+  animation: diceCardIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes diceCardIn {
+  0% { transform: scale(0.92); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.pothole-dice-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.pothole-dice-player {
+  font-family: var(--font-ui, sans-serif);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary, #f0f0f0);
+}
+
+.pothole-dice-tag {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  background: rgba(245, 196, 0, 0.15);
+  color: var(--accent-yellow, #f5c400);
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.pothole-dice-stage {
+  margin: 8px 0 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 90px;
+}
+
+.pothole-d8-die {
+  width: 76px;
+  height: 76px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+}
+
+.pothole-d8-die.rolling {
+  animation: d8Spin 0.5s ease-in-out infinite;
+}
+
+.pothole-d8-die.landed {
+  animation: d8Land 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes d8Spin {
+  0% { transform: rotate(0deg) scale(0.9); }
+  50% { transform: rotate(180deg) scale(1.1); }
+  100% { transform: rotate(360deg) scale(0.9); }
+}
+
+@keyframes d8Land {
+  0% { transform: scale(0.85); }
+  60% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+.d8-svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.6));
+}
+
+.d8-face {
+  stroke: rgba(245, 196, 0, 0.8);
+  stroke-width: 2;
+  transition: fill 0.2s ease;
+}
+
+.d8-face-top { fill: #2c2920; }
+.d8-face-left { fill: #23211b; }
+.d8-face-bottom-left { fill: #1a1815; }
+.d8-face-bottom-right { fill: #201e18; }
+
+.d8-number {
+  font-family: var(--font-serif, serif);
+  font-weight: 700;
+  font-size: 24px;
+  fill: var(--accent-yellow, #f5c400);
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+.pothole-dice-result {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary, #f0f0f0);
+  line-height: 1.4;
+  margin-bottom: 6px;
+}
+
+.pothole-dice-subresult {
+  font-size: 11px;
+  color: var(--text-secondary, #9a9a9a);
+  line-height: 1.4;
+  margin-bottom: 14px;
+}
+
+.pothole-dice-actions {
+  width: 100%;
+}
+
+.pothole-btn-continue {
+  background: var(--accent-yellow, #f5c400);
+  color: #161514;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 18px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.pothole-btn-continue:hover {
+  background: var(--accent-yellow-hover, #e0b300);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(245, 196, 0, 0.3);
+}
+
+/* ----------------------------------------------------------
+   POTHOLE HAZARD TRACKER PANEL (Sidebar widget)
+   ---------------------------------------------------------- */
+.pothole-status-panel {
+  background: #1c1b1a;
+  border: 1px solid var(--border-subtle, #333333);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-top: 14px;
+}
+
+.pothole-status-panel .panel-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  color: var(--text-primary, #f0f0f0);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pothole-status-panel .panel-icon {
+  color: var(--accent-yellow, #f5c400);
+  display: flex;
+}
+
+.pothole-active-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pothole-empty-text {
+  font-size: 11px;
+  color: var(--text-dimmed, #666666);
+  font-style: italic;
+  padding: 4px 0;
+}
+
+.pothole-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: #242321;
+  border-radius: 6px;
+  border: 1px solid #2e2d2b;
+}
+
+.pothole-chip {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.chip-w {
+  background: #f4f4f2;
+  color: #141413;
+}
+
+.chip-b {
+  background: #161514;
+  color: #eeeeee;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.pothole-coords {
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--text-primary, #f0f0f0);
+  font-family: monospace;
+}
+
+.pothole-expiry {
+  font-size: 10px;
+  color: var(--text-secondary, #9a9a9a);
+  margin-left: auto;
+}
+
+/* ----------------------------------------------------------
+   "HOW IT WORKS" RULES MODAL (UI Requirement 1)
+   ---------------------------------------------------------- */
+.pothole-modal-content {
+  max-width: 580px !important;
+  width: 92% !important;
+  max-height: 85vh;
+  overflow-y: auto;
+  background: #1c1b1a;
+  border: 1px solid #333333;
+  border-radius: 10px;
+  padding: 24px;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.8);
+}
+
+.pothole-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #2e2d2b;
+  padding-bottom: 14px;
+  margin-bottom: 16px;
+}
+
+.pothole-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary, #f0f0f0);
+}
+
+.pothole-modal-title svg {
+  color: var(--accent-yellow, #f5c400);
+}
+
+.pothole-rules-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pothole-rule-item {
+  background: #242321;
+  border-left: 3px solid var(--accent-yellow, #f5c400);
+  border-radius: 0 6px 6px 0;
+  padding: 10px 14px;
+}
+
+.pothole-rule-item strong {
+  display: block;
+  font-size: 12px;
+  color: var(--text-primary, #f0f0f0);
+  margin-bottom: 3px;
+}
+
+.pothole-rule-item p {
+  font-size: 11.5px;
+  color: var(--text-secondary, #9a9a9a);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.pothole-rule-item em {
+  color: #38bdf8;
+  font-style: normal;
+  font-weight: 600;
+}

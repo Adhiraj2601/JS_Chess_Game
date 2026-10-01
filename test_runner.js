@@ -312,6 +312,14 @@ global.$ = function(selector) {
             cls.split(' ').forEach(c => cell.classes.delete(c));
             return this;
           },
+          append: function() { return this; },
+          find: function() {
+            return {
+              addClass: function() { return this; },
+              removeClass: function() { return this; },
+              length: 1
+            };
+          },
           closest: function() { return this; },
           length: 1
         };
@@ -327,10 +335,17 @@ global.$ = function(selector) {
     is: function() { return false; },
     addClass: function() { return this; },
     removeClass: function() { return this; },
-    text: function() { return ''; },
-    html: function() { return ''; },
+    text: function(t) { if (t !== undefined) return this; return ''; },
+    html: function(h) { if (h !== undefined) return this; return ''; },
     val: function() { return ''; },
     css: function() { return this; },
+    fadeIn: function(d, cb) { if (cb) cb(); return this; },
+    fadeOut: function(d, cb) { if (cb) cb(); return this; },
+    hide: function() { return this; },
+    show: function() { return this; },
+    append: function() { return this; },
+    find: function() { return this; },
+    remove: function() { return this; },
     data: function() { return null; },
     closest: function() { return this; },
     length: 0
@@ -340,6 +355,8 @@ global.$ = function(selector) {
 const { main, ClockManager, AudioManager, DragManager, GameModeManager } = require('./script.js');
 const UnoMode = require('./uno_mode.js');
 GameModeManager.register('uno', UnoMode);
+const PotholeMode = require('./pothole_mode.js');
+GameModeManager.register('pothole', PotholeMode);
 
 let passedTests = 0;
 let failedTests = 0;
@@ -1401,6 +1418,366 @@ runTest('71. Chess UNO: First-Time Auto-Trigger Guard', () => {
   // Normal start without force should not activate if already seen
   UnoMode.tutorial.start(false);
   assert.strictEqual(UnoMode.tutorial.active, false);
+});
+
+// ==========================================================
+// POTHOLE CHESS MODE TESTS (R1–R11)
+// ==========================================================
+
+runTest('72. Pothole Chess: Mode Activation & Plugin Registration', () => {
+  GameModeManager.setMode('pothole');
+  assert.strictEqual(GameModeManager.activeMode, 'pothole');
+  assert.strictEqual(PotholeMode.state.active, true);
+  assert.strictEqual(PotholeMode.config.DIE_SIDES, 8);
+  assert.strictEqual(PotholeMode.config.PLACE_ON, 'even');
+  GameModeManager.setMode('standard');
+});
+
+runTest('73. Pothole Chess: R2 Gate Roll (Even places, Odd places nothing)', () => {
+  GameModeManager.setMode('pothole');
+  PotholeMode.resetState();
+
+  // Odd gate roll (e.g. 3) -> Places nothing
+  PotholeMode.onTurnStart('w', { gate: 3 });
+  assert.strictEqual(PotholeMode.state.potholes.length, 0);
+  assert.strictEqual(PotholeMode.state.lastRoll.placed, false);
+  assert.strictEqual(PotholeMode.state.lastRoll.gate, 3);
+
+  // Even gate roll (e.g. 4) -> Places pothole on specified square (rank 4, file 5 = e4)
+  PotholeMode.onTurnStart('w', { gate: 4, rank: 4, file: 5 });
+  assert.strictEqual(PotholeMode.state.potholes.length, 1);
+  assert.strictEqual(PotholeMode.state.lastRoll.placed, true);
+  assert.strictEqual(PotholeMode.state.potholes[0].square, 'e4');
+  assert.strictEqual(PotholeMode.state.potholes[0].cellId, '5_4');
+  assert.strictEqual(PotholeMode.state.potholes[0].owner, 'w');
+
+  GameModeManager.setMode('standard');
+});
+
+runTest('74. Pothole Chess: R3 Square Selection (Rank 1-8, File 1-8 to Coords)', () => {
+  GameModeManager.setMode('pothole');
+  PotholeMode.resetState();
+
+  // Test corners: (rank 1, file 1 = a1)
+  PotholeMode.onTurnStart('w', { gate: 2, rank: 1, file: 1 });
+  assert.strictEqual(PotholeMode.state.potholes[0].square, 'a1');
+  assert.strictEqual(PotholeMode.state.potholes[0].cellId, '1_1');
+
+  // Test (rank 8, file 8 = h8)
+  PotholeMode.onTurnStart('w', { gate: 6, rank: 8, file: 8 });
+  let h8Pothole = PotholeMode.state.potholes.find(p => p.square === 'h8');
+  assert(h8Pothole, 'h8 pothole should exist');
+  assert.strictEqual(h8Pothole.cellId, '8_8');
+
+  GameModeManager.setMode('standard');
+});
+
+runTest('75. Pothole Chess: R4 & R5 Ownership Lifetime (Owner is Timer, Max 2 Potholes)', () => {
+  GameModeManager.setMode('pothole');
+  PotholeMode.resetState();
+
+  // Turn 1 (White): White rolls even (4) and places W1 on e4 (5_4)
+  PotholeMode.onTurnStart('w', { gate: 4, rank: 4, file: 5 });
+  assert.strictEqual(PotholeMode.state.potholes.length, 1);
+  assert.strictEqual(PotholeMode.state.potholes[0].square, 'e4');
+  assert.strictEqual(PotholeMode.state.potholes[0].owner, 'w');
+
+  // Turn 1 completes: White ends turn -> next is Black
+  // White removes all potholes owned by OPPONENT (Black). W1 is owned by White, so W1 remains!
+  PotholeMode.onTurnEnd('w', 'b');
+  assert.strictEqual(PotholeMode.state.potholes.length, 1, 'W1 must survive White turn completion');
+
+  // Turn 2 (Black): Black rolls even (2) and places B1 on d5 (4_5)
+  PotholeMode.onTurnStart('b', { gate: 2, rank: 5, file: 4 });
+  assert.strictEqual(PotholeMode.state.potholes.length, 2, 'Max 2 active potholes concurrently');
+  assert.strictEqual(PotholeMode.state.potholes.some(p => p.square === 'e4' && p.owner === 'w'), true);
+  assert.strictEqual(PotholeMode.state.potholes.some(p => p.square === 'd5' && p.owner === 'b'), true);
+
+  // Turn 2 completes: Black ends turn -> next is White
+  // Black removes all potholes owned by OPPONENT (White). W1 is removed! B1 remains!
+  PotholeMode.onTurnEnd('b', 'w');
+  assert.strictEqual(PotholeMode.state.potholes.length, 1, 'W1 must be removed at end of opponent Black turn');
+  assert.strictEqual(PotholeMode.state.potholes[0].square, 'd5');
+  assert.strictEqual(PotholeMode.state.potholes[0].owner, 'b');
+
+  // Turn 3 (White): White rolls odd (1) -> places nothing
+  PotholeMode.onTurnStart('w', { gate: 1 });
+  assert.strictEqual(PotholeMode.state.potholes.length, 1, 'B1 still active during White turn');
+
+  // Turn 3 completes: White ends turn -> next is Black
+  // White removes all potholes owned by OPPONENT (Black). B1 is removed!
+  PotholeMode.onTurnEnd('w', 'b');
+  assert.strictEqual(PotholeMode.state.potholes.length, 0, 'B1 must be removed at end of opponent White turn');
+
+  GameModeManager.setMode('standard');
+});
+
+runTest('76. Pothole Chess: R6 Non-King Piece Falls Through Board and is Removed', () => {
+  GameModeManager.setMode('pothole');
+  PotholeMode.resetState();
+
+  // Square 4_2 holds White Pawn 4 (d2) in starting position
+  let d2PieceBefore = main.variables.pieces['w_pawn4'];
+  assert.strictEqual(d2PieceBefore.captured, false);
+  assert.strictEqual(d2PieceBefore.position, '4_2');
+
+  // White rolls even (6) landing on d2 (rank 2, file 4)
+  PotholeMode.onTurnStart('w', { gate: 6, rank: 2, file: 4 });
+
+  // Piece must fall through board and be removed from the game!
+  let d2PieceAfter = main.variables.pieces['w_pawn4'];
+  assert.strictEqual(d2PieceAfter.captured, true, 'Swallowed piece must have captured: true');
+  assert.strictEqual(d2PieceAfter.position, null, 'Swallowed piece must have position: null');
+  assert.strictEqual(PotholeMode.state.lastRoll.fell.key, 'w_pawn4');
+
+  GameModeManager.setMode('standard');
+});
+
+runTest('77. Pothole Chess: R7 Potholes Block Landing and Passing Through (Sliding & Knights)', () => {
+  GameModeManager.setMode('pothole');
+  PotholeMode.resetState();
+
+  // Clear path for White Queen on d1 (4_1) by removing pawn on d2
+  main.variables.pieces['w_pawn4'].captured = true;
+  main.variables.pieces['w_pawn4'].position = null;
+  $('#4_2').attr('chess', 'null');
+
+  // Place pothole on d4 (4_4)
+  PotholeMode.onTurnStart('w', { gate: 4, rank: 4, file: 4 });
+  PotholeMode.state.isRolling = false;
+  assert.strictEqual(GameModeManager.isPothole('4_4'), true);
+
+  // Queen pseudo moves along d-file: d2 (4_2), d3 (4_3) are legal; d4 (4_4) is pothole and blocks!
+  let qMoves = main.methods.getPseudoMoves('w_queen');
+  assert(qMoves.includes('4_2'), 'Queen can move to d2');
+  assert(qMoves.includes('4_3'), 'Queen can move to d3');
+  assert(!qMoves.includes('4_4'), 'Queen CANNOT land on pothole d4');
+  assert(!qMoves.includes('4_5'), 'Queen CANNOT pass through pothole d4 to d5');
+  assert(!qMoves.includes('4_6'), 'Queen CANNOT pass through pothole d4 to d6');
+
+  // Knight jump test: Place pothole on f3 (6_3).
+  // Knight on g1 (7_1) normally jumps to f3 (6_3) and h3 (8_3).
+  let bKnightMovesBefore = main.methods.getPseudoMoves('w_knight2');
+  assert(bKnightMovesBefore.includes('6_3'), 'Knight can normally reach f3');
+
+  PotholeMode.state.potholes.push({ square: 'f3', cellId: '6_3', owner: 'b' });
+  let bKnightMovesAfter = main.methods.getPseudoMoves('w_knight2');
+  assert(!bKnightMovesAfter.includes('6_3'), 'Knight cannot land on pothole f3');
+  assert(bKnightMovesAfter.includes('8_3'), 'Knight can still reach h3');
+
+  GameModeManager.setMode('standard');
+});
+
+runTest('78. Pothole Chess: R7 Castling & Pawn Pushes Blocked by Pothole', () => {
+  GameModeManager.setMode('pothole');
+  PotholeMode.resetState();
+  PotholeMode.state.isRolling = false;
+
+  // Pawn push e2 -> e4: if e3 (5_3) is a pothole, both single and double push blocked
+  PotholeMode.state.potholes.push({ square: 'e3', cellId: '5_3', owner: 'b' });
+  let pawnMoves = main.methods.getPseudoMoves('w_pawn5');
+  assert(!pawnMoves.includes('5_3'), 'Pawn single push blocked by pothole on e3');
+  assert(!pawnMoves.includes('5_4'), 'Pawn double push blocked when crossing pothole on e3');
+
+  // Castling: Clear f1 and g1 for Kingside castling
+  PotholeMode.resetState();
+  PotholeMode.state.isRolling = false;
+  main.variables.pieces['w_bishop2'].captured = true;
+  main.variables.pieces['w_bishop2'].position = null;
+  $('#6_1').attr('chess', 'null');
+  main.variables.pieces['w_knight2'].captured = true;
+  main.variables.pieces['w_knight2'].position = null;
+  $('#7_1').attr('chess', 'null');
+
+  let kingMovesClear = main.methods.getPseudoMoves('w_king');
+  assert(kingMovesClear.includes('7_1_castleKS'), 'Kingside castle should be legal when path is clear');
+
+  // Place pothole on transit square f1 (6_1)
+  PotholeMode.state.potholes.push({ square: 'f1', cellId: '6_1', owner: 'b' });
+  let kingMovesBlocked = main.methods.getPseudoMoves('w_king');
+  assert(!kingMovesBlocked.includes('7_1_castleKS'), 'Castling illegal when transit square is a pothole');
+
+  GameModeManager.setMode('standard');
+});
+
+runTest('79. Pothole Chess: R7 Attack Ray Blocked by Pothole Stops Check', () => {
+  GameModeManager.setMode('pothole');
+  PotholeMode.resetState();
+  PotholeMode.state.isRolling = false;
+
+  // Clear e-file completely between White King on e1 (5_1) and Black King on e8 (5_8)
+  main.variables.pieces['w_pawn5'].captured = true;
+  main.variables.pieces['w_pawn5'].position = null;
+  $('#5_2').attr('chess', 'null');
+  main.variables.pieces['b_pawn5'].captured = true;
+  main.variables.pieces['b_pawn5'].position = null;
+  $('#5_7').attr('chess', 'null');
+
+  // Place Black Rook on e5 (5_5)
+  main.variables.pieces['b_rook1'].position = '5_5';
+  main.variables.pieces['b_rook1'].captured = false;
+  $('#5_5').attr('chess', 'b_rook1');
+  $('#1_8').attr('chess', 'null');
+
+  // Without pothole: Black Rook on e5 directly attacks White King on e1 (Check!)
+  assert.strictEqual(main.methods.isInCheck('w'), true, 'White King should be in check from Black Rook on e5');
+
+  // Place pothole on e3 (5_3) between Rook (5_5) and King (5_1)
+  PotholeMode.state.potholes.push({ square: 'e3', cellId: '5_3', owner: 'w' });
+
+  // Attack ray must be blocked by the pothole at e3: White King is NO LONGER in check!
+  assert.strictEqual(main.methods.isInCheck('w'), false, 'Pothole blocks attack ray, preventing check');
+
+  GameModeManager.setMode('standard');
+});
+
+runTest('80. Pothole Chess: R8 Overlap Transfer (Rolling onto active pothole transfers ownership)', () => {
+  GameModeManager.setMode('pothole');
+  PotholeMode.resetState();
+
+  // White places pothole on c4 (3_4)
+  PotholeMode.onTurnStart('w', { gate: 4, rank: 4, file: 3 });
+  assert.strictEqual(PotholeMode.state.potholes.length, 1);
+  assert.strictEqual(PotholeMode.state.potholes[0].owner, 'w');
+
+  // Black rolls same square c4 (3_4)
+  PotholeMode.onTurnStart('b', { gate: 2, rank: 4, file: 3 });
+  assert.strictEqual(PotholeMode.state.potholes.length, 1, 'Still only one pothole on square');
+  assert.strictEqual(PotholeMode.state.potholes[0].owner, 'b', 'Ownership transferred to Black');
+  assert.strictEqual(PotholeMode.state.lastRoll.isOverlap, true);
+
+  GameModeManager.setMode('standard');
+});
+
+runTest('81. Pothole Chess: R9 King Never Falls; Standing King is Frozen', () => {
+  GameModeManager.setMode('pothole');
+  PotholeMode.resetState();
+
+  // White King is at e1 (5_1). Roll lands on e1!
+  PotholeMode.onTurnStart('w', { gate: 4, rank: 1, file: 5 });
+  PotholeMode.state.isRolling = false; // Dice roll finished
+
+  let king = main.variables.pieces['w_king'];
+  assert.strictEqual(king.captured, false, 'King NEVER falls through board');
+  assert.strictEqual(king.position, '5_1', 'King remains on the board');
+  assert.strictEqual(PotholeMode.isKingFrozen('w'), true, 'White King is frozen');
+
+  // Frozen King has 0 moves (cannot step, cannot capture, cannot castle)
+  let kingMoves = main.methods.getLegalMoves('w_king');
+  assert.strictEqual(kingMoves.length, 0, 'Frozen king has 0 legal moves');
+
+  // Other pieces can still move normally
+  let knightMoves = main.methods.getLegalMoves('w_knight1');
+  assert(knightMoves.length > 0, 'Non-king pieces can move normally while king is frozen');
+
+  GameModeManager.setMode('standard');
+});
+
+runTest('82. Pothole Chess: R10 True Checkmate with Frozen King', () => {
+  GameModeManager.setMode('pothole');
+  PotholeMode.resetState();
+  PotholeMode.state.isRolling = false;
+
+  // White King at e1 (5_1) is frozen
+  PotholeMode.state.potholes.push({ square: 'e1', cellId: '5_1', owner: 'w' });
+  assert.strictEqual(PotholeMode.isKingFrozen('w'), true);
+
+  // Clear e-file pawns
+  main.variables.pieces['w_pawn5'].captured = true;
+  main.variables.pieces['w_pawn5'].position = null;
+  $('#5_2').attr('chess', 'null');
+  main.variables.pieces['b_pawn5'].captured = true;
+  main.variables.pieces['b_pawn5'].position = null;
+  $('#5_7').attr('chess', 'null');
+
+  // Place Black Queen on e2 (5_2), supported by Black Rook on e8 (5_8)
+  main.variables.pieces['b_queen'].position = '5_2';
+  main.variables.pieces['b_queen'].captured = false;
+  $('#5_2').attr('chess', 'b_queen');
+  $('#4_8').attr('chess', 'null');
+
+  main.variables.pieces['b_rook1'].position = '5_8';
+  main.variables.pieces['b_rook1'].captured = false;
+  $('#5_8').attr('chess', 'b_rook1');
+  $('#1_8').attr('chess', 'null');
+
+  // Remove other white pieces that could capture on e2
+  ['w_queen', 'w_bishop1', 'w_bishop2', 'w_knight1', 'w_knight2', 'w_pawn4', 'w_pawn6'].forEach(k => {
+    let p = main.variables.pieces[k];
+    if (p.position) $('#' + p.position).attr('chess', 'null');
+    p.captured = true;
+    p.position = null;
+  });
+
+  // White King is in check, frozen (cannot capture Queen or escape), and no other piece can block/capture
+  assert.strictEqual(main.methods.isInCheck('w'), true);
+  assert.strictEqual(main.methods.hasAnyLegalMoves('w'), false);
+
+  GameModeManager.setMode('standard');
+});
+
+runTest('83. Pothole Chess: R11 Stalemate Detection with Frozen King', () => {
+  GameModeManager.setMode('pothole');
+  PotholeMode.resetState();
+
+  // Freeze White King at e1 (5_1)
+  PotholeMode.state.potholes.push({ square: 'e1', cellId: '5_1', owner: 'w' });
+
+  // Remove ALL other White pieces from the board
+  Object.keys(main.variables.pieces).forEach(key => {
+    if (key.startsWith('w_') && key !== 'w_king') {
+      main.variables.pieces[key].captured = true;
+      main.variables.pieces[key].position = null;
+    }
+  });
+
+  // Not in check!
+  assert.strictEqual(main.methods.isInCheck('w'), false);
+  // King has 0 moves and no other pieces exist -> 0 legal moves total!
+  assert.strictEqual(main.methods.hasAnyLegalMoves('w'), false);
+
+  GameModeManager.setMode('standard');
+});
+
+runTest('84. Pothole Chess: Undo / Redo Snapshot Preservation', () => {
+  GameModeManager.setMode('pothole');
+  PotholeMode.resetState();
+
+  PotholeMode.state.potholes = [
+    { square: 'e4', cellId: '5_4', owner: 'w' },
+    { square: 'c6', cellId: '3_6', owner: 'b' }
+  ];
+  PotholeMode.state.turnCount = 5;
+
+  let snap = PotholeMode.createSnapshot();
+  assert.strictEqual(snap.potholes.length, 2);
+  assert.strictEqual(snap.turnCount, 5);
+
+  // Mutate state
+  PotholeMode.resetState();
+  assert.strictEqual(PotholeMode.state.potholes.length, 0);
+
+  // Restore snapshot
+  PotholeMode.restoreSnapshot(snap);
+  assert.strictEqual(PotholeMode.state.potholes.length, 2);
+  assert.strictEqual(PotholeMode.state.potholes[0].square, 'e4');
+  assert.strictEqual(PotholeMode.state.potholes[1].square, 'c6');
+  assert.strictEqual(PotholeMode.state.turnCount, 5);
+
+  GameModeManager.setMode('standard');
+});
+
+runTest('85. Classic Chess Regression Check (Clean Separation)', () => {
+  GameModeManager.setMode('standard');
+  assert.strictEqual(GameModeManager.activeMode, 'standard');
+  assert.strictEqual(GameModeManager.isPothole('5_4'), false);
+  assert.strictEqual(GameModeManager.isKingFrozen('w'), false);
+  assert.strictEqual(GameModeManager.isActionBlocked(), false);
+
+  // Standard move generation works normally
+  let e2Moves = main.methods.getLegalMoves('w_pawn5');
+  assert(e2Moves.includes('5_3'), 'Standard e2-e3');
+  assert(e2Moves.includes('5_4'), 'Standard e2-e4');
 });
 
 console.log('\n------------------------------------');
