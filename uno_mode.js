@@ -996,7 +996,7 @@
         let discardEl = this.renderSingleCardHtml(topDiscard, false, true);
         $('#discard-top-display').html(discardEl);
       } else {
-        $('#discard-top-display').html('<div class="uno-card mini-card empty-card"><span class="card-center">🂠</span></div>');
+        $('#discard-top-display').html('<div class="uno-card mini-card empty-card"><span class="card-center empty-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3 3"><rect x="3" y="3" width="18" height="18" rx="3"/></svg></span></div>');
       }
 
       // 2. Energy Meters
@@ -1051,7 +1051,12 @@
       if (isFaceDown) {
         return `
           <div class="uno-card face-down${miniCls}">
-            <div class="card-back-pattern">♟</div>
+            <div class="card-back-pattern">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="5" y="5" width="14" height="14" rx="2" transform="rotate(45 12 12)"/>
+                <circle cx="12" cy="12" r="2.5" fill="currentColor"/>
+              </svg>
+            </div>
           </div>
         `;
       }
@@ -1087,7 +1092,7 @@
       if (typeof $ === 'undefined') return;
       let html = '';
       this.state.cardLog.slice(0, 20).forEach(entry => {
-        let tag = entry.color === 'system' ? '⚙️' : (entry.color === 'w' ? '♙ White' : '♟ Black');
+        let tag = entry.color === 'system' ? 'SYSTEM' : (entry.color === 'w' ? 'White' : 'Black');
         html += `
           <div class="card-log-entry">
             <span class="log-color">${tag}:</span> ${entry.text}
@@ -1234,43 +1239,43 @@
       steps: [
         {
           target: '#board-stage',
-          title: 'Welcome to Chess UNO! ♟️🃏',
+          title: 'Welcome to Chess UNO',
           desc: 'Chess UNO combines classical FIDE chess with tactical UNO cards! All standard rules (Check, Checkmate, Castling, En Passant) remain fully in effect.',
           placement: 'center'
         },
         {
           target: '#uno-hand-white',
-          title: 'Your Card Hand 🎴',
+          title: 'Your Card Hand',
           desc: 'Each player starts with 3 cards (max 5). On your turn, you can optionally play 1 card before or after your chess move.',
           placement: 'top'
         },
         {
           target: '#uno-main-panel .deck-status-bar',
-          title: 'Draw Deck & Discard Pile 🗃️',
+          title: 'Draw Deck & Discard Pile',
           desc: 'You automatically draw 1 card every 3 turns. If the draw pile empties, the discard pile reshuffles into the deck automatically.',
           placement: 'left'
         },
         {
           target: '#uno-main-panel .energy-tracker',
-          title: 'Energy System (0–20) ⚡',
+          title: 'Energy System (0–20)',
           desc: 'Playing Number cards converts them into Energy. Spend 6 Energy to draw an extra card, or 3 Energy to recycle an unwanted card.',
           placement: 'left'
         },
         {
           target: '#uno-graveyard-panel',
-          title: 'The Graveyard Pool ⚰️',
+          title: 'The Graveyard Pool',
           desc: 'Captured pieces enter the Graveyard. Use special cards like Draw Two (+2) and Wild Draw Four (★+4) to revive fallen pieces back into battle!',
           placement: 'left'
         },
         {
           target: '#uno-card-log-panel',
-          title: 'Card Action Log 📋',
+          title: 'Card Action Log',
           desc: 'Every card played, energy transaction, and piece revival is transparently tracked in this live action log.',
           placement: 'left'
         },
         {
           target: '#turn',
-          title: 'Victory Condition 🏆',
+          title: 'Victory Condition',
           desc: 'Your objective is the same as classical chess: Checkmate the opponent King! Cards enhance your strategy—play smart and have fun!',
           placement: 'bottom'
         }
@@ -1313,7 +1318,7 @@
 
         // Nav buttons
         $('#tutorial-prev-btn').prop('disabled', idx === 0);
-        $('#tutorial-next-btn').text(idx === this.steps.length - 1 ? 'Finish 🏁' : 'Next ▶');
+        $('#tutorial-next-btn').text(idx === this.steps.length - 1 ? 'Finish' : 'Next ▶');
 
         // Position spotlight & box
         let $target = $(step.target);

@@ -499,7 +499,13 @@
 
     <div id="uno-main-panel" class="panel-card uno-panel uno-only">
       <div class="panel-header">
-        <span class="panel-header-icon">🃏</span>
+        <span class="panel-header-icon">
+          <svg class="panel-icon-svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="6" width="12" height="15" rx="2"/>
+            <path d="M7 6V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2h-2"/>
+            <circle cx="9" cy="13.5" r="1.5" fill="currentColor"/>
+          </svg>
+        </span>
         <h3 class="panel-title">UNO Deck & Energy</h3>
       </div>
       <div class="deck-status-bar">
@@ -526,8 +532,20 @@
         </div>
       </div>
       <div class="energy-actions">
-        <button id="energy-draw-btn" class="energy-action-btn">⚡ Draw (6E)</button>
-        <button id="energy-recycle-btn" class="energy-action-btn">♻️ Recycle (3E)</button>
+        <button id="energy-draw-btn" class="energy-action-btn">
+          <svg class="btn-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+          </svg>
+          <span>Draw (6E)</span>
+        </button>
+        <button id="energy-recycle-btn" class="energy-action-btn">
+          <svg class="btn-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"/>
+            <polyline points="1 20 1 14 7 14"/>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+          </svg>
+          <span>Recycle (3E)</span>
+        </button>
       </div>
     </div>
 
@@ -538,7 +556,14 @@
 
     <div id="uno-graveyard-panel" class="panel-card graveyard-tray uno-only">
       <div class="panel-header">
-        <span class="panel-header-icon">⚰️</span>
+        <span class="panel-header-icon">
+          <svg class="panel-icon-svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 21V10a7 7 0 0 1 14 0v11H5z"/>
+            <line x1="3" y1="21" x2="21" y2="21"/>
+            <line x1="12" y1="8" x2="12" y2="14"/>
+            <line x1="9" y1="10" x2="15" y2="10"/>
+          </svg>
+        </span>
         <h3 class="panel-title">Graveyard (Revival Pool)</h3>
       </div>
       <div class="graveyard-row">
@@ -553,7 +578,14 @@
 
     <div id="uno-card-log-panel" class="panel-card uno-only">
       <div class="panel-header">
-        <span class="panel-header-icon">📋</span>
+        <span class="panel-header-icon">
+          <svg class="panel-icon-svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+            <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+            <line x1="9" y1="12" x2="15" y2="12"/>
+            <line x1="9" y1="16" x2="13" y2="16"/>
+          </svg>
+        </span>
         <h3 class="panel-title">Card Action Log</h3>
       </div>
       <div id="card-log-box" class="card-log-box"></div>
@@ -610,12 +642,27 @@
 
     <div class="settings-group">
       <label class="settings-label">Sound Effects</label>
-      <button id="sound-toggle" class="action-btn sound-btn" title="Toggle Move Sounds">🔊 Sound</button>
+      <button id="sound-toggle" class="action-btn sound-btn" title="Toggle Move Sounds">
+        <svg class="btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+          <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+        </svg>
+        <span>Sound</span>
+      </button>
     </div>
 
     <div class="settings-group">
       <label class="settings-label">Game Mode</label>
-      <button id="mode-toggle-btn" class="action-btn mode-btn" title="Select Game Mode">♟ Classic</button>
+      <button id="mode-toggle-btn" class="action-btn mode-btn" title="Select Game Mode">
+        <svg class="btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="5" r="3"/>
+          <path d="M9 8.5h6l-1 4.5h-4z"/>
+          <path d="M7.5 17.5l1.5-4.5h6l1.5 4.5z"/>
+          <path d="M6 21h12v-2a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1v2z"/>
+        </svg>
+        <span>Classic</span>
+      </button>
     </div>
 
     <div class="settings-group">
@@ -627,7 +674,13 @@
 
     <div class="settings-group">
       <label class="settings-label">Help & Rules</label>
-      <button id="help-btn" class="action-btn help-btn" title="How to Play & Game Rules">📖 Rulebook</button>
+      <button id="help-btn" class="action-btn help-btn" title="How to Play & Game Rules">
+        <svg class="btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+          <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+        </svg>
+        <span>Rulebook</span>
+      </button>
     </div>
   </div>
 </div>
@@ -638,12 +691,25 @@
     <h3>Select Game Mode</h3>
     <div class="mode-options-grid">
       <div class="mode-card-btn active" data-mode="standard">
-        <div class="mode-card-icon">♟</div>
+        <div class="mode-card-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="5" r="3.2"/>
+            <path d="M9 8.5h6l-1 4.5H10L9 8.5z"/>
+            <path d="M7.5 17.5l1.5-4.5h6l1.5 4.5z"/>
+            <path d="M5.5 21h13v-2a1.5 1.5 0 0 0-1.5-1.5h-10A1.5 1.5 0 0 0 5.5 19v2z"/>
+          </svg>
+        </div>
         <div class="mode-card-title">Classic Chess</div>
         <div class="mode-card-desc">Authentic FIDE chess with full rules & clocks.</div>
       </div>
       <div class="mode-card-btn" data-mode="uno">
-        <div class="mode-card-icon">🃏</div>
+        <div class="mode-card-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="6" width="12" height="15" rx="2"/>
+            <path d="M7 6V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2h-2"/>
+            <circle cx="9" cy="13.5" r="1.5" fill="currentColor"/>
+          </svg>
+        </div>
         <div class="mode-card-title">Chess UNO Mode</div>
         <div class="mode-card-desc">Chess enhanced with tactical UNO card powers & energy.</div>
       </div>
@@ -657,12 +723,21 @@
   <div class="modal-content help-modal-content">
     <div class="help-modal-header">
       <div class="help-title-badge">
-        <span class="help-title-icon">📖</span>
+        <span class="help-title-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+          </svg>
+        </span>
         <h2 class="help-title">Chess UNO Rulebook</h2>
       </div>
       <div class="help-header-actions">
         <button id="restart-tutorial-btn" class="action-btn tutorial-replay-btn" title="Launch Interactive Guided Tour">
-          🎓 Replay Tutorial
+          <svg class="btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+            <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+          </svg>
+          <span>Replay Tutorial</span>
         </button>
         <button class="modal-close-icon" id="close-help-modal" title="Close Rulebook">&times;</button>
       </div>
@@ -671,22 +746,61 @@
     <!-- Rulebook Tabs Navigation -->
     <div class="help-tabs-nav">
       <button class="help-tab-btn active" data-tab="overview">
-        <span class="tab-icon">📜</span> Overview
+        <span class="tab-icon">
+          <svg class="tab-icon-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+        </span>
+        <span>Overview</span>
       </button>
       <button class="help-tab-btn" data-tab="turnflow">
-        <span class="tab-icon">🔄</span> Turn Flow
+        <span class="tab-icon">
+          <svg class="tab-icon-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-1.19"/>
+          </svg>
+        </span>
+        <span>Turn Flow</span>
       </button>
       <button class="help-tab-btn" data-tab="cards">
-        <span class="tab-icon">🃏</span> Card Guide
+        <span class="tab-icon">
+          <svg class="tab-icon-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="6" width="12" height="15" rx="2"/>
+            <path d="M7 6V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2h-2"/>
+          </svg>
+        </span>
+        <span>Card Guide</span>
       </button>
       <button class="help-tab-btn" data-tab="energy">
-        <span class="tab-icon">⚡</span> Energy System
+        <span class="tab-icon">
+          <svg class="tab-icon-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+          </svg>
+        </span>
+        <span>Energy System</span>
       </button>
       <button class="help-tab-btn" data-tab="graveyard">
-        <span class="tab-icon">⚰️</span> Graveyard & Revival
+        <span class="tab-icon">
+          <svg class="tab-icon-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 21V10a7 7 0 0 1 14 0v11H5z"/>
+            <line x1="3" y1="21" x2="21" y2="21"/>
+            <line x1="12" y1="8" x2="12" y2="14"/>
+            <line x1="9" y1="10" x2="15" y2="10"/>
+          </svg>
+        </span>
+        <span>Graveyard & Revival</span>
       </button>
       <button class="help-tab-btn" data-tab="faq">
-        <span class="tab-icon">❓</span> FAQ
+        <span class="tab-icon">
+          <svg class="tab-icon-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+        </span>
+        <span>FAQ</span>
       </button>
     </div>
 
@@ -695,7 +809,12 @@
 
       <!-- 1. Overview Tab -->
       <div id="help-tab-overview" class="help-tab-panel active">
-        <div class="rulebook-section-title">♟️ What is Chess UNO?</div>
+        <div class="rulebook-section-title">
+          <svg class="section-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="5" r="3"/><path d="M9 8.5h6l-1 4.5h-4z"/><path d="M7.5 17.5l1.5-4.5h6l1.5 4.5z"/><path d="M6 21h12v-2a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1v2z"/>
+          </svg>
+          <span>What is Chess UNO?</span>
+        </div>
         <p class="rulebook-intro-p">
           <b>Chess UNO</b> seamlessly marries traditional FIDE chess with the tactical dynamism of UNO cards. Chess remains the primary strategic battlefield—cards provide tactical maneuvers, piece revivals, and board control without breaking the sacred laws of chess.
         </p>
@@ -708,7 +827,12 @@
           • En Passant Captures & Pawn Promotion
         </div>
 
-        <div class="rulebook-section-title">🏆 Winning the Match</div>
+        <div class="rulebook-section-title">
+          <svg class="section-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.45 1-1 1H8v4h8v-4h-1c-.55 0-1-.45-1-1v-2.34"/><path d="M18 4H6v5c0 3.31 2.69 6 6 6s6-2.69 6-6V4z"/>
+          </svg>
+          <span>Winning the Match</span>
+        </div>
         <p class="rulebook-intro-p">
           The ultimate victory condition is identical to classical chess: <b>Checkmate the opponent's King</b>. Cards provide tactical momentum, but sound chess fundamentals will always decide the champion.
         </p>
@@ -716,7 +840,12 @@
 
       <!-- 2. Turn Flow Tab -->
       <div id="help-tab-turnflow" class="help-tab-panel">
-        <div class="rulebook-section-title">🔄 Anatomy of a Turn</div>
+        <div class="rulebook-section-title">
+          <svg class="section-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-1.19"/>
+          </svg>
+          <span>Anatomy of a Turn</span>
+        </div>
         <p class="rulebook-intro-p">
           Every turn gives you the flexibility to play a card before or after your chess move. Cards are optional, but making a legal chess move is required.
         </p>
@@ -769,7 +898,13 @@
 
       <!-- 3. Card Guide Tab -->
       <div id="help-tab-cards" class="help-tab-panel">
-        <div class="rulebook-section-title">🃏 Complete Card Almanac</div>
+        <div class="rulebook-section-title">
+          <svg class="section-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="6" width="12" height="15" rx="2"/>
+            <path d="M7 6V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2h-2"/>
+          </svg>
+          <span>Complete Card Almanac</span>
+        </div>
         <p class="rulebook-intro-p">
           The deck contains 108 cards matching the warm parlor palette: Crimson Red, Slate Blue, Forest Green, and Amber Gold.
         </p>
@@ -875,21 +1010,38 @@
 
       <!-- 4. Energy System Tab -->
       <div id="help-tab-energy" class="help-tab-panel">
-        <div class="rulebook-section-title">⚡ The Energy Economy</div>
+        <div class="rulebook-section-title">
+          <svg class="section-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+          </svg>
+          <span>The Energy Economy</span>
+        </div>
         <p class="rulebook-intro-p">
           Energy is your personal tactical reserve, accumulated by converting Number cards in your hand. Each player stores up to <b>20 Energy</b>.
         </p>
 
         <div class="energy-showcase-row">
           <div class="energy-box">
-            <div class="energy-box-title">⚡ Draw Card (Cost: 6 Energy)</div>
+            <div class="energy-box-title">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+              </svg>
+              <span>Draw Card (Cost: 6 Energy)</span>
+            </div>
             <p class="energy-box-p">
               Spend 6 Energy on your turn to draw 1 extra card directly from the deck into your hand (subject to the 5-card hand maximum).
             </p>
           </div>
 
           <div class="energy-box">
-            <div class="energy-box-title">♻️ Recycle Card (Cost: 3 Energy)</div>
+            <div class="energy-box-title">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 4 23 10 17 10"/>
+                <polyline points="1 20 1 14 7 14"/>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+              </svg>
+              <span>Recycle Card (Cost: 3 Energy)</span>
+            </div>
             <p class="energy-box-p">
               Spend 3 Energy, select 1 unwanted card from your hand to discard, and instantly draw a fresh replacement card from the deck.
             </p>
@@ -903,7 +1055,15 @@
 
       <!-- 5. Graveyard & Revival Tab -->
       <div id="help-tab-graveyard" class="help-tab-panel">
-        <div class="rulebook-section-title">⚰️ The Graveyard Pool & Revival Rules</div>
+        <div class="rulebook-section-title">
+          <svg class="section-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 21V10a7 7 0 0 1 14 0v11H5z"/>
+            <line x1="3" y1="21" x2="21" y2="21"/>
+            <line x1="12" y1="8" x2="12" y2="14"/>
+            <line x1="9" y1="10" x2="15" y2="10"/>
+          </svg>
+          <span>The Graveyard Pool & Revival Rules</span>
+        </div>
         <p class="rulebook-intro-p">
           Whenever a piece is captured on the board (by standard capture or En Passant), it is transferred to that player's <b>Graveyard</b>.
         </p>
@@ -920,36 +1080,59 @@
 
       <!-- 6. FAQ Tab -->
       <div id="help-tab-faq" class="help-tab-panel">
-        <div class="rulebook-section-title">❓ Frequently Asked Questions</div>
+        <div class="rulebook-section-title">
+          <svg class="section-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <span>Frequently Asked Questions</span>
+        </div>
 
         <div class="faq-list">
           <div class="faq-card">
-            <div class="faq-q">❓ Can I ignore a Check on my King by playing a card?</div>
+            <div class="faq-q">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              <span>Can I ignore a Check on my King by playing a card?</span>
+            </div>
             <div class="faq-a"><b>No.</b> Standard FIDE check rules are absolute. When your King is attacked, you must legally escape check on your turn. Skip cards cannot freeze an enemy piece if that piece is your opponent's only way out of check.</div>
           </div>
 
           <div class="faq-card">
-            <div class="faq-q">❓ Can I revive a King with Wild Draw Four?</div>
+            <div class="faq-q">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              <span>Can I revive a King with Wild Draw Four?</span>
+            </div>
             <div class="faq-a"><b>No.</b> Kings are permanent commanders and never enter the Graveyard. Only Pawns, Knights, Bishops, Rooks, and Queens can be revived.</div>
           </div>
 
           <div class="faq-card">
-            <div class="faq-q">❓ Can cards create illegal board positions?</div>
+            <div class="faq-q">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              <span>Can cards create illegal board positions?</span>
+            </div>
             <div class="faq-a"><b>No.</b> Every card effect is validated by the chess engine before execution. If a Reverse swap or piece revival would leave your King in check, it is prevented and the card remains safely in your hand.</div>
           </div>
 
           <div class="faq-card">
-            <div class="faq-q">❓ How many cards can I play per turn?</div>
+            <div class="faq-q">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              <span>How many cards can I play per turn?</span>
+            </div>
             <div class="faq-a">You can play at most <b>1 card per turn</b>. Playing a card is always optional.</div>
           </div>
 
           <div class="faq-card">
-            <div class="faq-q">❓ What happens when the card deck runs out?</div>
+            <div class="faq-q">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              <span>What happens when the card deck runs out?</span>
+            </div>
             <div class="faq-a">The discard pile is automatically shuffled back into a fresh 108-card draw deck with zero interruption to play.</div>
           </div>
 
           <div class="faq-card">
-            <div class="faq-q">❓ Does Undo and Redo work with cards?</div>
+            <div class="faq-q">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              <span>Does Undo and Redo work with cards?</span>
+            </div>
             <div class="faq-a"><b>Yes!</b> The undo/redo engine saves complete immutable snapshots of the chessboard, card hands, energy levels, and graveyard. Undoing a move restores card state perfectly.</div>
           </div>
         </div>
