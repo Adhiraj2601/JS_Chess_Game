@@ -130,7 +130,7 @@ body::after {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: 220px minmax(360px, auto) 300px;
+  grid-template-columns: 275px minmax(360px, auto) 240px;
   justify-content: center;
   align-items: start;
   min-height: 100vh;
@@ -148,7 +148,9 @@ body::after {
 #action-sidebar {
   display: flex;
   flex-direction: column;
-  width: 220px;
+  width: 275px;
+  height: calc(var(--board-dimension) + 54px);
+  min-height: min-content;
   margin-top: 0; /* Aligned with top player strip */
 }
 
@@ -169,7 +171,7 @@ chess-wordmark,
 
 .chess-wordmark {
   width: 100%;
-  max-width: 220px;
+  max-width: 275px;
   height: auto;
   display: block;
   user-select: none;
@@ -179,6 +181,7 @@ chess-wordmark,
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
+  margin-bottom: 24px;
 }
 
 .nav-tile-btn {
@@ -646,9 +649,8 @@ chess-wordmark,
 #game-sidebar {
   display: flex;
   flex-direction: column;
-  width: 300px;
-  margin-top: 0; /* Aligned with top player strip and CHESS wordmark */
-  gap: 16px;
+  width: 240px;
+  margin-top: 54px; /* Top-aligned with top of chessboard (rank 8) */
 }
 
 /* Analog Chess Clock Widget */
@@ -656,6 +658,7 @@ chess-wordmark,
   width: 100%;
   aspect-ratio: 2 / 1;
   display: block;
+  margin-top: auto;
 }
 
 chess-clock,
@@ -724,7 +727,7 @@ chess-clock,
   display: none;
 }
 
-/* Move History Panel (~300px wide, 1px #333 border, no radius, no card background) */
+/* Move History Panel (~240px wide, 1px #333 border, no radius, no card background) */
 .history-panel {
   background: transparent;
   border: 1px solid #333333;
@@ -732,10 +735,8 @@ chess-clock,
   display: flex;
   flex-direction: column;
   width: 100%;
-  flex: 1;
-  min-height: 240px;
-  height: calc(var(--board-dimension) + 54px - 150px - 16px);
-  max-height: calc(var(--board-dimension) + 54px - 150px - 16px);
+  height: var(--board-dimension);
+  max-height: var(--board-dimension);
   overflow: hidden;
   box-sizing: border-box;
 }
@@ -1088,13 +1089,21 @@ body.mode-uno .uno-only {
   }
 
   #action-sidebar {
+    display: contents;
+  }
+
+  .clock-widget-container {
     order: 2;
     width: 100%;
     max-width: var(--board-dimension);
+    aspect-ratio: 2 / 1;
+    margin: 0 auto;
     margin-top: 0;
   }
 
   .sidebar-header {
+    order: 3;
+    width: 100%;
     margin-bottom: 14px;
     justify-content: center;
   }
@@ -1105,10 +1114,14 @@ body.mode-uno .uno-only {
   }
 
   .action-top {
+    order: 4;
+    width: 100%;
+    max-width: var(--board-dimension);
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: center;
     gap: 8px;
+    margin-bottom: 0;
   }
 
   .action-brand {
@@ -1147,27 +1160,21 @@ body.mode-uno .uno-only {
     display: contents;
   }
 
-  .clock-widget-container {
-    order: 2;
-    width: 100%;
-    max-width: var(--board-dimension);
-    aspect-ratio: 2 / 1;
-    margin: 0 auto;
-  }
-
-  #action-sidebar {
-    order: 3;
-    width: 100%;
-    max-width: var(--board-dimension);
-    margin-top: 0;
-  }
-
   .history-panel {
-    order: 4;
+    order: 5;
     width: 100%;
     max-width: var(--board-dimension);
     height: 180px;
     max-height: 180px;
+  }
+}
+
+@media (max-height: 680px) and (min-width: 901px) {
+  #action-sidebar {
+    height: auto;
+  }
+  .action-top {
+    margin-bottom: 32px;
   }
 }
 

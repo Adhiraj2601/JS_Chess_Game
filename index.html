@@ -106,90 +106,6 @@
         Rematch
       </button>
     </div>
-  </aside>
-
-  <!-- Center Column: Board Stage -->
-  <main id="board-stage">
-
-    <!-- Top (Opponent) Player Bar - ALWAYS UP -->
-    <div class="player-strip player-top">
-      <div class="player-left">
-        <div class="avatar-circle" id="top-avatar" title="Opponent">
-          <img src="assets/avatars/opponent.png" alt="Opponent" class="avatar-img" />
-        </div>
-        <div id="top-clock-slot">
-          <div id="clock-black" class="clock-capsule">
-            <span class="clock-time" id="clock-black-time">—</span>
-          </div>
-        </div>
-        <div class="player-identity-text">
-          <div class="player-name-row">
-            <span class="player-name" id="top-player-name">Opponent</span>
-            <div id="top-material-slot">
-              <div id="material-group-black" class="material-group" style="display:none;">
-                <div id="captured-white" class="captured-tray" title="Pieces captured by Black">
-                  <div class="captured-pieces-list"></div>
-                </div>
-                <span id="material-black" class="material-pill"></span>
-              </div>
-            </div>
-          </div>
-          <span class="player-meta" id="top-player-meta">Black</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Chess Board Container -->
-    <div id="board-wrapper">
-      <div id="game"></div>
-      <svg id="board-arrow-overlay" class="board-arrow-overlay" viewBox="0 0 100 100" preserveAspectRatio="none">
-        <defs>
-          <marker id="arrowhead" markerWidth="3.5" markerHeight="3.5" refX="2" refY="1.75" orient="auto">
-            <polygon points="0 0, 3.5 1.75, 0 3.5" fill="#ffffff" fill-opacity="0.7"/>
-          </marker>
-        </defs>
-        <line id="last-move-arrow" x1="0" y1="0" x2="0" y2="0" stroke="#ffffff" stroke-width="6" stroke-opacity="0.7" stroke-linecap="round" marker-end="url(#arrowhead)" style="display:none;" />
-      </svg>
-    </div>
-
-    <!-- Centered Large Italic Serif Game Result -->
-    <div id="game-result-banner" class="game-result-banner" style="display:none;"></div>
-
-    <!-- Bottom (You) Player Bar - ALWAYS DOWN -->
-    <div class="player-strip player-bottom">
-      <div class="player-left">
-        <div class="avatar-circle active-turn" id="bottom-avatar" title="Player">
-          <img src="assets/avatars/player.png" alt="Player" class="avatar-img" />
-        </div>
-        <div id="bottom-clock-slot">
-          <div id="clock-white" class="clock-capsule">
-            <span class="clock-time" id="clock-white-time">—</span>
-          </div>
-        </div>
-        <div class="player-identity-text">
-          <div class="player-name-row">
-            <span class="player-name" id="bottom-player-name">You</span>
-            <div id="bottom-material-slot">
-              <div id="material-group-white" class="material-group" style="display:none;">
-                <div id="captured-black" class="captured-tray" title="Pieces captured by White">
-                  <div class="captured-pieces-list"></div>
-                </div>
-                <span id="material-white" class="material-pill"></span>
-              </div>
-            </div>
-          </div>
-          <span class="player-meta" id="bottom-player-meta">White</span>
-        </div>
-      </div>
-    </div>
-
-  </main>
-
-  <!-- Right Column: Move History Table & Match Controls -->
-  <aside id="game-sidebar">
-
-    <!-- Turn Status Banner (Hidden visually, preserved for engine text/status) -->
-    <div id="turn" class="status-banner" style="display:none;">It's White's Turn!</div>
 
     <!-- Reusable Analog Chess Clock Component -->
     <div id="clock-widget-container" class="clock-widget-container">
@@ -481,6 +397,93 @@
 </svg>
       </chess-clock>
     </div>
+
+  </aside>
+
+  <!-- Center Column: Board Stage -->
+  <main id="board-stage">
+
+    <!-- Top (Opponent) Player Bar - ALWAYS UP -->
+    <div class="player-strip player-top">
+      <div class="player-left">
+        <div class="avatar-circle" id="top-avatar" title="Opponent">
+          <img src="assets/avatars/opponent.png" alt="Opponent" class="avatar-img" />
+        </div>
+        <div id="top-clock-slot">
+          <div id="clock-black" class="clock-capsule">
+            <span class="clock-time" id="clock-black-time">—</span>
+          </div>
+        </div>
+        <div class="player-identity-text">
+          <div class="player-name-row">
+            <span class="player-name" id="top-player-name">Opponent</span>
+            <div id="top-material-slot">
+              <div id="material-group-black" class="material-group" style="display:none;">
+                <div id="captured-white" class="captured-tray" title="Pieces captured by Black">
+                  <div class="captured-pieces-list"></div>
+                </div>
+                <span id="material-black" class="material-pill"></span>
+              </div>
+            </div>
+          </div>
+          <span class="player-meta" id="top-player-meta">Black</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chess Board Container -->
+    <div id="board-wrapper">
+      <div id="game"></div>
+      <svg id="board-arrow-overlay" class="board-arrow-overlay" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <defs>
+          <marker id="arrowhead" markerWidth="3.5" markerHeight="3.5" refX="2" refY="1.75" orient="auto">
+            <polygon points="0 0, 3.5 1.75, 0 3.5" fill="#ffffff" fill-opacity="0.7"/>
+          </marker>
+        </defs>
+        <line id="last-move-arrow" x1="0" y1="0" x2="0" y2="0" stroke="#ffffff" stroke-width="6" stroke-opacity="0.7" stroke-linecap="round" marker-end="url(#arrowhead)" style="display:none;" />
+      </svg>
+    </div>
+
+    <!-- Centered Large Italic Serif Game Result -->
+    <div id="game-result-banner" class="game-result-banner" style="display:none;"></div>
+
+    <!-- Bottom (You) Player Bar - ALWAYS DOWN -->
+    <div class="player-strip player-bottom">
+      <div class="player-left">
+        <div class="avatar-circle active-turn" id="bottom-avatar" title="Player">
+          <img src="assets/avatars/player.png" alt="Player" class="avatar-img" />
+        </div>
+        <div id="bottom-clock-slot">
+          <div id="clock-white" class="clock-capsule">
+            <span class="clock-time" id="clock-white-time">—</span>
+          </div>
+        </div>
+        <div class="player-identity-text">
+          <div class="player-name-row">
+            <span class="player-name" id="bottom-player-name">You</span>
+            <div id="bottom-material-slot">
+              <div id="material-group-white" class="material-group" style="display:none;">
+                <div id="captured-black" class="captured-tray" title="Pieces captured by White">
+                  <div class="captured-pieces-list"></div>
+                </div>
+                <span id="material-white" class="material-pill"></span>
+              </div>
+            </div>
+          </div>
+          <span class="player-meta" id="bottom-player-meta">White</span>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Right Column: Move History Table & Match Controls -->
+  <aside id="game-sidebar">
+
+    <!-- Turn Status Banner (Hidden visually, preserved for engine text/status) -->
+    <div id="turn" class="status-banner" style="display:none;">It's White's Turn!</div>
+
+
 
 
     <!-- UNO MODE Elements (visible only in UNO mode) -->
