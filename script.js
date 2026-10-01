@@ -964,7 +964,7 @@ const GameModeManager = {
       newMode.onActivate();
     }
     if (typeof $ !== 'undefined') {
-      $('#mode-toggle-btn').html(modeName === 'uno' ? '🃏 Chess UNO' : '♟ Standard');
+      $('#mode-toggle-btn').html(modeName === 'uno' ? '🃏 Chess UNO' : '♟ Classic');
       if (modeName === 'uno') {
         $('body').addClass('mode-uno');
       } else {
@@ -2815,21 +2815,72 @@ if (typeof $ !== 'undefined') {
       AudioManager.toggleSound();
     });
 
+    // Helper to determine if a match has started or is in progress
+    function isGameInProgress() {
+      if (main.variables.gameOver) return true;
+      if (main.variables.moveHistory && main.variables.moveHistory.length > 0) return true;
+      if (main.variables.halfmoveClock > 0 || main.variables.fullmoveNumber > 1 || main.variables.turn !== 'w') return true;
+      if (main.variables.capturedWhite && main.variables.capturedWhite.length > 0) return true;
+      if (main.variables.capturedBlack && main.variables.capturedBlack.length > 0) return true;
+      if (ClockManager.state.running) return true;
+      if (ClockManager.state.isTimed && ClockManager.state.initialMs > 0) {
+        if (ClockManager.state.whiteMs < ClockManager.state.initialMs || ClockManager.state.blackMs < ClockManager.state.initialMs) {
+          return true;
+        }
+      }
+      if (typeof UnoMode !== 'undefined' && UnoMode.state) {
+        if (UnoMode.state.discardPile && UnoMode.state.discardPile.length > 0) return true;
+        if (UnoMode.state.turnCount > 1) return true;
+      }
+      return false;
+    }
+
     // Time Control Presets
     $(document).on('change', '#time-preset', function () {
       let val = $(this).val();
       if (val === 'custom') {
         $('#custom-time-inputs').css('display', 'flex');
-      } else {
-        $('#custom-time-inputs').css('display', 'none');
-        ClockManager.setPreset(val);
+        return;
       }
+      $('#custom-time-inputs').css('display', 'none');
+
+      if (val === ClockManager.state.preset) return;
+
+      const inProgress = isGameInProgress();
+      if (inProgress) {
+        const wasRunning = ClockManager.state.running;
+        ClockManager.stop();
+        const confirmed = (typeof confirm === 'function') ? confirm("Switching game modes will reset the current match. Do you want to proceed and start fresh?") : true;
+        if (!confirmed) {
+          $(this).val(ClockManager.state.preset);
+          if (wasRunning) ClockManager.start(ClockManager.state.activeColor);
+          return;
+        }
+      }
+
+      ClockManager.setPreset(val);
+      main.methods.resetGame();
+      $('#settings-modal').css('display', 'none');
     });
 
     $(document).on('click', '#apply-custom-time', function () {
-      let mins = $('#custom-mins').val();
-      let inc = $('#custom-inc').val();
+      let mins = parseInt($('#custom-mins').val(), 10) || 5;
+      let inc = parseInt($('#custom-inc').val(), 10) || 0;
+
+      const inProgress = isGameInProgress();
+      if (inProgress) {
+        const wasRunning = ClockManager.state.running;
+        ClockManager.stop();
+        const confirmed = (typeof confirm === 'function') ? confirm("Switching game modes will reset the current match. Do you want to proceed and start fresh?") : true;
+        if (!confirmed) {
+          if (wasRunning) ClockManager.start(ClockManager.state.activeColor);
+          return;
+        }
+      }
+
       ClockManager.setPreset('custom', mins, inc);
+      main.methods.resetGame();
+      $('#settings-modal').css('display', 'none');
     });
 
     // Game Mode Selection Modal
@@ -2850,15 +2901,23 @@ if (typeof $ !== 'undefined') {
         return;
       }
 
-      let inProgress = main.variables.moveHistory && main.variables.moveHistory.length > 0;
+      const inProgress = isGameInProgress();
       if (inProgress) {
-        let confirmed = confirm("Switching game modes will reset the current match. Do you want to proceed?");
-        if (!confirmed) return;
+        const wasRunning = ClockManager.state.running;
+        ClockManager.stop();
+        let confirmed = (typeof confirm === 'function') ? confirm("Switching game modes will reset the current match. Do you want to proceed and start fresh?") : true;
+        if (!confirmed) {
+          $('.mode-card-btn').removeClass('active');
+          $(`.mode-card-btn[data-mode="${GameModeManager.activeMode}"]`).addClass('active');
+          if (wasRunning) ClockManager.start(ClockManager.state.activeColor);
+          return;
+        }
       }
 
       GameModeManager.setMode(targetMode);
       main.methods.resetGame();
       $('#mode-select-modal').css('display', 'none');
+      $('#settings-modal').css('display', 'none');
     });
 
     // Rematch button
@@ -2868,6 +2927,15 @@ if (typeof $ !== 'undefined') {
 
     // Settings modal
     $(document).on('click', '#settings-btn', function () {
+      $('#time-preset').val(ClockManager.state.preset);
+      if (ClockManager.state.preset === 'custom') {
+        $('#custom-time-inputs').css('display', 'flex');
+        $('#custom-mins').val(ClockManager.state.customMins || 5);
+        $('#custom-inc').val(ClockManager.state.customIncSecs || 0);
+      } else {
+        $('#custom-time-inputs').css('display', 'none');
+      }
+      $('#mode-toggle-btn').html(GameModeManager.activeMode === 'uno' ? '🃏 Chess UNO' : '♟ Classic');
       $('#settings-modal').css('display', 'flex');
     });
 
