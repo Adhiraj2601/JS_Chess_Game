@@ -1375,6 +1375,7 @@
           if (targetEl && typeof targetEl.getBoundingClientRect === 'function') {
             let rect = targetEl.getBoundingClientRect();
             let pad = 8;
+            $('#uno-tutorial-overlay').removeClass('no-spotlight');
             $('#uno-tutorial-spotlight').css({
               display: 'block',
               top: (rect.top - pad) + 'px',
@@ -1420,6 +1421,7 @@
         }
 
         // Fallback center positioning
+        $('#uno-tutorial-overlay').addClass('no-spotlight');
         $('#uno-tutorial-spotlight').css('display', 'none');
         $('#uno-tutorial-box').css({
           top: '50%',
@@ -1449,7 +1451,7 @@
       finish: function () {
         this.active = false;
         if (typeof $ !== 'undefined') {
-          $('#uno-tutorial-overlay').css('display', 'none');
+          $('#uno-tutorial-overlay').css('display', 'none').removeClass('no-spotlight');
         }
         try {
           if (typeof localStorage !== 'undefined') {
