@@ -23,6 +23,10 @@ body.theme-wood {
   --piece-b: #2b2b2b;
   --piece-b-shade: #151515;
 
+  /* CHESS Wordmark */
+  --wordmark-light: #eeeeee;
+  --wordmark-dark: #161514;
+
   /* Hairlines & Borders */
   --border-hairline: #2b2b2b;
   --border-subtle: #333333;
@@ -126,7 +130,7 @@ body::after {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: 180px minmax(360px, auto) 240px;
+  grid-template-columns: 220px minmax(360px, auto) 240px;
   justify-content: center;
   align-items: start;
   min-height: 100vh;
@@ -144,8 +148,31 @@ body::after {
 #action-sidebar {
   display: flex;
   flex-direction: column;
-  width: 180px;
-  margin-top: 54px; /* Top-aligned with top of chessboard */
+  width: 220px;
+  margin-top: 0; /* Aligned with top player strip */
+}
+
+/* Wordmark Header Component */
+.sidebar-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  padding: 2px 0 0 0;
+  margin-bottom: 36px; /* 32-48px spacing before menu buttons */
+}
+
+chess-wordmark,
+.chess-wordmark-container {
+  display: block;
+  width: 100%;
+}
+
+.chess-wordmark {
+  width: 100%;
+  max-width: 220px;
+  height: auto;
+  display: block;
+  user-select: none;
 }
 
 .action-top {
@@ -993,6 +1020,17 @@ body.mode-uno .uno-only {
     order: 2;
     width: 100%;
     max-width: var(--board-dimension);
+    margin-top: 0;
+  }
+
+  .sidebar-header {
+    margin-bottom: 14px;
+    justify-content: center;
+  }
+
+  .chess-wordmark {
+    max-width: 180px;
+    margin: 0 auto;
   }
 
   .action-top {
@@ -1050,6 +1088,10 @@ body.mode-uno .uno-only {
 @media (max-width: 420px) {
   :root {
     --board-dimension: calc(100vw - 20px);
+  }
+
+  .chess-wordmark {
+    max-width: 140px;
   }
 
   .clock-time {

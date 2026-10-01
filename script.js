@@ -2420,16 +2420,42 @@ if (typeof $ !== 'undefined') {
   });
 }
 
+// Reusable <chess-wordmark> Web Component
+class ChessWordmark extends (typeof HTMLElement !== 'undefined' ? HTMLElement : Object) {
+  connectedCallback() {
+    if (!this.querySelector('svg')) {
+      this.innerHTML = `<svg class="chess-wordmark" viewBox="0 0 396 154" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="CHESS">
+  <defs>
+    <clipPath id="chess-wordmark-clip">
+      <rect x="245" y="0" width="75" height="77" />
+      <rect x="320" y="77" width="75" height="77" />
+    </clipPath>
+  </defs>
+  <rect class="wm-tile" x="245" y="0" width="75" height="77" fill="var(--wordmark-light, #eeeeee)" />
+  <rect class="wm-tile" x="320" y="77" width="75" height="77" fill="var(--wordmark-light, #eeeeee)" />
+  <path class="wm-base-text" d="M 173 4 L 173 151 L 234 151 L 234 129 L 196 128 L 197 87 L 222 87 L 221 64 L 196 63 L 197 26 L 234 26 L 234 4 Z M 86 4 L 86 151 L 108 151 L 109 87 L 133 88 L 133 151 L 155 151 L 155 4 L 133 4 L 132 64 L 108 63 L 108 4 Z M 355 2 L 347 4 L 339 8 L 331 17 L 330 21 L 328 24 L 326 34 L 326 45 L 327 52 L 329 58 L 333 66 L 336 70 L 346 79 L 349 80 L 351 82 L 361 87 L 370 95 L 373 101 L 374 106 L 374 119 L 373 124 L 369 129 L 363 131 L 355 130 L 351 127 L 349 123 L 348 98 L 326 99 L 326 119 L 327 127 L 329 133 L 332 139 L 337 145 L 341 148 L 347 151 L 355 153 L 367 153 L 375 151 L 384 146 L 390 139 L 395 128 L 395 97 L 393 91 L 389 83 L 385 78 L 375 69 L 363 63 L 357 59 L 353 55 L 349 47 L 349 32 L 350 30 L 354 26 L 356 25 L 367 25 L 373 32 L 374 51 L 395 51 L 395 27 L 391 17 L 383 8 L 375 4 L 368 2 Z M 30 2 L 22 4 L 13 9 L 6 17 L 5 21 L 2 27 L 2 31 L 0 32 L 0 123 L 2 124 L 2 128 L 6 138 L 14 147 L 25 152 L 30 153 L 42 153 L 50 151 L 59 146 L 66 138 L 69 131 L 71 121 L 71 98 L 48 98 L 48 123 L 46 127 L 44 129 L 42 130 L 30 130 L 24 123 L 24 32 L 30 25 L 36 24 L 44 26 L 46 28 L 48 32 L 48 51 L 71 51 L 71 34 L 69 24 L 67 21 L 67 19 L 64 14 L 59 9 L 50 4 L 43 2 Z M 246 1 L 275 2 L 270 3 L 262 6 L 259 8 L 252 15 L 250 18 L 247 26 L 246 31 L 246 48 L 249 59 L 254 68 L 264 78 L 270 82 L 275 84 L 277 86 L 282 88 L 289 95 L 291 98 L 293 105 L 293 121 L 291 126 L 286 130 L 275 130 L 270 126 L 268 120 L 268 98 L 246 98 L 246 125 L 247 130 L 252 140 L 260 148 L 266 151 L 274 153 L 287 153 L 295 151 L 301 148 L 309 140 L 313 133 L 315 125 L 315 99 L 313 92 L 307 81 L 298 72 L 294 69 L 282 63 L 276 59 L 273 56 L 268 46 L 268 34 L 269 30 L 273 26 L 278 24 L 283 24 L 287 25 L 292 30 L 293 33 L 293 50 L 315 50 L 315 31 L 313 23 L 308 14 L 299 6 L 291 3 L 286 2 L 320 0 Z" fill="var(--wordmark-light, #eeeeee)" fill-rule="evenodd" />
+  <path class="wm-inverted-text" d="M 173 4 L 173 151 L 234 151 L 234 129 L 196 128 L 197 87 L 222 87 L 221 64 L 196 63 L 197 26 L 234 26 L 234 4 Z M 86 4 L 86 151 L 108 151 L 109 87 L 133 88 L 133 151 L 155 151 L 155 4 L 133 4 L 132 64 L 108 63 L 108 4 Z M 355 2 L 347 4 L 339 8 L 331 17 L 330 21 L 328 24 L 326 34 L 326 45 L 327 52 L 329 58 L 333 66 L 336 70 L 346 79 L 349 80 L 351 82 L 361 87 L 370 95 L 373 101 L 374 106 L 374 119 L 373 124 L 369 129 L 363 131 L 355 130 L 351 127 L 349 123 L 348 98 L 326 99 L 326 119 L 327 127 L 329 133 L 332 139 L 337 145 L 341 148 L 347 151 L 355 153 L 367 153 L 375 151 L 384 146 L 390 139 L 395 128 L 395 97 L 393 91 L 389 83 L 385 78 L 375 69 L 363 63 L 357 59 L 353 55 L 349 47 L 349 32 L 350 30 L 354 26 L 356 25 L 367 25 L 373 32 L 374 51 L 395 51 L 395 27 L 391 17 L 383 8 L 375 4 L 368 2 Z M 30 2 L 22 4 L 13 9 L 6 17 L 5 21 L 2 27 L 2 31 L 0 32 L 0 123 L 2 124 L 2 128 L 6 138 L 14 147 L 25 152 L 30 153 L 42 153 L 50 151 L 59 146 L 66 138 L 69 131 L 71 121 L 71 98 L 48 98 L 48 123 L 46 127 L 44 129 L 42 130 L 30 130 L 24 123 L 24 32 L 30 25 L 36 24 L 44 26 L 46 28 L 48 32 L 48 51 L 71 51 L 71 34 L 69 24 L 67 21 L 67 19 L 64 14 L 59 9 L 50 4 L 43 2 Z M 246 1 L 275 2 L 270 3 L 262 6 L 259 8 L 252 15 L 250 18 L 247 26 L 246 31 L 246 48 L 249 59 L 254 68 L 264 78 L 270 82 L 275 84 L 277 86 L 282 88 L 289 95 L 291 98 L 293 105 L 293 121 L 291 126 L 286 130 L 275 130 L 270 126 L 268 120 L 268 98 L 246 98 L 246 125 L 247 130 L 252 140 L 260 148 L 266 151 L 274 153 L 287 153 L 295 151 L 301 148 L 309 140 L 313 133 L 315 125 L 315 99 L 313 92 L 307 81 L 298 72 L 294 69 L 282 63 L 276 59 L 273 56 L 268 46 L 268 34 L 269 30 L 273 26 L 278 24 L 283 24 L 287 25 L 292 30 L 293 33 L 293 50 L 315 50 L 315 31 L 313 23 L 308 14 L 299 6 L 291 3 L 286 2 L 320 0 Z" fill="var(--wordmark-dark, #161514)" fill-rule="evenodd" clip-path="url(#chess-wordmark-clip)" />
+</svg>`;
+    }
+  }
+}
+
+if (typeof window !== 'undefined' && window.customElements && !customElements.get('chess-wordmark')) {
+  customElements.define('chess-wordmark', ChessWordmark);
+}
+
 if (typeof global !== 'undefined') {
   global.main = main;
   global.GameModeManager = GameModeManager;
   global.ClockManager = ClockManager;
   global.AudioManager = AudioManager;
   global.DragManager = DragManager;
+  global.ChessWordmark = ChessWordmark;
 }
 if (typeof window !== 'undefined') {
   window.main = main;
   window.GameModeManager = GameModeManager;
+  window.ChessWordmark = ChessWordmark;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -2438,7 +2464,8 @@ if (typeof module !== 'undefined' && module.exports) {
     ClockManager,
     AudioManager,
     DragManager,
-    GameModeManager
+    GameModeManager,
+    ChessWordmark
   };
 }
 
