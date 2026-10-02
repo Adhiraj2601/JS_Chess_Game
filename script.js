@@ -3016,15 +3016,6 @@ if (typeof $ !== 'undefined') {
       main.variables.autoFlip = $(this).is(':checked');
     });
 
-    $(document).on('click', '#dismiss-analog-clock-btn', function (e) {
-      e.stopPropagation();
-      $('body').addClass('hide-analog-clock');
-      $('#show-analog-clock-check').prop('checked', false);
-      try {
-        if (typeof localStorage !== 'undefined') localStorage.setItem('chess_show_analog_clock', 'false');
-      } catch (err) {}
-    });
-
     $(document).on('change', '#show-analog-clock-check', function () {
       let show = $(this).is(':checked');
       $('body').toggleClass('hide-analog-clock', !show);

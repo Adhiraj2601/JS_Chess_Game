@@ -1876,23 +1876,23 @@ runTest('90. Pothole Chess: Tutorial Prompt Card Preferences', () => {
   assert.strictEqual(storage['chess_pothole_tutorial_prompt_seen'], 'true');
 });
 
-runTest('91. Golden Chess Clock: Toggle & LocalStorage Persistence', () => {
-  // Test dismiss action
+runTest('91. Golden Chess Clock: Settings-Only Toggle & LocalStorage Persistence', () => {
+  // Start with clock visible
   document.body.className = 'theme-wood';
   $('body').removeClass('hide-analog-clock');
   assert.strictEqual($('body').hasClass('hide-analog-clock'), false);
 
-  // Simulate dismiss click
-  $('body').addClass('hide-analog-clock');
+  // Simulate unchecking the checkbox in Settings to hide clock
   $('#show-analog-clock-check').prop('checked', false);
-  storage['chess_show_analog_clock'] = 'false';
+  let show = $('#show-analog-clock-check').is(':checked');
+  $('body').toggleClass('hide-analog-clock', !show);
+  storage['chess_show_analog_clock'] = String(show);
   assert.strictEqual($('body').hasClass('hide-analog-clock'), true);
-  assert.strictEqual($('#show-analog-clock-check').is(':checked'), false);
   assert.strictEqual(storage['chess_show_analog_clock'], 'false');
 
-  // Simulate re-enabling from Settings modal
+  // Simulate re-enabling via Settings checkbox
   $('#show-analog-clock-check').prop('checked', true);
-  let show = $('#show-analog-clock-check').is(':checked');
+  show = $('#show-analog-clock-check').is(':checked');
   $('body').toggleClass('hide-analog-clock', !show);
   storage['chess_show_analog_clock'] = String(show);
   assert.strictEqual($('body').hasClass('hide-analog-clock'), false);
