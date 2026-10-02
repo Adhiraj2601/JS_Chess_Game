@@ -1097,6 +1097,10 @@ const GameModeManager = {
     return `${pawnSvg} <span>Classic</span>`;
   },
 
+  currentMode: function () {
+    return this.activeMode;
+  },
+
   setMode: function (modeName) {
     if (this.activeMode === modeName) return true;
     let oldMode = this.modes[this.activeMode];
@@ -1874,7 +1878,23 @@ let main = {
         epStr = main.methods.toAlgebraic(enPassantTarget.cell);
       }
 
-      return `${placement} ${turn} ${castling} ${epStr}`;
+      // Include pothole state so that positions identical on the board but with
+      // different potholes are correctly treated as distinct (potholes change
+      // which moves are legal, so they must be part of the repetition key).
+      let potholeStr = '-';
+      if (typeof GameModeManager !== 'undefined' &&
+          GameModeManager.activeMode === 'pothole') {
+        let mode = GameModeManager.modes['pothole'];
+        if (mode && mode.state && mode.state.potholes.length > 0) {
+          // Sort so key is order-independent
+          potholeStr = mode.state.potholes
+            .map(p => p.square + ':' + p.owner)
+            .sort()
+            .join(',');
+        }
+      }
+
+      return `${placement} ${turn} ${castling} ${epStr} ${potholeStr}`;
     },
 
     checkDrawConditions: function (color) {
@@ -2818,7 +2838,14 @@ let main = {
       main.methods.updateMoveHistoryUI();
       main.methods.updateNavButtons();
 
-      if (inCheck && !hasMoves) {
+      // In Pothole mode, defer checkmate/stalemate to evaluatePostRollGameStatus
+      // which runs AFTER pothole removal (onTurnEnd) and the new roll. Evaluating
+      // here would see stale potholes still on the board, causing false stalemates
+      // or ending the game before the incoming player has a chance to roll (R5, R10, R11).
+      let potholeActive = (typeof GameModeManager !== 'undefined' &&
+                           GameModeManager.currentMode() === 'pothole');
+
+      if (!potholeActive && inCheck && !hasMoves) {
         main.variables.gameOver = true;
         ClockManager.stop();
         let winner = color === 'w' ? 'Black' : 'White';
@@ -2827,7 +2854,7 @@ let main = {
         $('#rematch-btn').addClass('highlight-rematch');
         main.methods.updateMoveHistoryUI();
         AudioManager.playGameOver();
-      } else if (!inCheck && !hasMoves) {
+      } else if (!potholeActive && !inCheck && !hasMoves) {
         main.variables.gameOver = true;
         ClockManager.stop();
         $('#turn').addClass('turnhighlight').text("Stalemate! It's a draw.");
@@ -2846,6 +2873,7 @@ let main = {
         $('#turn').removeClass('turnhighlight').text(color === 'w' ? "It's White's Turn!" : "It's Black's Turn!");
         ClockManager.onMoveMade(previousColor, color);
       }
+
 
       if (main.variables.autoFlip && !main.variables.gameOver) {
         if (main.variables.orientation !== color) {

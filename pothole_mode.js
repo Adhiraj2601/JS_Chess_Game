@@ -354,6 +354,18 @@
             pieceObj.position = null;
           }
 
+          // R1+R6: If the fallen pawn was the en-passant target, the EP capture
+          // no longer has anything to capture — clear it immediately.
+          if (
+            type === 'pawn' &&
+            typeof main !== 'undefined' &&
+            main.variables &&
+            main.variables.enPassantTarget &&
+            main.variables.enPassantTarget.pawnCell === cellId
+          ) {
+            main.variables.enPassantTarget = null;
+          }
+
           if (typeof $ !== 'undefined') {
             let $cell = $('#' + cellId);
             $cell.attr('chess', 'null');
@@ -1131,7 +1143,7 @@
         {
           target: '#board-stage',
           title: 'Welcome to Pothole Chess',
-          desc: 'Pothole Chess plays by standard FIDE rules underneath, but hazardous potholes spawn each turn that swallow pieces, block sliding paths, and freeze kings!',
+          desc: 'Pothole Chess plays by standard FIDE rules, but before every move a d8 is rolled — on an even result (~50% of turns) a hazardous pothole spawns on the board, swallowing pieces, blocking paths, and freezing kings!',
           placement: 'center'
         },
         {
