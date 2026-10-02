@@ -1492,11 +1492,29 @@ let main = {
       return null;
     },
 
-    getAttackSquaresFrom: function (pieceKey, fromCellId, board) {
+    // ignorePotholesOwnedBy: when supplied, potholes owned by that colour are
+    // transparent for attack-ray purposes.  Used by the king-safety check so
+    // that the opponent's own potholes cannot act as a temporary shield for the
+    // moving side's king (they will be gone when the opponent actually moves).
+    getAttackSquaresFrom: function (pieceKey, fromCellId, board, ignorePotholesOwnedBy) {
       let color = main.methods.pieceColor(pieceKey);
       let type = main.methods.pieceTypeOf(pieceKey);
       let { col, row } = main.methods.parseCell(fromCellId);
       let attacks = [];
+
+      // Helper: is this cell an opaque pothole for this call?
+      const isBlockingPothole = (id) => {
+        if (typeof GameModeManager === 'undefined' || !GameModeManager.isPothole(id)) return false;
+        if (ignorePotholesOwnedBy) {
+          // Transparent if the pothole belongs to the colour we're ignoring
+          let mode = GameModeManager.modes && GameModeManager.modes['pothole'];
+          if (mode && mode.state) {
+            let ph = mode.state.potholes.find(p => p.cellId === id);
+            if (ph && ph.owner === ignorePotholesOwnedBy) return false; // see-through
+          }
+        }
+        return true; // opaque
+      };
 
       if (type === 'pawn') {
         let dir = color === 'w' ? 1 : -1;
@@ -1526,7 +1544,7 @@ let main = {
           while (main.methods.inBounds(c, r)) {
             let id = main.methods.cellId(c, r);
             attacks.push(id);
-            if (board[id] || (typeof GameModeManager !== 'undefined' && GameModeManager.isPothole(id))) break;
+            if (board[id] || isBlockingPothole(id)) break;
             c += dc; r += dr;
           }
         });
@@ -1534,12 +1552,12 @@ let main = {
       return attacks;
     },
 
-    isSquareAttacked: function (targetCellId, byColor, board) {
+    isSquareAttacked: function (targetCellId, byColor, board, ignorePotholesOwnedBy) {
       for (let cellId in board) {
         let key = board[cellId];
         if (!key) continue;
         if (main.methods.pieceColor(key) !== byColor) continue;
-        let attacks = main.methods.getAttackSquaresFrom(key, cellId, board);
+        let attacks = main.methods.getAttackSquaresFrom(key, cellId, board, ignorePotholesOwnedBy);
         if (attacks.indexOf(targetCellId) !== -1) return true;
       }
       return false;
@@ -1622,15 +1640,15 @@ let main = {
           let rank = color === 'w' ? 1 : 8;
           let kingStart = main.methods.cellId(5, rank);
 
-          if (board[kingStart] === pieceKey && !isPothole(kingStart) && !main.methods.isSquareAttacked(kingStart, oppColor, board)) {
+          if (board[kingStart] === pieceKey && !isPothole(kingStart) && !main.methods.isSquareAttacked(kingStart, oppColor, board, oppColor)) {
             let rookKSKey = color + '_rook2';
             let rookKS = main.variables.pieces[rookKSKey];
             if (rookKS && !rookKS.moved && !rookKS.captured && board[main.methods.cellId(8, rank)] === rookKSKey && !isPothole(main.methods.cellId(8, rank))) {
               let f = main.methods.cellId(6, rank);
               let g = main.methods.cellId(7, rank);
               if (!board[f] && !board[g] && !isPothole(f) && !isPothole(g) &&
-                  !main.methods.isSquareAttacked(f, oppColor, board) &&
-                  !main.methods.isSquareAttacked(g, oppColor, board)) {
+                  !main.methods.isSquareAttacked(f, oppColor, board, oppColor) &&
+                  !main.methods.isSquareAttacked(g, oppColor, board, oppColor)) {
                 moves.push(g + '_castleKS');
               }
             }
@@ -1642,8 +1660,8 @@ let main = {
               let c = main.methods.cellId(3, rank);
               let b = main.methods.cellId(2, rank);
               if (!board[d] && !board[c] && !board[b] && !isPothole(d) && !isPothole(c) && !isPothole(b) &&
-                  !main.methods.isSquareAttacked(d, oppColor, board) &&
-                  !main.methods.isSquareAttacked(c, oppColor, board)) {
+                  !main.methods.isSquareAttacked(d, oppColor, board, oppColor) &&
+                  !main.methods.isSquareAttacked(c, oppColor, board, oppColor)) {
                 moves.push(c + '_castleQS');
               }
             }
@@ -1703,13 +1721,17 @@ let main = {
       let board = main.methods.getBoard();
       let color = main.methods.pieceColor(pieceKey);
       let pseudo = main.methods.getPseudoMoves(pieceKey, board);
+      let oppColor = color === 'w' ? 'b' : 'w';
       let legal = [];
 
       pseudo.forEach(moveToken => {
         let simulated = main.methods.simulateMove(board, pieceKey, moveToken);
         let kingCell = main.methods.findKingCell(color, simulated);
-        let oppColor = color === 'w' ? 'b' : 'w';
-        if (kingCell && !main.methods.isSquareAttacked(kingCell, oppColor, simulated)) {
+        // In Pothole mode, judge the king's safety as if the opponent's potholes
+        // were already gone — they will be removed at the end of this turn before
+        // the opponent moves, so they cannot permanently shield our king from attacks.
+        // Own potholes are still opaque (they survive into the opponent's turn).
+        if (kingCell && !main.methods.isSquareAttacked(kingCell, oppColor, simulated, oppColor)) {
           legal.push(moveToken);
         }
       });
@@ -1719,12 +1741,12 @@ let main = {
       return legal;
     },
 
-    isInCheck: function (color, optBoard) {
+    isInCheck: function (color, optBoard, ignorePotholesOwnedBy) {
       let board = optBoard || main.methods.getBoard();
       let kingCell = main.methods.findKingCell(color, board);
       if (!kingCell) return false;
       let oppColor = color === 'w' ? 'b' : 'w';
-      return main.methods.isSquareAttacked(kingCell, oppColor, board);
+      return main.methods.isSquareAttacked(kingCell, oppColor, board, ignorePotholesOwnedBy);
     },
 
     hasAnyLegalMoves: function (color) {
@@ -2831,19 +2853,24 @@ let main = {
       main.variables.turn = main.variables.turn === 'w' ? 'b' : 'w';
       let color = main.variables.turn;
 
-      let inCheck = main.methods.isInCheck(color);
-      let hasMoves = main.methods.hasAnyLegalMoves(color);
-
-      main.methods.updateVisualHighlights();
-      main.methods.updateMoveHistoryUI();
-      main.methods.updateNavButtons();
-
       // In Pothole mode, defer checkmate/stalemate to evaluatePostRollGameStatus
       // which runs AFTER pothole removal (onTurnEnd) and the new roll. Evaluating
       // here would see stale potholes still on the board, causing false stalemates
       // or ending the game before the incoming player has a chance to roll (R5, R10, R11).
       let potholeActive = (typeof GameModeManager !== 'undefined' &&
                            GameModeManager.currentMode() === 'pothole');
+
+      // In Pothole mode also judge check with the opponent's (= previousColor's) potholes
+      // treated as transparent — they will be gone before the opponent moves.
+      let oppColorForCheck = color === 'w' ? 'b' : 'w';
+      let inCheck = potholeActive
+        ? main.methods.isInCheck(color, null, oppColorForCheck)
+        : main.methods.isInCheck(color);
+      let hasMoves = main.methods.hasAnyLegalMoves(color);
+
+      main.methods.updateVisualHighlights();
+      main.methods.updateMoveHistoryUI();
+      main.methods.updateNavButtons();
 
       if (!potholeActive && inCheck && !hasMoves) {
         main.variables.gameOver = true;
