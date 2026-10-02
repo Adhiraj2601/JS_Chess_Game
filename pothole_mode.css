@@ -432,6 +432,49 @@ body.mode-pothole .standard-only {
   letter-spacing: 0.3px;
 }
 
+/* Phase containers */
+.pothole-dice-phase {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Two-dice stage for Phase 2 (rank + file side-by-side) */
+.pothole-two-dice-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: auto;
+  min-height: 110px;
+  margin: 8px 0 10px;
+}
+
+.pothole-location-die-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.pothole-die-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--accent-yellow, #f5c400);
+  opacity: 0.8;
+}
+
+.pothole-dice-sep {
+  font-size: 22px;
+  font-weight: 300;
+  color: var(--text-dimmed, #555);
+  line-height: 1;
+  margin-top: 18px;
+}
+
 /* ----------------------------------------------------------
    POTHOLE HAZARD TRACKER PANEL (Sidebar widget)
    ---------------------------------------------------------- */

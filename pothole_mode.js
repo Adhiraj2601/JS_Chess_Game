@@ -580,10 +580,7 @@
     },
 
     /**
-     * UI Requirement 2: Show animated dice step at the start of each turn
-     */
-    /**
-     * UI Requirement 2 (Interactive): Prompt the player to roll the d8 hazard die at turn start
+     * Phase-1 UI: Player rolls the single gate d8 to check for a hazard
      */
     showInteractiveDicePrompt: function (player) {
       if (typeof $ === 'undefined' || typeof document === 'undefined') {
@@ -591,52 +588,95 @@
         return;
       }
 
+      // Build panel HTML if it doesn't exist yet
       let $container = $('#pothole-dice-panel');
       if (!$container.length) {
-        let diceModalHtml = `
+        let panelHtml = `
           <div id="pothole-dice-panel" class="pothole-dice-overlay" style="display:none;" role="dialog" aria-modal="true" tabindex="-1">
-            <div class="pothole-dice-card">
+            <div class="pothole-dice-card" id="pothole-dice-card">
               <div class="pothole-dice-header">
                 <span class="pothole-dice-player" id="pothole-dice-player">White's Turn</span>
-                <span class="pothole-dice-tag">d8 Hazard Roll</span>
+                <span class="pothole-dice-tag" id="pothole-dice-phase-tag">Phase 1 of 1 — Hazard Check</span>
               </div>
-              <div class="pothole-dice-stage">
-                <div class="pothole-d8-die ready-to-roll" id="pothole-d8-die" title="Click die or button to roll">
-                  <svg class="d8-svg" viewBox="0 0 100 100">
-                    <polygon points="50,5 92,28 50,50" class="d8-face d8-face-top" />
-                    <polygon points="50,5 8,28 50,50" class="d8-face d8-face-left" />
-                    <polygon points="8,28 50,50 50,95" class="d8-face d8-face-bottom-left" />
-                    <polygon points="92,28 50,50 50,95" class="d8-face d8-face-bottom-right" />
-                    <text x="50" y="58" class="d8-number" id="pothole-d8-number">🎲</text>
-                  </svg>
+
+              <!-- Phase 1: single gate die -->
+              <div class="pothole-dice-phase" id="pothole-phase1">
+                <div class="pothole-dice-stage">
+                  <div class="pothole-d8-die ready-to-roll" id="pothole-gate-die" title="Click die to roll">
+                    <svg class="d8-svg" viewBox="0 0 100 100">
+                      <polygon points="50,5 92,28 50,50" class="d8-face d8-face-top" />
+                      <polygon points="50,5 8,28 50,50" class="d8-face d8-face-left" />
+                      <polygon points="8,28 50,50 50,95" class="d8-face d8-face-bottom-left" />
+                      <polygon points="92,28 50,50 50,95" class="d8-face d8-face-bottom-right" />
+                      <text x="50" y="58" class="d8-number" id="pothole-gate-number">🎲</text>
+                    </svg>
+                  </div>
+                </div>
+                <div class="pothole-dice-result" id="pothole-dice-result">Roll the d8 to check for hazards!</div>
+                <div class="pothole-dice-subresult" id="pothole-dice-subresult">Even (2,4,6,8) spawns a pothole &bull; Odd (1,3,5,7) safe</div>
+                <div class="pothole-dice-actions">
+                  <button id="pothole-roll-gate-btn" class="pothole-btn-roll">🎲 Roll Hazard Die</button>
+                  <div class="pothole-dice-keyhint" id="pothole-dice-keyhint">click die, button, or press Space / Enter</div>
                 </div>
               </div>
-              <div class="pothole-dice-result" id="pothole-dice-result">
-                Roll the d8 to check for hazards!
+
+              <!-- Phase 2: two location dice (hidden until even gate) -->
+              <div class="pothole-dice-phase" id="pothole-phase2" style="display:none;">
+                <div class="pothole-dice-stage pothole-two-dice-stage">
+                  <div class="pothole-location-die-wrap">
+                    <div class="pothole-die-label">Rank</div>
+                    <div class="pothole-d8-die ready-to-roll" id="pothole-rank-die" title="Click to roll both">
+                      <svg class="d8-svg" viewBox="0 0 100 100">
+                        <polygon points="50,5 92,28 50,50" class="d8-face d8-face-top" />
+                        <polygon points="50,5 8,28 50,50" class="d8-face d8-face-left" />
+                        <polygon points="8,28 50,50 50,95" class="d8-face d8-face-bottom-left" />
+                        <polygon points="92,28 50,50 50,95" class="d8-face d8-face-bottom-right" />
+                        <text x="50" y="58" class="d8-number" id="pothole-rank-number">🎲</text>
+                      </svg>
+                    </div>
+                  </div>
+                  <div class="pothole-dice-sep">×</div>
+                  <div class="pothole-location-die-wrap">
+                    <div class="pothole-die-label">File</div>
+                    <div class="pothole-d8-die ready-to-roll" id="pothole-file-die" title="Click to roll both">
+                      <svg class="d8-svg" viewBox="0 0 100 100">
+                        <polygon points="50,5 92,28 50,50" class="d8-face d8-face-top" />
+                        <polygon points="50,5 8,28 50,50" class="d8-face d8-face-left" />
+                        <polygon points="8,28 50,50 50,95" class="d8-face d8-face-bottom-left" />
+                        <polygon points="92,28 50,50 50,95" class="d8-face d8-face-bottom-right" />
+                        <text x="50" y="58" class="d8-number" id="pothole-file-number">🎲</text>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+                <div class="pothole-dice-result" id="pothole-location-result">Roll both dice to find the hazard square!</div>
+                <div class="pothole-dice-subresult" id="pothole-location-subresult">Rank 1–8 (row) &bull; File 1–8 (a–h column)</div>
+                <div class="pothole-dice-actions">
+                  <button id="pothole-roll-location-btn" class="pothole-btn-roll">🎲 Roll Location Dice</button>
+                  <button id="pothole-continue-btn" class="pothole-btn-continue" style="display:none;">Make Your Move ▶</button>
+                  <div class="pothole-dice-keyhint" id="pothole-dice-keyhint2">click dice, button, or press Space / Enter</div>
+                </div>
               </div>
-              <div class="pothole-dice-subresult" id="pothole-dice-subresult">
-                Even (2, 4, 6, 8) places a pothole &bull; Odd (1, 3, 5, 7) skips
-              </div>
-              <div class="pothole-dice-actions" id="pothole-dice-actions">
-                <button id="pothole-roll-btn" class="pothole-btn-roll">🎲 Roll d8</button>
-                <button id="pothole-continue-btn" class="pothole-btn-continue" style="display:none;">Make Your Move ▶</button>
-                <div class="pothole-dice-keyhint" id="pothole-dice-keyhint">(or press Space / Enter)</div>
-              </div>
+
             </div>
           </div>`;
-        $('#board-wrapper').append(diceModalHtml);
+        $('#board-wrapper').append(panelHtml);
         $container = $('#pothole-dice-panel');
       }
 
+      // Reset to Phase 1
       let playerName = player === 'w' ? 'White' : 'Black';
       $('#pothole-dice-player').text(`${playerName}'s Turn`);
-      $('#pothole-d8-die').removeClass('rolling landed').addClass('ready-to-roll');
-      $('#pothole-d8-number').text('🎲');
-      $('#pothole-dice-result').text(`Your turn, ${playerName}! Roll the d8.`);
-      $('#pothole-dice-subresult').show().html('Even (2, 4, 6, 8) spawns a hazard &bull; Odd (1, 3, 5, 7) skips');
-      $('#pothole-roll-btn').show().prop('disabled', false);
-      $('#pothole-continue-btn').hide();
-      $('#pothole-dice-keyhint').show().text('(or press Space / Enter)');
+      $('#pothole-dice-phase-tag').text('Phase 1 of 1 — Hazard Check');
+      $('#pothole-phase1').show();
+      $('#pothole-phase2').hide();
+
+      $('#pothole-gate-die').removeClass('rolling landed').addClass('ready-to-roll');
+      $('#pothole-gate-number').text('🎲');
+      $('#pothole-dice-result').text(`Your turn, ${playerName}! Roll the hazard die.`);
+      $('#pothole-dice-subresult').show().html('Even (2,4,6,8) spawns a pothole &bull; Odd (1,3,5,7) safe');
+      $('#pothole-roll-gate-btn').show().prop('disabled', false);
+      $('#pothole-dice-keyhint').show().text('click die, button, or press Space / Enter');
 
       if ($container.fadeIn) {
         $container.fadeIn(150);
@@ -644,21 +684,24 @@
         $container.show();
       }
 
-      let hasRolled = false;
-      const doRoll = () => {
-        if (hasRolled) return;
-        hasRolled = true;
-        this.executeManualRoll(player);
+      let phase1Done = false;
+      const doGateRoll = () => {
+        if (phase1Done) return;
+        phase1Done = true;
+        this.executeGateRoll(player);
       };
 
-      $('#pothole-roll-btn').off('click').on('click', doRoll);
-      $('#pothole-d8-die').off('click').on('click', doRoll);
+      $('#pothole-roll-gate-btn').off('click').on('click', doGateRoll);
+      $('#pothole-gate-die').off('click').on('click', doGateRoll);
 
       $(document).off('keydown.potholeRoll').on('keydown.potholeRoll', (e) => {
         if (e.key === ' ' || e.key === 'Enter') {
           e.preventDefault();
-          if (!hasRolled) {
-            doRoll();
+          if ($('#pothole-phase1').is(':visible') && !phase1Done) {
+            doGateRoll();
+          } else if ($('#pothole-phase2').is(':visible') && !$('#pothole-continue-btn').is(':visible')) {
+            // waiting for location roll
+            $('#pothole-roll-location-btn').trigger('click');
           } else if ($('#pothole-continue-btn').is(':visible')) {
             $('#pothole-continue-btn').trigger('click');
           }
@@ -667,107 +710,216 @@
     },
 
     /**
-     * Executes the dice roll animation and resolves pothole effects when triggered by the player
+     * Phase 1 execution: Animate the gate die. If even → switch to Phase 2. If odd → finish.
      */
-    executeManualRoll: function (player) {
-      $('#pothole-roll-btn').hide();
+    executeGateRoll: function (player) {
+      $('#pothole-roll-gate-btn').hide();
       $('#pothole-dice-keyhint').hide();
-      $('#pothole-d8-die').removeClass('ready-to-roll landed').addClass('rolling');
-      $('#pothole-d8-number').text('?');
-      $('#pothole-dice-result').text('Rolling eight-sided die...');
-      $('#pothole-dice-subresult').text('Testing for pothole hazards...');
+      $('#pothole-gate-die').removeClass('ready-to-roll landed').addClass('rolling');
+      $('#pothole-gate-number').text('?');
+      $('#pothole-dice-result').text('Rolling hazard die...');
+      $('#pothole-dice-subresult').text('Checking for pothole hazards...');
 
       if (typeof AudioManager !== 'undefined' && AudioManager.playTone) {
         AudioManager.playTone(420, 'triangle', 0.08);
       }
 
-      // R2: Roll d8 gate
+      // Roll the gate die
       let gate = this.rollD8();
-      let shouldPlace = (POTHOLE_CONFIG.PLACE_ON === "always") || (gate % 2 === 0);
+      let shouldPlace = (POTHOLE_CONFIG.PLACE_ON === 'always') || (gate % 2 === 0);
+      let playerName = player === 'w' ? 'White' : 'Black';
 
+      let cycles = 8, cycle = 0;
+      let interval = setInterval(() => {
+        cycle++;
+        $('#pothole-gate-number').text(Math.floor(Math.random() * 8) + 1);
+        if (typeof AudioManager !== 'undefined' && AudioManager.playTone && cycle % 2 === 0) {
+          AudioManager.playTone(300 + cycle * 18, 'sine', 0.04);
+        }
+
+        if (cycle >= cycles) {
+          clearInterval(interval);
+          $('#pothole-gate-die').removeClass('rolling').addClass('landed');
+          $('#pothole-gate-number').text(gate);
+
+          if (typeof AudioManager !== 'undefined' && AudioManager.playTone) {
+            AudioManager.playTone(shouldPlace ? 220 : 520, 'triangle', 0.12);
+          }
+
+          if (shouldPlace) {
+            // Even → need location roll
+            setTimeout(() => {
+              $('#pothole-dice-result').text(`Rolled ${gate} — Even! A pothole will be placed.`);
+              $('#pothole-dice-subresult').text('Now roll two dice to determine the hazard square.');
+              setTimeout(() => {
+                this.showPhase2(player, gate);
+              }, 600);
+            }, 200);
+          } else {
+            // Odd → no pothole, finish turn
+            $('#pothole-dice-result').text(`${playerName} rolled ${gate} — Odd! No pothole this turn.`);
+            $('#pothole-dice-subresult').text('Safe! Make your chess move.');
+
+            let rollRecord = {
+              turn: this.state.turnCount,
+              player: player,
+              gate: gate,
+              rank: null,
+              file: null,
+              placed: false,
+              square: null,
+              cellId: null,
+              fell: null,
+              isOverlap: false,
+              frozenKing: false
+            };
+            this.state.lastRoll = rollRecord;
+            this.state.rollHistory.push(rollRecord);
+            this.recordPotholeEventInHistory(rollRecord);
+
+            // Show continue in phase1 area
+            $('#pothole-roll-gate-btn').hide();
+            let $cont = $('<button id="pothole-continue-btn-p1" class="pothole-btn-continue">Make Your Move ▶</button>');
+            $('#pothole-phase1 .pothole-dice-actions').append($cont);
+            $('#pothole-dice-keyhint').show().text('or press Space / Enter');
+
+            const finish = () => {
+              $(document).off('keydown.potholeRoll');
+              this.finishDiceStep(() => {
+                this.state.isRolling = false;
+                this.renderUI();
+                this.evaluatePostRollGameStatus(player);
+              });
+            };
+            $cont.on('click', finish);
+          }
+        }
+      }, 70);
+    },
+
+    /**
+     * Phase 2: Show two dice (rank + file) for the player to roll simultaneously
+     */
+    showPhase2: function (player, gate) {
+      let playerName = player === 'w' ? 'White' : 'Black';
+
+      $('#pothole-phase1').hide();
+      $('#pothole-dice-phase-tag').text('Phase 2 of 2 — Hazard Location');
+      $('#pothole-phase2').show();
+
+      $('#pothole-rank-die').removeClass('rolling landed').addClass('ready-to-roll');
+      $('#pothole-file-die').removeClass('rolling landed').addClass('ready-to-roll');
+      $('#pothole-rank-number').text('🎲');
+      $('#pothole-file-number').text('🎲');
+      $('#pothole-location-result').text(`Gate ${gate} (Even) — Roll to find the hazard square!`);
+      $('#pothole-location-subresult').html('Rank die (row 1–8) &bull; File die (col a–h) — both at once!');
+      $('#pothole-roll-location-btn').show().prop('disabled', false);
+      $('#pothole-continue-btn').hide();
+      $('#pothole-dice-keyhint2').show().text('click dice, button, or press Space / Enter');
+
+      let locationRolled = false;
+      const doLocationRoll = () => {
+        if (locationRolled) return;
+        locationRolled = true;
+        this.executeLocationRoll(player, gate);
+      };
+
+      $('#pothole-roll-location-btn').off('click').on('click', doLocationRoll);
+      $('#pothole-rank-die').off('click').on('click', doLocationRoll);
+      $('#pothole-file-die').off('click').on('click', doLocationRoll);
+    },
+
+    /**
+     * Phase 2 execution: Animate both dice simultaneously, resolve pothole, show result
+     */
+    executeLocationRoll: function (player, gate) {
+      $('#pothole-roll-location-btn').hide();
+      $('#pothole-dice-keyhint2').hide();
+
+      $('#pothole-rank-die').removeClass('ready-to-roll landed').addClass('rolling');
+      $('#pothole-file-die').removeClass('ready-to-roll landed').addClass('rolling');
+      $('#pothole-rank-number').text('?');
+      $('#pothole-file-number').text('?');
+      $('#pothole-location-result').text('Rolling location dice...');
+      $('#pothole-location-subresult').text('Choosing rank and file simultaneously...');
+
+      if (typeof AudioManager !== 'undefined' && AudioManager.playTone) {
+        AudioManager.playTone(380, 'triangle', 0.08);
+      }
+
+      // Roll both dice
+      let rank = this.rollD8();
+      let file = this.rollD8();
+      let fileLetter = POTHOLE_CONFIG.FILE_MAP[file] || 'a';
+      let square = fileLetter + rank;
+      let cellId = file + '_' + rank;
+      let playerName = player === 'w' ? 'White' : 'Black';
+
+      // Build roll record
       let rollRecord = {
         turn: this.state.turnCount,
         player: player,
         gate: gate,
-        rank: null,
-        file: null,
-        placed: false,
-        square: null,
-        cellId: null,
+        rank: rank,
+        file: file,
+        placed: true,
+        square: square,
+        cellId: cellId,
         fell: null,
         isOverlap: false,
         frozenKing: false
       };
 
-      if (shouldPlace) {
-        let rank = this.rollD8();
-        let file = this.rollD8();
-        let fileLetter = POTHOLE_CONFIG.FILE_MAP[file] || 'a';
-        let square = fileLetter + rank;
-        let cellId = file + '_' + rank;
-
-        rollRecord.rank = rank;
-        rollRecord.file = file;
-        rollRecord.placed = true;
-        rollRecord.square = square;
-        rollRecord.cellId = cellId;
-
-        let result = this.placePothole(cellId, square, player);
-        rollRecord.fell = result.fell;
-        rollRecord.isOverlap = result.isOverlap;
-        rollRecord.frozenKing = result.frozenKing;
-      }
+      // Place the pothole
+      let result = this.placePothole(cellId, square, player);
+      rollRecord.fell = result.fell;
+      rollRecord.isOverlap = result.isOverlap;
+      rollRecord.frozenKing = result.frozenKing;
 
       this.state.lastRoll = rollRecord;
       this.state.rollHistory.push(rollRecord);
       this.recordPotholeEventInHistory(rollRecord);
 
-      let rollCycles = 8;
-      let cycle = 0;
+      // Animate both dice simultaneously
+      let cycles = 8, cycle = 0;
       let interval = setInterval(() => {
         cycle++;
-        let tempVal = Math.floor(Math.random() * 8) + 1;
-        $('#pothole-d8-number').text(tempVal);
+        $('#pothole-rank-number').text(Math.floor(Math.random() * 8) + 1);
+        $('#pothole-file-number').text(Math.floor(Math.random() * 8) + 1);
         if (typeof AudioManager !== 'undefined' && AudioManager.playTone && cycle % 2 === 0) {
-          AudioManager.playTone(320 + cycle * 20, 'sine', 0.04);
+          AudioManager.playTone(280 + cycle * 20, 'sine', 0.04);
         }
 
-        if (cycle >= rollCycles) {
+        if (cycle >= cycles) {
           clearInterval(interval);
-          $('#pothole-d8-die').removeClass('rolling').addClass('landed');
-          $('#pothole-d8-number').text(rollRecord.gate);
+          $('#pothole-rank-die').removeClass('rolling').addClass('landed');
+          $('#pothole-file-die').removeClass('rolling').addClass('landed');
+          $('#pothole-rank-number').text(rank);
+          $('#pothole-file-number').text(file);
 
           if (typeof AudioManager !== 'undefined' && AudioManager.playTone) {
-            AudioManager.playTone(shouldPlace ? 260 : 520, 'triangle', 0.12);
+            AudioManager.playTone(260, 'triangle', 0.14);
           }
 
-          let playerName = player === 'w' ? 'White' : 'Black';
-          let mainText = '';
-          let subText = '';
-
-          if (rollRecord.placed) {
-            mainText = `${playerName} rolled ${rollRecord.gate} (Even): Pothole placed on ${rollRecord.square}!`;
-            subText = `Rank ${rollRecord.rank}, File ${POTHOLE_CONFIG.FILE_MAP[rollRecord.file]}`;
-            if (rollRecord.fell) {
-              subText += ` — ${rollRecord.fell.color === 'w' ? 'White' : 'Black'} ${rollRecord.fell.type} fell through the board!`;
-            } else if (rollRecord.frozenKing) {
-              subText += ` — ${playerName} King is frozen!`;
-            } else if (rollRecord.isOverlap) {
-              subText += ` — Transferred active pothole to ${playerName}!`;
-            } else {
-              subText += ` — Square is now impassable.`;
-            }
+          // Build result text
+          let mainText = `${playerName} placed a pothole on ${square}!`;
+          let subText = `Rank ${rank}, File ${fileLetter.toUpperCase()} (${square})`;
+          if (rollRecord.fell) {
+            subText += ` — ${rollRecord.fell.color === 'w' ? 'White' : 'Black'} ${rollRecord.fell.type} fell through the board!`;
+          } else if (rollRecord.frozenKing) {
+            subText += ` — ${playerName}'s King is frozen!`;
+          } else if (rollRecord.isOverlap) {
+            subText += ` — Transferred existing pothole to ${playerName}!`;
           } else {
-            mainText = `${playerName} rolled ${rollRecord.gate} (Odd): No pothole placed this turn.`;
-            subText = `Safe! Standard chess move follows.`;
+            subText += ` — Square is now impassable.`;
           }
 
-          $('#pothole-dice-result').text(mainText);
-          $('#pothole-dice-subresult').show().text(subText);
+          $('#pothole-location-result').text(mainText);
+          $('#pothole-location-subresult').show().text(subText);
           this.renderUI();
 
           $('#pothole-continue-btn').show();
-          $('#pothole-dice-keyhint').show().text('(or press Space / Enter)');
+          $('#pothole-dice-keyhint2').show().text('or press Space / Enter');
 
           $('#pothole-continue-btn').off('click').on('click', () => {
             $(document).off('keydown.potholeRoll');
@@ -782,6 +934,13 @@
     },
 
     /**
+     * Legacy executeManualRoll kept for compatibility — not used in interactive mode any more
+     */
+    executeManualRoll: function (player) {
+      this.showInteractiveDicePrompt(player);
+    },
+
+    /**
      * UI Requirement 2 (Legacy / Wrapper): Show animated dice step
      */
     showDiceRollUI: function (roll, onComplete) {
@@ -789,15 +948,12 @@
         if (onComplete) onComplete();
         return;
       }
-
-      let $container = $('#pothole-dice-panel');
-      if (!$container.length) {
-        this.showInteractiveDicePrompt(roll.player);
-      }
       if (onComplete) onComplete();
     },
 
     finishDiceStep: function (onComplete) {
+      // Remove any Phase-1 continue button that was dynamically added
+      $('#pothole-continue-btn-p1').remove();
       this.hideDiceUI();
       if (onComplete) onComplete();
     },
