@@ -2931,6 +2931,15 @@ if (typeof $ !== 'undefined') {
     ClockManager.init();
     DragManager.init();
 
+    let showAnalogClock = (typeof localStorage !== 'undefined') ? localStorage.getItem('chess_show_analog_clock') : null;
+    if (showAnalogClock === 'false') {
+      $('body').addClass('hide-analog-clock');
+      $('#show-analog-clock-check').prop('checked', false);
+    } else {
+      $('body').removeClass('hide-analog-clock');
+      $('#show-analog-clock-check').prop('checked', true);
+    }
+
     main.methods.renderBoard();
     main.methods.gamesetup();
 
@@ -3005,6 +3014,23 @@ if (typeof $ !== 'undefined') {
 
     $(document).on('change', '#autoflip-check', function () {
       main.variables.autoFlip = $(this).is(':checked');
+    });
+
+    $(document).on('click', '#dismiss-analog-clock-btn', function (e) {
+      e.stopPropagation();
+      $('body').addClass('hide-analog-clock');
+      $('#show-analog-clock-check').prop('checked', false);
+      try {
+        if (typeof localStorage !== 'undefined') localStorage.setItem('chess_show_analog_clock', 'false');
+      } catch (err) {}
+    });
+
+    $(document).on('change', '#show-analog-clock-check', function () {
+      let show = $(this).is(':checked');
+      $('body').toggleClass('hide-analog-clock', !show);
+      try {
+        if (typeof localStorage !== 'undefined') localStorage.setItem('chess_show_analog_clock', String(show));
+      } catch (err) {}
     });
 
     // Sound toggle
@@ -3133,6 +3159,7 @@ if (typeof $ !== 'undefined') {
         $('#custom-time-inputs').css('display', 'none');
       }
       $('#mode-toggle-btn').html(GameModeManager.getModeToggleBtnHtml(GameModeManager.activeMode));
+      $('#show-analog-clock-check').prop('checked', !$('body').hasClass('hide-analog-clock'));
       $('#settings-modal').css('display', 'flex');
     });
 

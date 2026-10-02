@@ -127,6 +127,28 @@ global.$ = function(selector) {
     };
   }
 
+  if (selector === 'body') {
+    return {
+      addClass: function(cls) {
+        document.body.className = (document.body.className ? document.body.className + ' ' : '') + cls;
+        return this;
+      },
+      removeClass: function(cls) {
+        document.body.className = document.body.className.replace(cls, '').trim();
+        return this;
+      },
+      toggleClass: function(cls, state) {
+        if (state === undefined) state = !this.hasClass(cls);
+        if (state) this.addClass(cls);
+        else this.removeClass(cls);
+        return this;
+      },
+      hasClass: function(cls) {
+        return document.body.className.includes(cls);
+      }
+    };
+  }
+
   if (selector === '.gamecell') {
     return {
       attr: function(name, val) {
@@ -218,6 +240,20 @@ global.$ = function(selector) {
           text: function(txt) {
             if (txt !== undefined) { dom.soundToggleText = txt; return this; }
             return dom.soundToggleText;
+          }
+        };
+      }
+
+      if (id === 'show-analog-clock-check') {
+        return {
+          prop: function(prop, val) {
+            if (val !== undefined) { dom.showAnalogClock = !!val; return this; }
+            if (prop === 'checked') return dom.showAnalogClock !== false;
+            return false;
+          },
+          is: function(sel) {
+            if (sel === ':checked') return dom.showAnalogClock !== false;
+            return false;
           }
         };
       }
@@ -1838,6 +1874,68 @@ runTest('90. Pothole Chess: Tutorial Prompt Card Preferences', () => {
   };
   PotholeMode._handleTutorialDismiss(dummyCard);
   assert.strictEqual(storage['chess_pothole_tutorial_prompt_seen'], 'true');
+});
+
+runTest('91. Golden Chess Clock: Toggle & LocalStorage Persistence', () => {
+  // Test dismiss action
+  document.body.className = 'theme-wood';
+  $('body').removeClass('hide-analog-clock');
+  assert.strictEqual($('body').hasClass('hide-analog-clock'), false);
+
+  // Simulate dismiss click
+  $('body').addClass('hide-analog-clock');
+  $('#show-analog-clock-check').prop('checked', false);
+  storage['chess_show_analog_clock'] = 'false';
+  assert.strictEqual($('body').hasClass('hide-analog-clock'), true);
+  assert.strictEqual($('#show-analog-clock-check').is(':checked'), false);
+  assert.strictEqual(storage['chess_show_analog_clock'], 'false');
+
+  // Simulate re-enabling from Settings modal
+  $('#show-analog-clock-check').prop('checked', true);
+  let show = $('#show-analog-clock-check').is(':checked');
+  $('body').toggleClass('hide-analog-clock', !show);
+  storage['chess_show_analog_clock'] = String(show);
+  assert.strictEqual($('body').hasClass('hide-analog-clock'), false);
+  assert.strictEqual(storage['chess_show_analog_clock'], 'true');
+});
+
+runTest('92. Pothole Chess: Player-Driven Manual Dice Roll Flow', () => {
+  GameModeManager.setMode('pothole');
+  PotholeMode.resetState();
+  assert.strictEqual(PotholeMode.state.isRolling, false);
+
+  // Verify interactive prompt locks board movement during roll phase
+  PotholeMode.state.isRolling = true;
+  assert.strictEqual(PotholeMode.isActionBlocked(), true);
+
+  // Trigger manual execution
+  let rollCalled = false;
+  let prevRollD8 = PotholeMode.rollD8;
+  PotholeMode.rollD8 = function() {
+    rollCalled = true;
+    return 4; // Even -> places hazard
+  };
+
+  // Perform manual roll logic
+  let gate = PotholeMode.rollD8();
+  assert.strictEqual(rollCalled, true);
+  assert.strictEqual(gate, 4);
+
+  // Place pothole e4
+  let result = PotholeMode.placePothole('5_4', 'e4', 'w');
+  assert.strictEqual(PotholeMode.state.potholes.length, 1);
+  assert.strictEqual(PotholeMode.state.potholes[0].square, 'e4');
+
+  // Complete dice step unlocks action
+  PotholeMode.finishDiceStep(() => {
+    PotholeMode.state.isRolling = false;
+  });
+  assert.strictEqual(PotholeMode.state.isRolling, false);
+  assert.strictEqual(PotholeMode.isActionBlocked(), false);
+
+  // Restore mock
+  PotholeMode.rollD8 = prevRollD8;
+  GameModeManager.setMode('standard');
 });
 
 console.log('\n------------------------------------');

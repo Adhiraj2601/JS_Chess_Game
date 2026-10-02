@@ -362,8 +362,8 @@ body.mode-pothole .standard-only {
   color: #161514;
   border: none;
   border-radius: 6px;
-  padding: 8px 18px;
-  font-size: 12px;
+  padding: 8px 20px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -374,6 +374,62 @@ body.mode-pothole .standard-only {
   background: var(--accent-yellow-hover, #e0b300);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(245, 196, 0, 0.3);
+}
+
+.pothole-d8-die.ready-to-roll {
+  cursor: pointer;
+  animation: d8ReadyPulse 2s ease-in-out infinite;
+}
+
+.pothole-d8-die.ready-to-roll:hover {
+  transform: scale(1.12);
+}
+
+@keyframes d8ReadyPulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 6px rgba(245, 196, 0, 0.3));
+    transform: scale(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 16px rgba(245, 196, 0, 0.75));
+    transform: scale(1.05);
+  }
+}
+
+.pothole-btn-roll {
+  background: linear-gradient(135deg, #f5c400, #d4a300);
+  color: #161514;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: inherit;
+  box-shadow: 0 4px 14px rgba(245, 196, 0, 0.35);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.pothole-btn-roll:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 6px 20px rgba(245, 196, 0, 0.5);
+  background: linear-gradient(135deg, #ffd700, #e0b300);
+}
+
+.pothole-btn-roll:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.pothole-dice-keyhint {
+  font-size: 11px;
+  color: var(--text-tertiary, #777);
+  margin-top: 6px;
+  letter-spacing: 0.3px;
 }
 
 /* ----------------------------------------------------------
