@@ -527,3 +527,54 @@ body.mode-pothole .standard-only {
   font-style: normal;
   font-weight: 600;
 }
+
+/* ----------------------------------------------------------
+   POTHOLE TUTORIAL PROMPT CARD & INTERACTIVE OVERLAY
+   ---------------------------------------------------------- */
+#pothole-tutorial-prompt.brutalist-card {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+}
+
+.pothole-modal-header .help-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+#pothole-tutorial-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99990;
+  pointer-events: auto;
+}
+
+#pothole-tutorial-overlay.no-spotlight {
+  background: rgba(10, 10, 9, 0.75);
+}
+
+#pothole-tutorial-spotlight {
+  position: absolute;
+  border-radius: 8px;
+  box-shadow: 0 0 0 9999px rgba(10, 10, 9, 0.75), 0 0 20px rgba(245, 196, 0, 0.4);
+  border: 2px solid #f5c400;
+  pointer-events: none;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 99991;
+  animation: pulseSpotlight 2s infinite ease-in-out;
+}
+
+#pothole-tutorial-box {
+  position: absolute;
+  width: 320px;
+  background: #1c1b1a;
+  border: 2px solid #f5c400;
+  border-radius: 10px;
+  padding: 16px 18px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.7), 6px 6px 0 #f5c400;
+  z-index: 99992;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}

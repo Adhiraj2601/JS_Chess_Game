@@ -1780,6 +1780,66 @@ runTest('85. Classic Chess Regression Check (Clean Separation)', () => {
   assert(e2Moves.includes('5_4'), 'Standard e2-e4');
 });
 
+runTest('86. Pothole Chess: Interactive Tutorial (7 Step Guided Tour)', () => {
+  PotholeMode.tutorial.start(true);
+  assert.strictEqual(PotholeMode.tutorial.active, true);
+  assert.strictEqual(PotholeMode.tutorial.currentStep, 0);
+  assert.strictEqual(PotholeMode.tutorial.steps.length, 7);
+
+  // Step through each of the 7 steps
+  for (let i = 0; i < 6; i++) {
+    PotholeMode.tutorial.next();
+    assert.strictEqual(PotholeMode.tutorial.currentStep, i + 1);
+  }
+
+  // Stepping back
+  PotholeMode.tutorial.prev();
+  assert.strictEqual(PotholeMode.tutorial.currentStep, 5);
+
+  // Finishing
+  PotholeMode.tutorial.finish();
+  assert.strictEqual(PotholeMode.tutorial.active, false);
+  assert.strictEqual(storage['chess_pothole_tutorial_seen'], 'true');
+});
+
+runTest('87. Pothole Chess: Tutorial Skip Updates LocalStorage', () => {
+  storage['chess_pothole_tutorial_seen'] = 'false';
+  PotholeMode.tutorial.start(true);
+  assert.strictEqual(PotholeMode.tutorial.active, true);
+
+  PotholeMode.tutorial.skip();
+  assert.strictEqual(PotholeMode.tutorial.active, false);
+  assert.strictEqual(storage['chess_pothole_tutorial_seen'], 'true');
+});
+
+runTest('88. Pothole Chess: Replay Tutorial Trigger', () => {
+  storage['chess_pothole_tutorial_seen'] = 'true';
+  // Force start via replay
+  PotholeMode.tutorial.start(true);
+  assert.strictEqual(PotholeMode.tutorial.active, true);
+  assert.strictEqual(PotholeMode.tutorial.currentStep, 0);
+  PotholeMode.tutorial.finish();
+});
+
+runTest('89. Pothole Chess: First-Time Auto-Trigger Guard', () => {
+  storage['chess_pothole_tutorial_seen'] = 'true';
+  // Normal start without force should not activate if already seen
+  PotholeMode.tutorial.start(false);
+  assert.strictEqual(PotholeMode.tutorial.active, false);
+});
+
+runTest('90. Pothole Chess: Tutorial Prompt Card Preferences', () => {
+  storage['chess_pothole_tutorial_prompt_seen'] = 'false';
+  let dummyCard = {
+    find: (sel) => ({
+      is: (state) => state === ':checked'
+    }),
+    remove: () => {}
+  };
+  PotholeMode._handleTutorialDismiss(dummyCard);
+  assert.strictEqual(storage['chess_pothole_tutorial_prompt_seen'], 'true');
+});
+
 console.log('\n------------------------------------');
 console.log('TOTAL PASSED: ' + passedTests);
 console.log('TOTAL FAILED: ' + failedTests);

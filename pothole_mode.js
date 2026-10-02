@@ -70,6 +70,19 @@
           this.onTurnStart('w');
         }
       }
+
+      let tutorialPromptSeen = false;
+      try {
+        tutorialPromptSeen = (typeof localStorage !== 'undefined') && localStorage.getItem('chess_pothole_tutorial_prompt_seen') === 'true';
+      } catch (e) {}
+
+      if (!tutorialPromptSeen && typeof $ !== 'undefined') {
+        setTimeout(() => {
+          if (PotholeMode.state.active) {
+            PotholeMode.showTutorialPrompt();
+          }
+        }, 400);
+      }
     },
 
     onDeactivate: function () {
@@ -80,12 +93,17 @@
         this.state.rollTimer = null;
       }
       this.hideDiceUI();
+      if (this.tutorial && this.tutorial.active) {
+        this.tutorial.finish();
+      }
       if (typeof $ !== 'undefined') {
         $('body').removeClass('mode-pothole');
         $('.pothole-marker').remove();
         $('.gamecell').removeClass('has-pothole has-frozen-king');
         $('.frozen-king-badge').remove();
         $('#pothole-status-panel').hide();
+        $('#pothole-tutorial-prompt').remove();
+        $('#pothole-tutorial-overlay').css('display', 'none');
       }
     },
 
@@ -662,6 +680,59 @@
     },
 
     // ----------------------------------------------------------
+    // POTHOLE TUTORIAL PROMPT (Brutalist Card Style)
+    // ----------------------------------------------------------
+    showTutorialPrompt: function () {
+      if (typeof $ === 'undefined' || typeof document === 'undefined') return;
+      if ($('#pothole-tutorial-prompt').length) return;
+      const promptHtml = `
+        <div id="pothole-tutorial-prompt" class="brutalist-card">
+          <div class="brutalist-card__header">
+            <div class="brutalist-card__icon">
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width:20px; height:20px;">
+                <circle cx="12" cy="12" r="9" fill="none" stroke="#1c1b1a" stroke-width="2.2"/>
+                <circle cx="12" cy="12" r="3.5" fill="#1c1b1a"/>
+              </svg>
+            </div>
+            <div class="brutalist-card__alert">POTHOLE CHESS</div>
+          </div>
+          <div class="brutalist-card__message">
+            New to Pothole Chess? Would you like a quick interactive tutorial to learn the hazard mechanics?
+          </div>
+          <div class="brutalist-card__actions">
+            <label class="brutalist-card__dont-show">
+              <input type="checkbox" id="pothole-tutorial-dont-show"> Don't remind me again
+            </label>
+            <button class="brutalist-card__button brutalist-card__button--yes pothole-tutorial-yes">Yes, show me!</button>
+            <button class="brutalist-card__button brutalist-card__button--no pothole-tutorial-no">No thanks</button>
+          </div>
+        </div>`;
+      const $prompt = $(promptHtml);
+      if ($('body') && typeof $('body').append === 'function') {
+        $('body').append($prompt);
+      }
+      if ($prompt && typeof $prompt.find === 'function') {
+        $prompt.find('.pothole-tutorial-yes').on('click', () => {
+          if (PotholeMode.tutorial && typeof PotholeMode.tutorial.start === 'function') {
+            PotholeMode.tutorial.start(true);
+          }
+          PotholeMode._handleTutorialDismiss($prompt);
+        });
+        $prompt.find('.pothole-tutorial-no').on('click', () => {
+          PotholeMode._handleTutorialDismiss($prompt);
+        });
+      }
+    },
+
+    _handleTutorialDismiss: function ($el) {
+      const dontShow = $el.find('#pothole-tutorial-dont-show').is(':checked');
+      if (dontShow) {
+        try { localStorage.setItem('chess_pothole_tutorial_prompt_seen', 'true'); } catch (e) {}
+      }
+      $el.remove();
+    },
+
+    // ----------------------------------------------------------
     // "HOW IT WORKS" RULES MODAL (UI Requirement 1)
     // ----------------------------------------------------------
     openRulesModal: function () {
@@ -679,7 +750,16 @@
                   </svg>
                   <span>Pothole Chess — How It Works (R1–R11)</span>
                 </div>
-                <button class="modal-close-icon" id="close-pothole-rules">&times;</button>
+                <div class="help-header-actions">
+                  <button id="restart-pothole-tutorial-btn" class="action-btn tutorial-replay-btn" title="Launch Interactive Guided Tour">
+                    <svg class="btn-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
+                      <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+                    </svg>
+                    <span>Replay Tutorial</span>
+                  </button>
+                  <button class="modal-close-icon" id="close-pothole-rules">&times;</button>
+                </div>
               </div>
               <div class="pothole-rules-body">
                 <div class="pothole-rule-item">
@@ -738,6 +818,188 @@
       }
     },
 
+    // ----------------------------------------------------------
+    // INTERACTIVE ONBOARDING TUTORIAL CONTROLLER
+    // ----------------------------------------------------------
+    tutorial: {
+      active: false,
+      currentStep: 0,
+      steps: [
+        {
+          target: '#board-stage',
+          title: 'Welcome to Pothole Chess',
+          desc: 'Pothole Chess plays by standard FIDE rules underneath, but hazardous potholes spawn each turn that swallow pieces, block sliding paths, and freeze kings!',
+          placement: 'center'
+        },
+        {
+          target: '#board-wrapper',
+          title: 'The Turn Start d8 Hazard Roll (R2)',
+          desc: 'Before making your move, an 8-sided die (d8) rolls automatically. Rolling an EVEN number (2, 4, 6, 8) triggers a pothole. ODD (1, 3, 5, 7) means a normal turn.',
+          placement: 'center'
+        },
+        {
+          target: '#board-wrapper',
+          title: 'Target Coordinates (R3)',
+          desc: 'When an even number is rolled, two subsequent rolls determine the square: 1st roll = Rank (1–8), 2nd roll = File (1=a through 8=h).',
+          placement: 'center'
+        },
+        {
+          target: '#pothole-status-panel',
+          title: 'Two-Turn Lifetime (R4 & R5)',
+          desc: 'Every pothole is owned by the roller. At the END of your turn, all potholes owned by your opponent are removed! Each pothole lasts exactly 2 turns.',
+          placement: 'left'
+        },
+        {
+          target: '#board-stage',
+          title: 'Swallowed Pieces & Blocked Rays (R6 & R7)',
+          desc: 'Non-king pieces on the square fall through the board and are removed! Potholes block landing, sliding pieces, pawn pushes, and enemy attack rays (intercepting check). Knights can jump over.',
+          placement: 'center'
+        },
+        {
+          target: '#board-stage',
+          title: 'A King Never Falls — King Freeze (R9)',
+          desc: 'A King standing on a pothole is NEVER lost—instead, the King is frozen with 0 moves until the pothole vanishes. Other friendly pieces can move normally.',
+          placement: 'center'
+        },
+        {
+          target: '#turn',
+          title: 'Checkmate Victory (R10 & R11)',
+          desc: 'The only victory condition is authentic checkmate! A frozen King can be checked and must be defended, or it is mate. Stalemate applies if no legal moves remain.',
+          placement: 'bottom'
+        }
+      ],
+
+      start: function (force) {
+        if (typeof $ === 'undefined') return;
+        if (!force) {
+          try {
+            if (localStorage.getItem('chess_pothole_tutorial_seen') === 'true') return;
+          } catch (e) {}
+        }
+
+        // Ensure Pothole mode is active
+        if (typeof GameModeManager !== 'undefined' && GameModeManager.activeMode !== 'pothole') {
+          GameModeManager.setMode('pothole');
+        }
+
+        this.active = true;
+        this.currentStep = 0;
+        $('#pothole-tutorial-overlay').css('display', 'block');
+        this.renderStep(0);
+      },
+
+      renderStep: function (idx) {
+        if (idx < 0 || idx >= this.steps.length) return;
+        this.currentStep = idx;
+        let step = this.steps[idx];
+
+        $('#pothole-tutorial-step-tag').text(`Step ${idx + 1} of ${this.steps.length}`);
+        $('#pothole-tutorial-step-title').text(step.title);
+        $('#pothole-tutorial-step-desc').text(step.desc);
+
+        // Progress dots
+        let dotsHtml = '';
+        for (let i = 0; i < this.steps.length; i++) {
+          dotsHtml += `<div class="tutorial-dot${i === idx ? ' active' : ''}"></div>`;
+        }
+        $('#pothole-tutorial-dots').html(dotsHtml);
+
+        // Nav buttons
+        $('#pothole-tutorial-prev-btn').prop('disabled', idx === 0);
+        $('#pothole-tutorial-next-btn').text(idx === this.steps.length - 1 ? 'Finish' : 'Next ▶');
+
+        // Position spotlight & box
+        let $target = $(step.target);
+        if ($target.length && $target.is(':visible')) {
+          let targetEl = $target[0];
+          if (targetEl && typeof targetEl.getBoundingClientRect === 'function') {
+            let rect = targetEl.getBoundingClientRect();
+            let pad = 8;
+            $('#pothole-tutorial-overlay').removeClass('no-spotlight');
+            $('#pothole-tutorial-spotlight').css({
+              display: 'block',
+              top: (rect.top - pad) + 'px',
+              left: (rect.left - pad) + 'px',
+              width: (rect.width + pad * 2) + 'px',
+              height: (rect.height + pad * 2) + 'px'
+            });
+
+            let boxWidth = 320;
+            let boxHeight = 180;
+            let boxTop = rect.top;
+            let boxLeft = rect.left + rect.width + 16;
+
+            if (step.placement === 'left') {
+              boxLeft = rect.left - boxWidth - 16;
+              boxTop = rect.top;
+            } else if (step.placement === 'top') {
+              boxTop = rect.top - boxHeight - 16;
+              boxLeft = rect.left + (rect.width / 2) - (boxWidth / 2);
+            } else if (step.placement === 'bottom') {
+              boxTop = rect.bottom + 16;
+              boxLeft = rect.left + (rect.width / 2) - (boxWidth / 2);
+            } else if (step.placement === 'center') {
+              boxTop = rect.top + (rect.height / 2) - (boxHeight / 2);
+              boxLeft = rect.left + (rect.width / 2) - (boxWidth / 2);
+            }
+
+            if (typeof window !== 'undefined') {
+              let maxLeft = window.innerWidth - boxWidth - 16;
+              let maxTop = window.innerHeight - boxHeight - 16;
+              boxLeft = Math.max(16, Math.min(boxLeft, maxLeft));
+              boxTop = Math.max(16, Math.min(boxTop, maxTop));
+            }
+
+            $('#pothole-tutorial-box').css({
+              top: boxTop + 'px',
+              left: boxLeft + 'px',
+              transform: 'none'
+            });
+            return;
+          }
+        }
+
+        // Fallback center
+        $('#pothole-tutorial-overlay').addClass('no-spotlight');
+        $('#pothole-tutorial-spotlight').css('display', 'none');
+        $('#pothole-tutorial-box').css({
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)'
+        });
+      },
+
+      next: function () {
+        if (this.currentStep < this.steps.length - 1) {
+          this.renderStep(this.currentStep + 1);
+        } else {
+          this.finish();
+        }
+      },
+
+      prev: function () {
+        if (this.currentStep > 0) {
+          this.renderStep(this.currentStep - 1);
+        }
+      },
+
+      skip: function () {
+        this.finish();
+      },
+
+      finish: function () {
+        this.active = false;
+        if (typeof $ !== 'undefined') {
+          $('#pothole-tutorial-overlay').css('display', 'none').removeClass('no-spotlight');
+        }
+        try {
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('chess_pothole_tutorial_seen', 'true');
+          }
+        } catch (e) {}
+      }
+    },
+
     bindEvents: function () {
       if (typeof $ === 'undefined') return;
 
@@ -754,6 +1016,24 @@
         if ($(e.target).is('#pothole-rules-modal')) {
           this.closeRulesModal();
         }
+      });
+
+      // Tutorial triggers & navigation
+      $(document).on('click', '#restart-pothole-tutorial-btn', () => {
+        this.closeRulesModal();
+        this.tutorial.start(true);
+      });
+
+      $(document).on('click', '#pothole-tutorial-next-btn', () => {
+        this.tutorial.next();
+      });
+
+      $(document).on('click', '#pothole-tutorial-prev-btn', () => {
+        this.tutorial.prev();
+      });
+
+      $(document).on('click', '#pothole-tutorial-skip-btn', () => {
+        this.tutorial.skip();
       });
     }
   };
