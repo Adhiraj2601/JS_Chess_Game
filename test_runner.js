@@ -145,6 +145,9 @@ global.$ = function(selector) {
       },
       hasClass: function(cls) {
         return document.body.className.includes(cls);
+      },
+      append: function() {
+        return this;
       }
     };
   }

@@ -1,16 +1,21 @@
 /**
- * ==========================================================
- * CHESS UNO MODE — SPOODERY CHESS UNO TABLETOP PLUGIN
- * ==========================================================
- * Real "UNO Chess" variant by Spoodery Chess.
- * Seats vs Colors, multi-move Number cards, Skips,
- * physical 180° board-flipping Reverses, piece additions (+2 / +4),
- * and king-capture / last-card victory conditions.
- * Standard chess remains 100% unaffected.
+ * CHESS UNO MODE - SPOODERY CHESS UNO TABLETOP PLUGIN
+ * Follows Spoodery Chess UNO variant:
+ * - Two SEATS: Seat 'A' (You - bottom) and Seat 'B' (Opponent - top)
+ * - 98-Card Deck (0-9 numbers, Skips, Reverses, +2 Draw Two, Wild +4)
+ * - Number N grants N chess moves
+ * - Skip skips opponent's turn, active seat plays again
+ * - Reverse swaps sides (You <-> Opponent) and flips board 180°
+ * - +2 and Wild +4 revive captured friendly pieces on own home half
+ * - Top discard card displayed in center of chessboard with fanned stack
+ * - Instant victory on King capture or playing last card
+ * - Pseudo-legal chess moves; check/checkmate/stalemate/repetition suppressed
  */
 
 (function (root, factory) {
-  if (typeof module !== 'undefined' && module.exports) {
+  if (typeof define === 'function' && define.amd) {
+    define([], factory);
+  } else if (typeof module === 'object' && module.exports) {
     module.exports = factory();
   } else {
     root.UnoMode = factory();
@@ -18,6 +23,8 @@
 })(typeof window !== 'undefined' ? window : this, function () {
 
   const CONFIG = {
+    SHOW_CENTER_CARD: true,
+    CENTER_CARD_OPACITY_WHILE_MOVING: 0.35,
     DECK: {
       zerosPerColor: 1,
       onesToNinesPerColor: 2,
@@ -56,7 +63,7 @@
       },
       activeSeat: 'A', // 'A' | 'B'
       currentColor: null, // 'red' | 'blue' | 'green' | 'yellow'
-      phase: 'playCard', // 'playCard' | 'moving' | 'colorPick' | 'addingPieces'
+      phase: 'playCard', // 'playCard' | 'moving' | 'pickColor' | 'addingPieces'
       movesRemaining: 0,
       movedPieces: [],
       piecesToAdd: 0,
@@ -68,10 +75,16 @@
     },
 
     savedAutoFlip: undefined,
+    _centerCardAnimTimeout: null,
+    _isCenterCardAnimating: false,
 
     // ----------------------------------------------------------
     // SEAT & COLOR HELPERS
     // ----------------------------------------------------------
+    playerName: function (seat) {
+      return (seat || this.state.activeSeat) === 'A' ? 'You' : 'Opponent';
+    },
+
     colorOf: function (seat) {
       return this.state.seatColor[seat || this.state.activeSeat];
     },
@@ -107,9 +120,12 @@
         main.variables.autoFlip = false;
       }
 
+      this.ensureCenterCardContainer();
+
       if (this.state.deck.length === 0 && this.state.hands.A.length === 0) {
         this.startNewGame();
       }
+      this.refreshBanner();
       this.renderUI();
       this.logCard('system', 'Chess UNO Mode activated. Play a card to begin!');
 
@@ -136,9 +152,13 @@
       this.hidePromptBanner();
       if (typeof $ !== 'undefined') {
         $('#uno-color-picker-modal').hide();
+        $('#uno-center-card-container').hide();
       }
       if (this.help && typeof this.help.close === 'function') {
         this.help.close();
+      }
+      if (this.tutorial && this.tutorial.active) {
+        this.tutorial.skip();
       }
     },
 
@@ -159,14 +179,24 @@
       this.state.cardPlayedThisTurn = false;
       this.state.turnCount = 0;
       this.state.cardLog = [];
+      this._isCenterCardAnimating = false;
+      if (this._centerCardAnimTimeout) {
+        clearTimeout(this._centerCardAnimTimeout);
+        this._centerCardAnimTimeout = null;
+      }
     },
 
     startNewGame: function () {
       this.resetState();
+      this.ensureCenterCardContainer();
+
+      // 1. Build and shuffle the 98-card deck
       this.state.deck = this.buildDeck();
+
+      // 2. Deal 6 cards to each seat
       this.dealInitialHands();
 
-      // Flip one card onto the discard pile (cannot be Wild +4)
+      // 3. Flip one starting card onto the discard pile (must not be Wild +4)
       let initialCard = null;
       while (this.state.deck.length > 0) {
         let candidate = this.state.deck.pop();
@@ -178,31 +208,42 @@
           break;
         }
       }
-      if (initialCard) {
-        this.state.discardPile.push(initialCard);
-        this.state.currentColor = initialCard.color;
+      if (!initialCard) {
+        initialCard = {
+          id: 'card_init',
+          color: 'red',
+          type: 'number',
+          value: 7,
+          label: '7',
+          title: 'Number 7',
+          desc: 'Make 7 chess moves'
+        };
       }
+      this.state.discardPile.push(initialCard);
+      this.state.currentColor = initialCard.color;
 
-      this.state.activeSeat = 'A';
-      this.state.seatColor = { A: 'w', B: 'b' };
+      // 4. Initialize engine turn to match Seat A's color (White)
       if (typeof main !== 'undefined' && main.variables) {
         main.variables.turn = this.state.seatColor.A; // 'w'
       }
-      this.state.phase = 'playCard';
+
+      this.clearReviveBoardHighlights();
+      this.refreshBanner();
       this.renderUI();
+      this.logCard('system', `Game started. You are White, Opponent is Black.`);
     },
 
     // ----------------------------------------------------------
-    // DECK GENERATION & SHUFFLE
+    // DECK CREATION & MANAGEMENT
     // ----------------------------------------------------------
     buildDeck: function () {
       const colors = ['red', 'blue', 'green', 'yellow'];
+      const dec = CONFIG.DECK;
       let cards = [];
       let cardId = 1;
-      const dec = CONFIG.DECK;
 
       colors.forEach(color => {
-        // Zero cards (1 per color by default)
+        // Zero (1 per color by default)
         for (let i = 0; i < dec.zerosPerColor; i++) {
           cards.push({
             id: 'card_' + (cardId++),
@@ -211,21 +252,21 @@
             value: 0,
             label: '0',
             title: 'Number 0',
-            desc: '0 chess moves (pass turn)'
+            desc: 'Turn passes immediately (0 moves)'
           });
         }
 
-        // 1-9 cards (2 each per color by default)
-        for (let num = 1; num <= 9; num++) {
+        // Numbers 1-9 (2 each per color by default)
+        for (let val = 1; val <= 9; val++) {
           for (let i = 0; i < dec.onesToNinesPerColor; i++) {
             cards.push({
               id: 'card_' + (cardId++),
               color: color,
               type: 'number',
-              value: num,
-              label: String(num),
-              title: 'Number ' + num,
-              desc: `Make ${num} moves this turn`
+              value: val,
+              label: String(val),
+              title: `Number ${val}`,
+              desc: `Make ${val} chess moves this turn`
             });
           }
         }
@@ -236,9 +277,9 @@
             id: 'card_' + (cardId++),
             color: color,
             type: 'skip',
-            label: '⊘',
+            label: 'SKIP',
             title: 'Skip',
-            desc: 'Skip opponent\'s turn, play again'
+            desc: "Skip opponent's turn, play again"
           });
         }
 
@@ -248,7 +289,7 @@
             id: 'card_' + (cardId++),
             color: color,
             type: 'reverse',
-            label: '⇄',
+            label: 'REV',
             title: 'Reverse',
             desc: 'Swap sides with your opponent (flip the board)'
           });
@@ -260,6 +301,7 @@
             id: 'card_' + (cardId++),
             color: color,
             type: 'drawTwo',
+            value: 2,
             label: '+2',
             title: 'Draw Two',
             desc: 'Add up to 2 pieces to your half'
@@ -273,7 +315,8 @@
           id: 'card_' + (cardId++),
           color: 'wild',
           type: 'wildDrawFour',
-          label: '★+4',
+          value: 4,
+          label: '+4',
           title: 'Wild +4',
           desc: 'Choose a color, add up to 4 pieces to your half'
         });
@@ -324,17 +367,17 @@
       let card = this.state.deck.pop();
       this.state.hands[seat].push(card);
       if (!silent) {
-        this.logCard(this.colorOf(seat), `Player ${seat} drew [${card.title}]`);
+        this.logCard(this.colorOf(seat), `${this.playerName(seat)} drew [${card.title}]`);
       }
       return card;
     },
 
     // ----------------------------------------------------------
-    // CARD PLAYABILITY & DRAW ACTION
+    // PLAYABILITY CHECK
     // ----------------------------------------------------------
     isCardPlayable: function (card) {
       if (!card) return false;
-      if (card.type === 'wildDrawFour') return true;
+      if (card.type === 'wildDrawFour' || card.color === 'wild') return true;
 
       let top = this.getTopDiscard();
       if (!top) return true;
@@ -342,17 +385,30 @@
       let targetColor = this.state.currentColor || top.color;
       if (card.color === targetColor) return true;
 
-      if (card.type === 'number' && top.type === 'number' && card.value === top.value) return true;
-      if (card.type !== 'number' && card.type === top.type) return true;
-      if (card.label === top.label) return true;
+      // Symbol or number matching
+      if (top.type === 'number' && card.type === 'number' && top.value === card.value) {
+        return true;
+      }
+      if (top.type !== 'number' && card.type === top.type) {
+        return true;
+      }
+      if (card.label && top.label && card.label === top.label) {
+        return true;
+      }
 
       return false;
     },
 
-    handleDrawAction: function (seat) {
-      if (this.state.phase !== 'playCard') return;
+    // ----------------------------------------------------------
+    // DRAW BUTTON ACTION
+    // ----------------------------------------------------------
+    drawCardsUntilPlayable: function (seat) {
+      if (this.state.phase !== 'playCard') {
+        this.showToast('You cannot draw cards during this action!');
+        return;
+      }
       if (seat !== this.state.activeSeat) {
-        this.showToast("Cannot draw on opponent's turn!");
+        this.showToast("Cannot draw cards on opponent's turn!");
         return;
       }
 
@@ -363,17 +419,17 @@
       }
 
       let drewPlayable = false;
-      let drawnCount = 0;
+      let drawCount = 0;
 
-      while (!drewPlayable) {
+      while (!drewPlayable && drawCount < 40) {
         let card = this.drawCardToSeat(seat, false);
         if (!card) {
           break; // Deck & discard are empty
         }
-        drawnCount++;
+        drawCount++;
         if (this.isCardPlayable(card)) {
           drewPlayable = true;
-          this.showToast(`Drew playable card: [${card.label} ${card.color.toUpperCase()}]!`);
+          this.showToast(`${this.playerName(seat)} drew playable card: [${card.label} ${card.color.toUpperCase()}]!`);
           break;
         }
       }
@@ -382,14 +438,19 @@
         let hasAnyPlayable = this.state.hands[seat].some(c => this.isCardPlayable(c));
         if (!hasAnyPlayable) {
           this.showToast('No playable cards left and deck is empty — passing turn.');
-          this.logCard('system', `Player ${seat} has no playable cards and deck is empty → turn passes.`);
+          this.logCard('system', `${this.playerName(seat)} has no playable cards and deck is empty — turn passes.`);
           this.state.phase = 'playCard';
+          this.refreshBanner();
           main.methods.endturn(null);
           return;
         }
       }
 
       this.renderUI();
+    },
+
+    handleDrawAction: function (seat) {
+      this.drawCardsUntilPlayable(seat || this.state.activeSeat);
     },
 
     // ----------------------------------------------------------
@@ -436,9 +497,12 @@
       }
       this.state.cardPlayedThisTurn = true;
 
+      // Animate center card fly-in from playing seat's hand
+      this.renderCenterCard(true, seat);
+
       // Check last-card victory condition for Number / Skip / Reverse immediately
       if (hand.length === 0 && (card.type === 'number' || card.type === 'skip' || card.type === 'reverse')) {
-        this.logCard(this.colorOf(seat), `Player ${seat} played their last card [${card.label} ${card.color.toUpperCase()}]!`);
+        this.logCard(this.colorOf(seat), `${this.playerName(seat)} played their last card [${card.label} ${card.color.toUpperCase()}]!`);
         this.triggerSeatWin(seat, 'Played their last card');
         this.renderUI();
         return;
@@ -465,11 +529,14 @@
     // NUMBER N (0-9): Player makes N chess moves this turn
     executeNumberCard: function (card, seat) {
       let n = card.value;
-      this.logCard(this.colorOf(seat), `Player ${seat} played [${card.label} ${card.color.toUpperCase()}] → ${n} moves`);
+      this.logCard(this.colorOf(seat), `${this.playerName(seat)} played [${card.label} ${card.color.toUpperCase()}] — ${n} moves`);
 
       if (n === 0) {
         // 0 moves: turn immediately passes
         this.state.phase = 'playCard';
+        this.state.movesRemaining = 0;
+        this.state.cardPlayedThisTurn = false;
+        this.refreshBanner();
         this.renderUI();
         main.methods.endturn(null);
         return;
@@ -478,25 +545,26 @@
       this.state.phase = 'moving';
       this.state.movesRemaining = n;
       this.state.movedPieces = [];
-      this.showPromptBanner(`Moves remaining: ${n}`, false);
+      this.refreshBanner();
       this.renderUI();
     },
 
     // SKIP: Opponent's turn is skipped; active seat plays another card immediately
     executeSkipCard: function (card, seat) {
-      this.logCard(this.colorOf(seat), `Player ${seat} played [SKIP] ⊘ → Player ${this.otherSeat(seat)} is skipped!`);
+      this.logCard(this.colorOf(seat), `${this.playerName(seat)} played [SKIP] ⊘ — ${this.playerName(this.otherSeat(seat))} is skipped!`);
       this.state.phase = 'playCard';
       this.state.cardPlayedThisTurn = false;
       if (typeof main !== 'undefined' && main.variables) {
         main.variables.enPassantTarget = null;
       }
-      this.showToast(`Player ${seat} played SKIP! Player ${this.otherSeat(seat)} is skipped. Play another card.`);
+      this.showToast(`${this.playerName(seat)} played SKIP! ${this.playerName(this.otherSeat(seat))} is skipped. Play another card.`);
+      this.refreshBanner();
       this.renderUI();
     },
 
     // REVERSE: Swap sides (seatColor.A <-> seatColor.B) and rotate board 180°
     executeReverseCard: function (card, seat) {
-      this.logCard(this.colorOf(seat), `Player ${seat} played [REVERSE] ⇄ → Swapped sides!`);
+      this.logCard(this.colorOf(seat), `${this.playerName(seat)} played [REVERSE] ⇄ — Swapped sides!`);
 
       // 1. Swap seat colors immediately
       let temp = this.state.seatColor.A;
@@ -530,24 +598,26 @@
         this.state.phase = 'moving';
         this.state.movesRemaining = 1;
         this.state.movedPieces = [];
-        this.showPromptBanner('Moves remaining: 1', false);
+        this.refreshBanner();
         this.renderUI();
       } else {
         // Default: 'passTurn' - Reverse uses up turn; turn passes to other seat
         this.state.phase = 'playCard';
+        this.refreshBanner();
         main.methods.endturn(null);
       }
     },
 
     // +2 DRAW TWO: Add up to 2 pieces to empty squares on own half
     executeDrawTwoCard: function (card, seat) {
-      this.logCard(this.colorOf(seat), `Player ${seat} played [+2] → Add up to 2 pieces to own half`);
+      this.logCard(this.colorOf(seat), `${this.playerName(seat)} played [+2] — Add up to 2 pieces to own half`);
       this.initiatePieceAddition(2, false, seat);
     },
 
     // WILD +4: Choose color, add up to 4 pieces to own half
     executeWildDrawFour: function (card, seat) {
-      this.state.phase = 'colorPick';
+      this.state.phase = 'pickColor';
+      this.refreshBanner();
       this.showColorPickerModal(seat);
     },
 
@@ -560,7 +630,8 @@
       if (typeof $ === 'undefined') return;
       $('#uno-color-picker-modal').hide();
       this.state.currentColor = chosenColor;
-      this.logCard(this.colorOf(seat), `Player ${seat} set active color to ${chosenColor.toUpperCase()}`);
+      this.logCard(this.colorOf(seat), `${this.playerName(seat)} set active color to ${chosenColor.toUpperCase()}`);
+      this.renderCenterCard(false);
       this.initiatePieceAddition(4, true, seat);
     },
 
@@ -579,7 +650,6 @@
       if (available.length === 0) {
         this.showToast('No captured pieces in Graveyard to revive! Click Done to finish.');
       } else if (available.length === 1) {
-        // Auto-select the only available piece
         this.state.pendingPlacementPiece = { idx: 0, piece: available[0] };
       }
 
@@ -588,7 +658,6 @@
 
     getAvailableRevivePieces: function (color) {
       if (CONFIG.ADD_SOURCE === 'reserve') {
-        // Reserve piece fallback if configured
         return [
           { key: color + '_queen_res', type: color + '_queen', img: color === 'w' ? '&#9813;' : '&#9819;' },
           { key: color + '_rook_res', type: color + '_rook', img: color === 'w' ? '&#9814;' : '&#9820;' },
@@ -606,15 +675,7 @@
       let isPawn = piece ? (piece.type.endsWith('_pawn') || piece.key.includes('pawn')) : false;
 
       this.highlightEmptySquaresForRevive(color, isPawn);
-      let canCancel = this.state.placedPiecesThisAction.length === 0;
-
-      let msg = `Add up to ${this.state.piecesToAdd} piece(s) to your half.`;
-      if (piece) {
-        msg += ` Click a highlighted square to place ${piece.type.replace(/^[wb]_/, '')}.`;
-      } else {
-        msg += ' Select a piece from Graveyard.';
-      }
-      this.showPromptBanner(msg, canCancel, true);
+      this.refreshBanner();
       this.renderUI();
     },
 
@@ -649,100 +710,86 @@
         this.showToast('You can only revive pieces of the color you currently control!');
         return;
       }
+      let available = this.getAvailableRevivePieces(color);
+      if (!available || !available[idx]) return;
 
-      let grave = this.state.graveyard[color];
-      if (!grave || !grave[idx]) return;
-
-      this.state.pendingPlacementPiece = { idx: idx, piece: grave[idx] };
+      this.state.pendingPlacementPiece = { idx: idx, piece: available[idx] };
       this.updateReviveUIAndHighlights();
     },
 
-    executeRevivePlacementOnSquare: function (cellId) {
+    handleBoardSquareClickForRevive: function (cellId) {
       if (this.state.phase !== 'addingPieces') return;
-      let color = this.activeColor();
-      let pending = this.state.pendingPlacementPiece;
-
-      if (!pending) {
-        let available = this.getAvailableRevivePieces(color);
-        if (available.length > 0) {
-          pending = { idx: 0, piece: available[0] };
-          this.state.pendingPlacementPiece = pending;
-        } else {
-          this.showToast('No captured pieces in Graveyard to place!');
-          return;
-        }
-      }
-
-      let board = main.methods.getBoard();
-      if (board[cellId]) {
-        this.showToast('Must place on an EMPTY square!');
+      if (!this.state.pendingPlacementPiece) {
+        this.showToast('First select a piece from the Graveyard to place!');
         return;
       }
 
-      let parsed = main.methods.parseCell(cellId);
-      let row = parsed.row;
+      let color = this.activeColor();
+      let piece = this.state.pendingPlacementPiece.piece;
+      let isPawn = piece ? (piece.type.endsWith('_pawn') || piece.key.includes('pawn')) : false;
 
-      // Validate home half
-      if (color === 'w' && (row < 1 || row > 4)) {
+      // Coordinate checks
+      let rank = parseInt(cellId.charAt(1), 10);
+      if (color === 'w' && (rank < 1 || rank > 4)) {
         this.showToast('White pieces can only be placed on ranks 1–4!');
         return;
       }
-      if (color === 'b' && (row < 5 || row > 8)) {
+      if (color === 'b' && (rank < 5 || rank > 8)) {
         this.showToast('Black pieces can only be placed on ranks 5–8!');
         return;
       }
-
-      let isPawn = pending.piece.type.endsWith('_pawn') || pending.piece.key.includes('pawn');
-      if (isPawn && (row === 1 || row === 8)) {
+      if (isPawn && (rank === 1 || rank === 8)) {
         this.showToast('Pawns cannot be placed on rank 1 or 8!');
         return;
       }
 
-      // Execute revival on board
-      let pieceKey = pending.piece.key;
+      let board = main.methods.getBoard();
+      if (board[cellId]) {
+        this.showToast('You can only place pieces on empty squares!');
+        return;
+      }
+
+      this.executeRevivePlacementOnSquare(cellId, piece);
+    },
+
+    executeRevivePlacementOnSquare: function (cellId, piece) {
+      piece = piece || (this.state.pendingPlacementPiece ? this.state.pendingPlacementPiece.piece : null);
+      if (!piece) return;
+      let color = this.activeColor();
+      let pieceKey = piece.key;
       let pieceObj = main.variables.pieces[pieceKey];
+
       if (pieceObj) {
         pieceObj.captured = false;
         pieceObj.position = cellId;
         pieceObj.moved = true;
-        $('#' + cellId).html(pieceObj.img).attr('chess', pieceKey);
       }
 
-      // Remove piece icon from #captured-white / #captured-black HTML
-      let listSel = pieceKey.startsWith('w_') ? '#captured-white .captured-pieces-list' : '#captured-black .captured-pieces-list';
-      let $list = $(listSel);
-      if ($list && typeof $list.children === 'function') {
-        let $spans = $list.children('span');
-        if ($spans) {
-          for (let i = 0; i < $spans.length; i++) {
-            if ($($spans[i]).html && $($spans[i]).html().trim() === pieceObj.img.trim()) {
-              if (typeof $($spans[i]).remove === 'function') {
-                $($spans[i]).remove();
-              }
-              break;
-            }
-          }
-        }
-      } else if ($list && typeof $list.html === 'function') {
-        let h = $list.html();
-        if (h && typeof h === 'string') {
-          $list.html(h.replace(`<span>${pieceObj.img}</span>`, ''));
+      // Update board DOM
+      $('#' + cellId).html(piece.img).attr('chess', pieceKey);
+
+      // Remove from Graveyard
+      let grave = this.state.graveyard[color];
+      let pIdx = grave.findIndex(p => p.key === pieceKey);
+      if (pIdx !== -1) {
+        grave.splice(pIdx, 1);
+      }
+
+      // Remove from side capture tray UI
+      let traySel = (color === 'w') ? '#captured-black .captured-pieces-list' : '#captured-white .captured-pieces-list';
+      let $tray = $(traySel);
+      if ($tray && typeof $tray.children === 'function') {
+        let spans = $tray.children('span');
+        if (spans && spans.length > 0) {
+          spans.last().remove();
         }
       }
 
-      // Remove from graveyard
-      this.state.graveyard[color].splice(pending.idx, 1);
-      this.state.placedPiecesThisAction.push(pending.piece);
+      this.state.placedPiecesThisAction.push({ cellId: cellId, piece: piece });
       this.state.piecesToAdd--;
       this.state.pendingPlacementPiece = null;
 
-      // History snapshot for undo
-      if (typeof main !== 'undefined' && main.methods && main.methods.createSnapshot) {
-        main.variables.historyStack.push(main.methods.createSnapshot());
-        main.variables.redoStack = [];
-      }
-
-      main.methods.updateVisualHighlights();
+      this.logCard(color, `${this.playerName(this.state.activeSeat)} revived ${piece.type.replace(/^[wb]_/, '')} on ${cellId}`);
 
       let available = this.getAvailableRevivePieces(color);
       if (this.state.piecesToAdd <= 0 || available.length === 0) {
@@ -758,12 +805,12 @@
     finishPieceAddition: function () {
       let seat = this.state.activeSeat;
       this.clearReviveBoardHighlights();
-      this.hidePromptBanner();
       this.state.phase = 'playCard';
+      this.refreshBanner();
 
       // Check last-card win right after piece placement completes
       if (this.state.hands[seat].length === 0) {
-        this.logCard(this.colorOf(seat), `Player ${seat} played their last card!`);
+        this.logCard(this.colorOf(seat), `${this.playerName(seat)} played their last card!`);
         this.triggerSeatWin(seat, 'Played their last card');
         this.renderUI();
         return;
@@ -792,7 +839,7 @@
       this.state.cardPlayedThisTurn = false;
       this.state.phase = 'playCard';
       this.clearReviveBoardHighlights();
-      this.hidePromptBanner();
+      this.refreshBanner();
 
       // Undo the snapshot pushed on card play
       if (typeof main !== 'undefined' && main.variables && main.variables.historyStack.length > 0) {
@@ -816,7 +863,7 @@
       if (typeof ClockManager !== 'undefined') {
         ClockManager.stop();
       }
-      let winnerTitle = `Player ${seat} Wins!`;
+      let winnerTitle = seat === 'A' ? 'You Win!' : 'Opponent Wins!';
       let subtitle = reason || 'Game Over';
       $('#turn').addClass('turnhighlight').text(`${winnerTitle} — ${subtitle}`);
       if (typeof BoardStatusOverlay !== 'undefined') {
@@ -827,6 +874,7 @@
         AudioManager.playGameOver();
       }
       this.logCard('system', `${winnerTitle} (${subtitle})`);
+      this.refreshBanner();
     },
 
     // ----------------------------------------------------------
@@ -846,7 +894,6 @@
     },
 
     nextTurnColor: function (prevColor) {
-      // Pure helper: returns the color of the other seat
       let nextSeat = this.otherSeat(this.state.activeSeat);
       return this.state.seatColor[nextSeat];
     },
@@ -865,7 +912,7 @@
     onTurnHeld: function () {
       if (!this.state.active) return;
       if (this.state.phase === 'moving') {
-        this.showPromptBanner(`Moves remaining: ${this.state.movesRemaining}`, false);
+        this.refreshBanner();
         this.renderUI();
       }
     },
@@ -907,7 +954,8 @@
       if (this.state.phase === 'moving') {
         this.state.movesRemaining--;
         this.state.movedPieces.push(pieceKey);
-        this.logCard(this.activeColor(), `Player ${this.state.activeSeat} moved ${pieceKey} to ${main.methods.toAlgebraic(toCell)} (${this.state.movesRemaining} moves left)`);
+        this.logCard(this.activeColor(), `${this.playerName(this.state.activeSeat)} moved ${pieceKey} to ${main.methods.toAlgebraic(toCell)} (${this.state.movesRemaining} moves left)`);
+        this.refreshBanner();
       }
     },
 
@@ -943,28 +991,23 @@
       this.state.movesRemaining = 0;
       this.state.movedPieces = [];
       this.state.cardPlayedThisTurn = false;
-      this.hidePromptBanner();
+      this.refreshBanner();
       this.renderUI();
     },
 
     onTurnEnd: function (previousColor, nextColor) {
       if (!this.state.active) return;
-      this.state.turnCount++;
       this.state.activeSeat = this.otherSeat(this.state.activeSeat);
-      this.state.cardPlayedThisTurn = false;
+      this.state.turnCount++;
       this.state.phase = 'playCard';
+      this.state.cardPlayedThisTurn = false;
       this.clearReviveBoardHighlights();
-      this.hidePromptBanner();
+      this.refreshBanner();
       this.renderUI();
     },
 
-    onReset: function () {
-      if (!this.state.active) return;
-      this.startNewGame();
-    },
-
     // ----------------------------------------------------------
-    // STATE SNAPSHOTS (FOR UNDO / REDO)
+    // SNAPSHOT SYSTEM (Fidelity across Undo/Redo)
     // ----------------------------------------------------------
     createSnapshot: function () {
       if (!this.state.active) return null;
@@ -1004,12 +1047,14 @@
       this.state.cardPlayedThisTurn = snap.cardPlayedThisTurn || false;
       this.state.turnCount = snap.turnCount || 0;
       this.state.cardLog = snap.cardLog || [];
+      this._isCenterCardAnimating = false;
 
       this.clearReviveBoardHighlights();
-      this.hidePromptBanner();
       if (typeof $ !== 'undefined') {
         $('#uno-color-picker-modal').hide();
       }
+      this.refreshBanner();
+      this.renderCenterCard(false);
       this.renderUI();
     },
 
@@ -1027,12 +1072,6 @@
       $('#discard-count-badge').text(this.state.discardPile.length);
 
       let topDiscard = this.getTopDiscard();
-      if (topDiscard) {
-        let discardEl = this.renderSingleCardHtml(topDiscard, false, true, null);
-        $('#discard-top-display').html(discardEl);
-      } else {
-        $('#discard-top-display').html('<div class="uno-card mini-card empty-card"><span class="card-center empty-icon">∅</span></div>');
-      }
 
       // 2. Active Color Swatch / Badge
       let currentC = this.state.currentColor || (topDiscard ? topDiscard.color : 'red');
@@ -1041,32 +1080,52 @@
         $colorBadge.attr('class', 'uno-color-badge color-' + currentC).text(currentC.charAt(0).toUpperCase() + currentC.slice(1));
       }
 
-      // 3. Hand Header Labels & Counts
-      $('#hand-a-label').text(`Player A · ${this.state.seatColor.A === 'w' ? 'White' : 'Black'}`);
-      $('#hand-b-label').text(`Player B · ${this.state.seatColor.B === 'w' ? 'White' : 'Black'}`);
+      // 3. Hand Header Labels & Counts (YOU vs OPPONENT)
+      let colorA = this.state.seatColor.A === 'w' ? 'WHITE' : 'BLACK';
+      let colorB = this.state.seatColor.B === 'w' ? 'WHITE' : 'BLACK';
+      $('#hand-a-label').text(`YOU · ${colorA}`);
+      $('#hand-b-label').text(`OPPONENT · ${colorB}`);
       $('#hand-a-count').text(`${this.state.hands.A.length} cards`);
       $('#hand-b-count').text(`${this.state.hands.B.length} cards`);
 
-      // 4. Hands: Active player face-up, inactive player face-down
+      // 4. Player Bars consistency
+      let youColor = this.state.seatColor.A === 'w' ? 'White' : 'Black';
+      let oppColor = this.state.seatColor.B === 'w' ? 'White' : 'Black';
+      $('#bottom-player-name').text('You');
+      $('#bottom-player-meta').text(youColor);
+      $('#top-player-name').text('Opponent');
+      $('#top-player-meta').text(oppColor);
+
+      // 5. Hands: Active player face-up, inactive player face-down
       let aFaceDown = activeSeat !== 'A';
       let bFaceDown = activeSeat !== 'B';
       this.renderHand('A', '#hand-white-cards', aFaceDown);
       this.renderHand('B', '#hand-black-cards', bFaceDown);
 
-      // 5. Draw button state
+      // 6. Draw button state
       $('#uno-draw-btn').prop('disabled', this.state.phase !== 'playCard');
 
-      // 6. Turn Status Header
+      // 7. Turn Status Header
       if (typeof main !== 'undefined' && !main.variables.gameOver) {
         let colorName = activeColor === 'w' ? 'White' : 'Black';
-        $('#turn').removeClass('turnhighlight').text(`Player ${activeSeat} (${colorName})'s Turn`);
+        if (activeSeat === 'A') {
+          $('#turn').removeClass('turnhighlight').text(`You (${colorName})'s Turn`);
+        } else {
+          $('#turn').removeClass('turnhighlight').text(`Opponent (${colorName})'s Turn`);
+        }
       }
 
-      // 7. Graveyard Trays
+      // 8. Graveyard Trays
       this.renderGraveyard();
 
-      // 8. Card Log
+      // 9. Card Log
       this.renderCardLog();
+
+      // 10. Center Played Card on Chessboard
+      this.renderCenterCard(false);
+
+      // 11. Interaction Banner
+      this.refreshBanner();
     },
 
     renderHand: function (seat, containerSelector, isFaceDown) {
@@ -1113,40 +1172,155 @@
       `;
     },
 
+    // ----------------------------------------------------------
+    // CENTER CHESSBOARD PLAYED CARD (SPOODERY TABLETOP)
+    // ----------------------------------------------------------
+    ensureCenterCardContainer: function () {
+      if (typeof $ === 'undefined') return null;
+      let $cont = $('#uno-center-card-container');
+      if (!$cont.length) {
+        let $board = $('#board-wrapper');
+        if (!$board.length) $board = $('#board-stage');
+        if ($board.length) {
+          $cont = $('<div id="uno-center-card-container" class="uno-only uno-center-card-container" style="display:none;"><div id="uno-center-card-stack" class="uno-center-card-stack"></div></div>');
+          let $overlay = $('#board-status-overlay');
+          if ($overlay.length) {
+            $cont.insertBefore($overlay);
+          } else {
+            $board.append($cont);
+          }
+        }
+      }
+      return $cont;
+    },
+
+    getCardTilt: function (card) {
+      if (!card) return 0;
+      if (card._tilt !== undefined) return card._tilt;
+      let hash = 0;
+      let str = String(card.id || card.title || card.label || '');
+      for (let i = 0; i < str.length; i++) {
+        hash = ((hash << 5) - hash) + str.charCodeAt(i);
+      }
+      card._tilt = Number((((Math.abs(hash) % 160) - 80) / 10).toFixed(1));
+      return card._tilt;
+    },
+
+    renderCenterCard: function (animate, playedSeat) {
+      if (typeof $ === 'undefined') return;
+      this.ensureCenterCardContainer();
+      const $container = $('#uno-center-card-container');
+      if (!$container.length) return;
+
+      if (!CONFIG.SHOW_CENTER_CARD || this.state.discardPile.length === 0) {
+        $container.hide();
+        return;
+      }
+
+      $container.show();
+      if (this.state.phase === 'moving') {
+        $container.addClass('moving-phase').css('opacity', CONFIG.CENTER_CARD_OPACITY_WHILE_MOVING);
+      } else {
+        $container.removeClass('moving-phase').css('opacity', 1);
+      }
+
+      // If animation was triggered, preserve it until duration finishes
+      if (!animate && this._isCenterCardAnimating) {
+        return;
+      }
+
+      const pile = this.state.discardPile;
+      const topCard = pile[pile.length - 1];
+      const prev1 = pile.length >= 2 ? pile[pile.length - 2] : null;
+      const prev2 = pile.length >= 3 ? pile[pile.length - 3] : null;
+
+      let html = '';
+
+      if (prev2) {
+        let tilt2 = this.getCardTilt(prev2) + 5;
+        html += this.renderCenterCardHtml(prev2, 'under-2', tilt2, 'translate(calc(-50% - 5px), calc(-50% + 4px))', '');
+      }
+
+      if (prev1) {
+        let tilt1 = this.getCardTilt(prev1) - 4;
+        html += this.renderCenterCardHtml(prev1, 'under-1', tilt1, 'translate(calc(-50% + 5px), calc(-50% - 3px))', '');
+      }
+
+      let topTilt = this.getCardTilt(topCard);
+      let animClass = '';
+      if (animate && playedSeat) {
+        animClass = playedSeat === 'A' ? 'flying-bottom' : 'flying-top';
+        this._isCenterCardAnimating = true;
+        if (this._centerCardAnimTimeout) clearTimeout(this._centerCardAnimTimeout);
+        this._centerCardAnimTimeout = setTimeout(() => {
+          UnoMode._isCenterCardAnimating = false;
+          UnoMode.renderCenterCard(false);
+        }, 340);
+      }
+
+      html += this.renderCenterCardHtml(topCard, 'top', topTilt, 'translate(-50%, -50%)', animClass);
+
+      $('#uno-center-card-stack').html(html);
+    },
+
+    renderCenterCardHtml: function (card, role, tilt, transformPrefix, animClass) {
+      let colorCls = ' card-' + card.color;
+      let ringCls = '';
+      if (card.color === 'wild' || card.type === 'wildDrawFour') {
+        let chosen = this.state.currentColor || 'red';
+        ringCls = ` wild-active-ring-${chosen}`;
+      }
+      let roleCls = role ? ` card-${role}` : ' card-top';
+      let anim = animClass ? ` ${animClass}` : '';
+      let style = `--target-tilt: ${tilt}deg; transform: ${transformPrefix} rotate(${tilt}deg);`;
+
+      return `
+        <div class="uno-card uno-center-card${colorCls}${roleCls}${ringCls}${anim}" style="${style}">
+          <div class="card-corner top-corner">${card.label}</div>
+          <div class="card-center">${card.label}</div>
+          <div class="card-type-label">${card.title}</div>
+          <div class="card-corner bottom-corner">${card.label}</div>
+        </div>
+      `;
+    },
+
     renderGraveyard: function () {
       let wGrave = this.state.graveyard.w;
       let bGrave = this.state.graveyard.b;
       let activeCol = this.activeColor();
       let isAdding = this.state.phase === 'addingPieces';
 
-      let renderPieceChips = (grave, col) => {
-        if (!grave || grave.length === 0) return '<span class="empty-grave">—</span>';
-        return grave.map((p, idx) => {
-          let isSel = (this.state.pendingPlacementPiece && this.state.pendingPlacementPiece.idx === idx && col === activeCol);
-          let extraCls = (isAdding && col === activeCol) ? ' selectable-revive' : '';
-          if (isSel) extraCls += ' selected-revive';
-          return `<span class="graveyard-piece-chip${extraCls}" data-idx="${idx}" data-color="${col}" title="${col === 'w' ? 'White' : 'Black'} ${p.type}">${p.img}</span>`;
+      let renderList = (arr, color) => {
+        if (!arr || arr.length === 0) return '<span class="empty-grave">—</span>';
+        let isControlled = (color === activeCol);
+        return arr.map((item, idx) => {
+          let selected = isAdding && isControlled && this.state.pendingPlacementPiece && this.state.pendingPlacementPiece.idx === idx;
+          let selectable = isAdding && isControlled;
+          let cls = 'graveyard-piece-chip';
+          if (selectable) cls += ' selectable-revive';
+          if (selected) cls += ' selected-revive';
+          return `<span class="${cls}" data-idx="${idx}" data-color="${color}" title="${item.type}">${item.img}</span>`;
         }).join('');
       };
 
-      $('#graveyard-white-pieces').html(renderPieceChips(wGrave, 'w'));
-      $('#graveyard-black-pieces').html(renderPieceChips(bGrave, 'b'));
+      $('#graveyard-white-pieces').html(renderList(wGrave, 'w'));
+      $('#graveyard-black-pieces').html(renderList(bGrave, 'b'));
     },
 
     renderCardLog: function () {
-      if (typeof $ === 'undefined') return;
-      let html = '';
-      this.state.cardLog.slice(0, 20).forEach(entry => {
-        let tag = entry.color === 'system' ? 'SYSTEM' : (entry.color === 'w' ? 'White' : 'Black');
-        html += `
-          <div class="card-log-entry">
-            <span class="log-color">${tag}:</span> ${entry.text}
+      let entries = this.state.cardLog.slice(0, 30);
+      let html = entries.map(entry => {
+        let dotCls = 'system';
+        if (entry.color === 'w') dotCls = 'white';
+        else if (entry.color === 'b') dotCls = 'black';
+        return `
+          <div class="log-entry">
+            <span class="log-turn-badge">T${entry.turn}</span>
+            <span class="log-dot ${dotCls}"></span>
+            <span class="log-text">${entry.text}</span>
           </div>
         `;
-      });
-      if (this.state.cardLog.length === 0) {
-        html = '<div class="empty-log-msg">No cards played yet</div>';
-      }
+      }).join('');
       $('#card-log-box').html(html);
     },
 
@@ -1155,24 +1329,109 @@
       this.state.cardLog.unshift({
         turn: turnNum,
         color: color,
-        text: actionText,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+        text: actionText
       });
       if (this.state.cardLog.length > 50) this.state.cardLog.pop();
       this.renderCardLog();
     },
 
+    // ----------------------------------------------------------
+    // DYNAMIC INTERACTION BANNER
+    // ----------------------------------------------------------
+    refreshBanner: function () {
+      if (typeof $ === 'undefined') return;
+      const $banner = $('#uno-prompt-banner');
+      const $text = $('#uno-prompt-text');
+      const $done = $('#uno-prompt-done');
+      const $cancel = $('#uno-prompt-cancel');
+
+      if (!$banner.length) return;
+
+      // 1. Hide completely on game over
+      if (typeof main !== 'undefined' && main.variables && main.variables.gameOver) {
+        $banner.removeClass('active').hide();
+        $text.text('');
+        $done.hide();
+        $cancel.hide();
+        return;
+      }
+
+      // 2. Phase-specific handling
+      switch (this.state.phase) {
+        case 'playCard': {
+          $done.hide();
+          $cancel.hide();
+          if (this.state.activeSeat === 'A') {
+            $text.text('Your turn: play a card or Draw');
+            $banner.addClass('active').show();
+          } else {
+            // Seat B (Opponent) is acting; keep banner hidden
+            $banner.removeClass('active').hide();
+            $text.text('');
+          }
+          break;
+        }
+
+        case 'moving': {
+          $done.hide();
+          $cancel.hide();
+          let msg = `Moves remaining: ${this.state.movesRemaining}`;
+          if (CONFIG.MOVE_MODE === 'samePiece') {
+            msg += ' (same piece only)';
+          } else if (CONFIG.MOVE_MODE === 'distinctPieces') {
+            msg += ' (distinct pieces only)';
+          }
+          $text.text(msg);
+          $banner.addClass('active').show();
+          break;
+        }
+
+        case 'colorPick':
+        case 'pickColor': {
+          $done.hide();
+          $cancel.hide();
+          $text.text('Choose a color');
+          $banner.addClass('active').show();
+          break;
+        }
+
+        case 'addingPieces': {
+          let rem = this.state.piecesToAdd;
+          $text.text(`Add up to ${rem} pieces: pick a piece, then a highlighted square`);
+          $done.show();
+          if (this.state.placedPiecesThisAction.length === 0) {
+            $cancel.show();
+          } else {
+            $cancel.hide();
+          }
+          $banner.addClass('active').show();
+          break;
+        }
+
+        default: {
+          $banner.removeClass('active').hide();
+          $text.text('');
+          $done.hide();
+          $cancel.hide();
+          break;
+        }
+      }
+    },
+
     showPromptBanner: function (msg, showCancel, showDone) {
       if (typeof $ === 'undefined') return;
-      $('#uno-prompt-text').text(msg);
+      $('#uno-prompt-text').text(msg || '');
       $('#uno-prompt-cancel').css('display', showCancel ? 'inline-block' : 'none');
       $('#uno-prompt-done').css('display', showDone ? 'inline-block' : 'none');
-      $('#uno-prompt-banner').addClass('active');
+      $('#uno-prompt-banner').addClass('active').show();
     },
 
     hidePromptBanner: function () {
       if (typeof $ === 'undefined') return;
-      $('#uno-prompt-banner').removeClass('active');
+      $('#uno-prompt-banner').removeClass('active').hide();
+      $('#uno-prompt-text').text('');
+      $('#uno-prompt-cancel').hide();
+      $('#uno-prompt-done').hide();
     },
 
     showToast: function (msg) {
@@ -1198,34 +1457,29 @@
       if ($('#uno-tutorial-prompt').length) return;
       const promptHtml = `
         <div id="uno-tutorial-prompt" class="brutalist-card">
-          <div class="brutalist-card__header">
-            <div class="brutalist-card__icon">
-              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-              </svg>
-            </div>
-            <div class="brutalist-card__alert">UNO Mode</div>
+          <div class="uno-tutorial-header">
+            <span class="uno-tutorial-badge">TUTORIAL</span>
+            <h3>Master Chess UNO</h3>
           </div>
-          <div class="brutalist-card__message">
-            New to Spoodery Chess UNO? Would you like a quick tutorial to learn the card mechanics?
+          <p class="uno-tutorial-body">
+            New to Spoodery Chess UNO? Take a quick guided tour to learn card matching, multi-moves, piece revival, and the Reverse board flip!
+          </p>
+          <div class="uno-tutorial-actions">
+            <button class="uno-tutorial-btn uno-tutorial-yes">Take Tour (1 min)</button>
+            <button class="uno-tutorial-btn uno-tutorial-no">Maybe Later</button>
           </div>
-          <div class="brutalist-card__actions">
-            <label class="brutalist-card__dont-show">
-              <input type="checkbox" id="uno-tutorial-dont-show"> Don't remind me again
-            </label>
-            <button class="brutalist-card__button brutalist-card__button--yes uno-tutorial-yes">Yes, show me!</button>
-            <button class="brutalist-card__button brutalist-card__button--no uno-tutorial-no">No thanks</button>
-          </div>
-        </div>`;
+          <label class="uno-tutorial-checkbox-label">
+            <input type="checkbox" id="uno-tutorial-dont-ask"> Don't show this again
+          </label>
+        </div>
+      `;
       const $prompt = $(promptHtml);
-      if ($('body') && typeof $('body').append === 'function') {
+      if (typeof $('body').append === 'function') {
         $('body').append($prompt);
       }
       if ($prompt && typeof $prompt.find === 'function') {
         $prompt.find('.uno-tutorial-yes').on('click', () => {
-          if (UnoMode.tutorial && typeof UnoMode.tutorial.start === 'function') {
-            UnoMode.tutorial.start(true);
-          }
+          UnoMode.tutorial.start(true);
           UnoMode._handleTutorialDismiss($prompt);
         });
         $prompt.find('.uno-tutorial-no').on('click', () => {
@@ -1234,12 +1488,12 @@
       }
     },
 
-    _handleTutorialDismiss: function ($el) {
-      const dontShow = $el.find('#uno-tutorial-dont-show').is(':checked');
-      if (dontShow) {
+    _handleTutorialDismiss: function ($prompt) {
+      let dontAsk = $('#uno-tutorial-dont-ask').is(':checked');
+      if (dontAsk) {
         try { localStorage.setItem('chess_uno_tutorial_prompt_seen', 'true'); } catch (e) {}
       }
-      $el.remove();
+      $prompt.remove();
     },
 
     // ----------------------------------------------------------
@@ -1248,111 +1502,77 @@
     bindEvents: function () {
       if (typeof $ === 'undefined') return;
 
-      // Card click in hand
-      $(document).on('click', '.uno-card:not(.face-down)', function () {
+      // Card click
+      $(document).on('click', '.uno-card:not(.face-down):not(.mini-card):not(.uno-center-card)', function () {
         let cardId = $(this).data('id');
         let seat = $(this).data('seat');
-        if (!cardId || !seat) return;
-        UnoMode.playCard(cardId, seat);
-      });
-
-      // Draw button click
-      $(document).on('click', '#uno-draw-btn', function () {
-        UnoMode.handleDrawAction(UnoMode.state.activeSeat);
-      });
-
-      // Color picker modal buttons (Wild +4)
-      $(document).on('click', '.uno-color-pick-btn', function () {
-        let color = $(this).data('color');
-        if (color) {
-          UnoMode.handleColorChosen(color, UnoMode.state.activeSeat);
+        if (cardId && seat) {
+          UnoMode.playCard(cardId, seat);
         }
       });
 
-      // Graveyard piece chip click (for piece addition)
-      $(document).on('click', '.graveyard-piece-chip', function () {
+      // Draw button
+      $(document).on('click', '#uno-draw-btn', function () {
+        UnoMode.drawCardsUntilPlayable(UnoMode.state.activeSeat);
+      });
+
+      // Graveyard piece chip click (for revival selection)
+      $(document).on('click', '.graveyard-piece-chip.selectable-revive', function () {
         let idx = parseInt($(this).data('idx'), 10);
         let color = $(this).data('color');
-        if (!isNaN(idx) && color) {
-          UnoMode.handleGraveyardChipClick(idx, color);
+        UnoMode.handleGraveyardChipClick(idx, color);
+      });
+
+      // Board candidate square click (for revival placement)
+      $(document).on('click', '.gamecell.revive-candidate', function () {
+        let cellId = $(this).attr('id');
+        if (cellId) {
+          UnoMode.handleBoardSquareClickForRevive(cellId);
         }
       });
 
-      // Board square click during piece addition
-      $(document).on('click', '.gamecell', function () {
-        if (UnoMode.state.phase === 'addingPieces') {
-          let cellId = $(this).attr('id');
-          if (cellId) {
-            UnoMode.executeRevivePlacementOnSquare(cellId);
-          }
+      // Color picker modal choices
+      $(document).on('click', '.uno-color-pick-btn', function () {
+        let chosen = $(this).data('color');
+        if (chosen) {
+          UnoMode.handleColorChosen(chosen, UnoMode.state.activeSeat);
         }
       });
 
-      // Banner Done button (finish piece addition early)
+      // Prompt Done button
       $(document).on('click', '#uno-prompt-done', function () {
         if (UnoMode.state.phase === 'addingPieces') {
           UnoMode.finishPieceAddition();
         }
       });
 
-      // Banner Cancel button (refund card if nothing placed yet)
+      // Prompt Cancel button
       $(document).on('click', '#uno-prompt-cancel', function () {
         if (UnoMode.state.phase === 'addingPieces') {
           UnoMode.cancelPieceAddition();
         }
       });
 
-      // Help Modal triggers
-      $(document).on('click', '#help-btn', function () {
-        UnoMode.help.open('overview');
-      });
-
-      $(document).on('click', '#close-help-modal', function () {
-        UnoMode.help.close();
-      });
-
-      $(document).on('click', '#help-modal', function (e) {
-        if ($(e.target).is('#help-modal')) {
-          UnoMode.help.close();
-        }
-      });
-
-      $(document).on('click', '.help-tab-btn', function () {
-        let tab = $(this).data('tab');
-        if (tab) UnoMode.help.switchTab(tab);
-      });
-
-      $(document).on('click', '#restart-tutorial-btn', function () {
-        UnoMode.help.close();
-        UnoMode.tutorial.start(true);
-      });
-
-      // Tutorial Navigation
-      $(document).on('click', '#tutorial-next-btn', function () {
-        UnoMode.tutorial.next();
-      });
-
-      $(document).on('click', '#tutorial-prev-btn', function () {
-        UnoMode.tutorial.prev();
-      });
-
-      $(document).on('click', '#tutorial-skip-btn', function () {
-        UnoMode.tutorial.skip();
+      // Unplayable card toast hint
+      $(document).on('click', '.uno-card.unplayable:not(.face-down):not(.uno-center-card)', function () {
+        let top = UnoMode.getTopDiscard();
+        let targetColor = UnoMode.state.currentColor || (top ? top.color : '');
+        UnoMode.showToast(`Unplayable: must match ${targetColor.toUpperCase()} or symbol/number (${top ? top.label : ''})!`);
       });
     },
 
     // ----------------------------------------------------------
-    // RULEBOOK & HELP MODAL CONTROLLER
+    // HELP MODAL CONTROLLER
     // ----------------------------------------------------------
     help: {
-      open: function (tabId) {
+      open: function () {
         if (typeof $ === 'undefined') return;
-        this.switchTab(tabId || 'overview');
-        $('#help-modal').css('display', 'flex');
+        $('#uno-help-modal').css('display', 'flex');
+        this.switchTab('welcome');
       },
       close: function () {
         if (typeof $ === 'undefined') return;
-        $('#help-modal').css('display', 'none');
+        $('#uno-help-modal').hide();
       },
       switchTab: function (tabId) {
         if (typeof $ === 'undefined') return;
@@ -1373,7 +1593,7 @@
         {
           target: '#board-stage',
           title: 'Welcome to Chess UNO',
-          desc: 'Chess UNO brings Spoodery Chess\'s tabletop card variant to your screen! Players sit in fixed seats (A & B) controlling colors, playing cards, and racing to capture the enemy King or empty their hand!',
+          desc: "Chess UNO brings Spoodery Chess's tabletop card variant to your screen! You and your opponent play cards, control pieces, and race to capture the enemy King or empty your hand!",
           placement: 'center'
         },
         {
@@ -1383,10 +1603,10 @@
           placement: 'top'
         },
         {
-          target: '#uno-main-panel .deck-status-bar',
-          title: 'Draw Deck & Discard Pile',
-          desc: 'If you have no playable card, click Draw to draw until a playable card appears. When the deck runs out, the discard pile reshuffles automatically.',
-          placement: 'left'
+          target: '#uno-center-card-container',
+          title: 'Center Discard & Draw Deck',
+          desc: 'The top card of the discard pile sits in the center of the chessboard. If you have no playable card, click Draw to draw until a playable card appears.',
+          placement: 'center'
         },
         {
           target: '#uno-main-panel .deck-status-bar',
@@ -1397,7 +1617,7 @@
         {
           target: '#board-stage',
           title: 'Action Cards: Skip & Reverse',
-          desc: 'Skip bypasses your opponent so you play again! Reverse physically rotates the board 180° and swaps piece colors between players—taking over the opponent\'s army!',
+          desc: "Skip bypasses your opponent so you play again! Reverse physically rotates the board 180° and swaps piece colors between players—taking over the opponent's army!",
           placement: 'center'
         },
         {
@@ -1428,92 +1648,63 @@
 
         this.active = true;
         this.currentStep = 0;
-        $('#uno-tutorial-overlay').css('display', 'block');
-        this.renderStep(0);
+        this.renderStep();
       },
 
-      renderStep: function (idx) {
-        if (idx < 0 || idx >= this.steps.length) return;
-        this.currentStep = idx;
-        let step = this.steps[idx];
-
-        $('#tutorial-step-tag').text(`Step ${idx + 1} of ${this.steps.length}`);
-        $('#tutorial-step-title').text(step.title);
-        $('#tutorial-step-desc').text(step.desc);
-
-        // Progress dots
-        let dotsHtml = '';
-        for (let i = 0; i < this.steps.length; i++) {
-          dotsHtml += `<div class="tutorial-dot${i === idx ? ' active' : ''}"></div>`;
+      renderStep: function () {
+        let step = this.steps[this.currentStep];
+        if (!step) {
+          this.finish();
+          return;
         }
-        $('#tutorial-dots').html(dotsHtml);
 
-        // Navigation buttons
-        $('#tutorial-prev-btn').prop('disabled', idx === 0);
-        $('#tutorial-next-btn').text(idx === this.steps.length - 1 ? 'Finish' : 'Next ▶');
+        $('.uno-tutorial-box').remove();
 
-        let $target = $(step.target);
-        if ($target.length && $target.is(':visible')) {
-          let targetEl = $target[0];
-          if (targetEl && typeof targetEl.getBoundingClientRect === 'function') {
-            let rect = targetEl.getBoundingClientRect();
-            let pad = 8;
-            $('#uno-tutorial-overlay').removeClass('no-spotlight');
-            $('#uno-tutorial-spotlight').css({
-              display: 'block',
-              top: (rect.top - pad) + 'px',
-              left: (rect.left - pad) + 'px',
-              width: (rect.width + pad * 2) + 'px',
-              height: (rect.height + pad * 2) + 'px'
-            });
+        let box = $(`
+          <div class="uno-tutorial-box brutalist-card">
+            <div class="uno-tutorial-header">
+              <span class="uno-tutorial-step-badge">${this.currentStep + 1} / ${this.steps.length}</span>
+              <h4>${step.title}</h4>
+            </div>
+            <p class="uno-tutorial-text">${step.desc}</p>
+            <div class="uno-tutorial-footer">
+              <button class="uno-btn-subtle" id="tutorial-skip-btn">Skip Tour</button>
+              <div class="uno-tutorial-nav">
+                ${this.currentStep > 0 ? '<button class="uno-btn-secondary" id="tutorial-prev-btn">Back</button>' : ''}
+                <button class="uno-btn-primary" id="tutorial-next-btn">${this.currentStep === this.steps.length - 1 ? 'Finish' : 'Next →'}</button>
+              </div>
+            </div>
+          </div>
+        `);
 
-            let boxWidth = 320;
-            let boxHeight = 180;
-            let boxTop = rect.top;
-            let boxLeft = rect.left + rect.width + 16;
+        let $body = $('body');
+        if ($body && typeof $body.append === 'function') {
+          $body.append(box);
+        }
+        this.positionBox(box, step.target, step.placement);
 
-            if (step.placement === 'left') {
-              boxLeft = rect.left - boxWidth - 16;
-              boxTop = rect.top;
-            } else if (step.placement === 'top') {
-              boxTop = rect.top - boxHeight - 16;
-              boxLeft = rect.left + (rect.width / 2) - (boxWidth / 2);
-            } else if (step.placement === 'bottom') {
-              boxTop = rect.bottom + 16;
-              boxLeft = rect.left + (rect.width / 2) - (boxWidth / 2);
-            } else if (step.placement === 'center') {
-              boxTop = rect.top + (rect.height / 2) - (boxHeight / 2);
-              boxLeft = rect.left + (rect.width / 2) - (boxWidth / 2);
-            }
-
-            if (typeof window !== 'undefined') {
-              let maxLeft = window.innerWidth - boxWidth - 16;
-              let maxTop = window.innerHeight - boxHeight - 16;
-              boxLeft = Math.max(16, Math.min(boxLeft, maxLeft));
-              boxTop = Math.max(16, Math.min(boxTop, maxTop));
-            }
-
-            $('#uno-tutorial-box').css({
-              top: boxTop + 'px',
-              left: boxLeft + 'px',
-              transform: 'none'
-            });
-            return;
+        let idx = this.currentStep;
+        $('#tutorial-next-btn').on('click', () => {
+          if (idx === this.steps.length - 1) {
+            this.finish();
+          } else {
+            this.next();
           }
-        }
+        });
 
-        $('#uno-tutorial-overlay').addClass('no-spotlight');
-        $('#uno-tutorial-spotlight').css('display', 'none');
-        $('#uno-tutorial-box').css({
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)'
+        $('#tutorial-prev-btn').on('click', () => {
+          this.prev();
+        });
+
+        $('#tutorial-skip-btn').on('click', () => {
+          this.skip();
         });
       },
 
       next: function () {
         if (this.currentStep < this.steps.length - 1) {
-          this.renderStep(this.currentStep + 1);
+          this.currentStep++;
+          this.renderStep();
         } else {
           this.finish();
         }
@@ -1521,24 +1712,66 @@
 
       prev: function () {
         if (this.currentStep > 0) {
-          this.renderStep(this.currentStep - 1);
+          this.currentStep--;
+          this.renderStep();
         }
       },
 
-      skip: function () {
-        this.finish();
+      positionBox: function (box, targetSel, placement) {
+        let $target = $(targetSel);
+        if (!$target.length) {
+          box.css({ top: '50%', left: '50%', transform: 'translate(-50%, -50%)', position: 'fixed' });
+          return;
+        }
+
+        try {
+          let offset = $target.offset();
+          let targetWidth = $target.outerWidth();
+          let targetHeight = $target.outerHeight();
+          let boxWidth = box.outerWidth() || 320;
+          let boxHeight = box.outerHeight() || 180;
+
+          let boxLeft = 0;
+          let boxTop = 0;
+
+          if (placement === 'center') {
+            boxLeft = offset.left + (targetWidth / 2) - (boxWidth / 2);
+            boxTop = offset.top + (targetHeight / 2) - (boxHeight / 2);
+          } else if (placement === 'top') {
+            boxLeft = offset.left + (targetWidth / 2) - (boxWidth / 2);
+            boxTop = offset.top - boxHeight - 14;
+          } else if (placement === 'bottom') {
+            boxLeft = offset.left + (targetWidth / 2) - (boxWidth / 2);
+            boxTop = offset.top + targetHeight + 14;
+          } else if (placement === 'left') {
+            boxLeft = offset.left - boxWidth - 14;
+            boxTop = offset.top + (targetHeight / 2) - (boxHeight / 2);
+          } else if (placement === 'right') {
+            boxLeft = offset.left + targetWidth + 14;
+            boxTop = offset.top + (targetHeight / 2) - (boxHeight / 2);
+          }
+
+          if (typeof window !== 'undefined') {
+            let maxLeft = window.innerWidth - boxWidth - 16;
+            let maxTop = window.innerHeight - boxHeight - 16;
+            boxLeft = Math.max(16, Math.min(boxLeft, maxLeft));
+            boxTop = Math.max(16, Math.min(boxTop, maxTop));
+          }
+
+          box.css({ top: boxTop + 'px', left: boxLeft + 'px', position: 'absolute' });
+        } catch (e) {
+          box.css({ top: '50%', left: '50%', transform: 'translate(-50%, -50%)', position: 'fixed' });
+        }
       },
 
       finish: function () {
         this.active = false;
-        if (typeof $ !== 'undefined') {
-          $('#uno-tutorial-overlay').css('display', 'none').removeClass('no-spotlight');
-        }
-        try {
-          if (typeof localStorage !== 'undefined') {
-            localStorage.setItem('chess_uno_tutorial_seen', 'true');
-          }
-        } catch (e) {}
+        $('.uno-tutorial-box').remove();
+        try { localStorage.setItem('chess_uno_tutorial_seen', 'true'); } catch (e) {}
+      },
+
+      skip: function () {
+        this.finish();
       }
     }
   };

@@ -235,12 +235,23 @@ body.mode-uno .standard-only {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
+.uno-draw-btn .draw-icon {
+  flex-shrink: 0;
+  stroke: currentColor;
+  transition: stroke 0.2s ease, transform 0.2s ease;
+}
+
 .uno-draw-btn:hover:not(:disabled) {
   background: linear-gradient(145deg, #383633 0%, #292825 100%);
   border-color: #f5c400;
   color: #f5c400;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(245, 196, 0, 0.25);
+}
+
+.uno-draw-btn:hover:not(:disabled) .draw-icon {
+  stroke: #f5c400;
+  transform: scale(1.1) rotate(-3deg);
 }
 
 .uno-draw-btn:active:not(:disabled) {
@@ -1452,4 +1463,161 @@ body.mode-uno #game-sidebar {
   background: rgba(245, 196, 0, 0.25) !important;
   box-shadow: 0 0 12px rgba(245, 196, 0, 0.8) !important;
   transform: scale(1.15);
+}
+
+/* ==========================================================
+   CENTER CHESSBOARD PLAYED CARD (SPOODERY TABLETOP DISCARD)
+   ========================================================== */
+.uno-center-card-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: clamp(74px, 20%, 116px);
+  aspect-ratio: 1 / 1.44;
+  pointer-events: none !important;
+  z-index: 25;
+  transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.uno-center-card-container * {
+  pointer-events: none !important;
+}
+
+.uno-center-card-container.moving-phase {
+  opacity: 0.35 !important;
+}
+
+.uno-center-card-stack {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.uno-center-card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.55), 0 2px 5px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 6px 8px;
+  box-sizing: border-box;
+  transform-origin: center center;
+  user-select: none;
+  border: 1.5px solid rgba(255, 255, 255, 0.22);
+}
+
+.uno-center-card .card-corner {
+  font-size: clamp(9px, 1.8vw, 13px);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.uno-center-card .card-corner.top-corner {
+  align-self: flex-start;
+}
+
+.uno-center-card .card-corner.bottom-corner {
+  align-self: flex-end;
+  transform: rotate(180deg);
+}
+
+.uno-center-card .card-center {
+  align-self: center;
+  font-size: clamp(22px, 4.5vw, 36px);
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.uno-center-card .card-type-label {
+  align-self: center;
+  font-size: clamp(7.5px, 1.3vw, 10px);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  opacity: 0.9;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* Fanned Stack undercards */
+.uno-center-card.card-under-2 {
+  z-index: 1;
+  opacity: 0.72;
+  filter: brightness(0.68);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.uno-center-card.card-under-1 {
+  z-index: 2;
+  opacity: 0.88;
+  filter: brightness(0.82);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.45);
+}
+
+.uno-center-card.card-top {
+  z-index: 3;
+  opacity: 1;
+}
+
+/* Wild +4 colored glowing rings */
+.uno-center-card.wild-active-ring-red {
+  box-shadow: 0 0 0 3px #ff3b30, 0 0 16px rgba(255, 59, 48, 0.7), 0 6px 20px rgba(0, 0, 0, 0.55) !important;
+}
+.uno-center-card.wild-active-ring-blue {
+  box-shadow: 0 0 0 3px #007aff, 0 0 16px rgba(0, 122, 255, 0.7), 0 6px 20px rgba(0, 0, 0, 0.55) !important;
+}
+.uno-center-card.wild-active-ring-green {
+  box-shadow: 0 0 0 3px #34c759, 0 0 16px rgba(52, 199, 89, 0.7), 0 6px 20px rgba(0, 0, 0, 0.55) !important;
+}
+.uno-center-card.wild-active-ring-yellow {
+  box-shadow: 0 0 0 3px #ffd60a, 0 0 16px rgba(255, 214, 10, 0.7), 0 6px 20px rgba(0, 0, 0, 0.55) !important;
+}
+
+/* Fly-in animations from Player A (You - bottom) or Player B (Opponent - top) */
+@keyframes unoFlyFromBottom {
+  0% {
+    transform: translate(-50%, 140%) scale(0.6) rotate(0deg);
+    opacity: 0.6;
+  }
+  75% {
+    transform: translate(-50%, -53%) scale(1.05) rotate(var(--target-tilt));
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1) rotate(var(--target-tilt));
+    opacity: 1;
+  }
+}
+
+@keyframes unoFlyFromTop {
+  0% {
+    transform: translate(-50%, -240%) scale(0.6) rotate(0deg);
+    opacity: 0.6;
+  }
+  75% {
+    transform: translate(-50%, -47%) scale(1.05) rotate(var(--target-tilt));
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1) rotate(var(--target-tilt));
+    opacity: 1;
+  }
+}
+
+.uno-center-card.flying-bottom {
+  animation: unoFlyFromBottom 0.32s cubic-bezier(0.18, 0.89, 0.32, 1.25) forwards;
+}
+
+.uno-center-card.flying-top {
+  animation: unoFlyFromTop 0.32s cubic-bezier(0.18, 0.89, 0.32, 1.25) forwards;
 }
