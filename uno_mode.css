@@ -163,91 +163,92 @@ body.mode-uno .standard-only {
   font-weight: 700;
 }
 
-/* Energy Bars */
-.energy-tracker {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  background: rgba(0, 0, 0, 0.25);
-  padding: 8px 10px;
-  border-radius: 6px;
-  border: 1px solid #2b2a28;
-}
-
-.energy-row {
+/* Deck & Active Color Controls */
+.uno-color-status-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #2b2a28;
   font-size: 11.5px;
-}
-
-.energy-player-tag {
-  width: 58px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-secondary, #9a9a9a);
 }
 
-.energy-meter {
-  flex: 1;
-  height: 10px;
-  background: #141413;
-  border-radius: 5px;
-  overflow: hidden;
-  border: 1px solid #2e2d2b;
-  position: relative;
-}
-
-.energy-fill {
-  height: 100%;
-  width: 0%;
-  background: linear-gradient(90deg, #d4a900, #f5c400);
-  border-radius: 4px;
-  transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 0 8px rgba(245, 196, 0, 0.4);
-}
-
-.energy-val {
-  width: 38px;
+.uno-color-badge {
+  padding: 3px 10px;
+  border-radius: 12px;
   font-size: 11px;
   font-weight: 700;
-  text-align: right;
-  color: #eeeeee;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.uno-color-badge.color-red {
+  background: #a83838;
+  color: #fffaf0;
+  border: 1px solid #c94c4c;
+  box-shadow: 0 0 8px rgba(168, 56, 56, 0.5);
+}
+.uno-color-badge.color-blue {
+  background: #2b5682;
+  color: #f0f7ff;
+  border: 1px solid #3d75ad;
+  box-shadow: 0 0 8px rgba(43, 86, 130, 0.5);
+}
+.uno-color-badge.color-green {
+  background: #326d40;
+  color: #f2fbf4;
+  border: 1px solid #459458;
+  box-shadow: 0 0 8px rgba(50, 109, 64, 0.5);
+}
+.uno-color-badge.color-yellow {
+  background: #b88628;
+  color: #fff9e6;
+  border: 1px solid #d49f39;
+  box-shadow: 0 0 8px rgba(184, 134, 40, 0.5);
 }
 
-/* Energy Action Buttons */
-.energy-actions {
+/* Draw Action Button */
+.uno-deck-actions {
   display: flex;
-  gap: 6px;
   margin-top: 2px;
 }
 
-.energy-action-btn {
-  flex: 1;
-  padding: 7px 8px;
-  font-size: 11px;
-  font-weight: 600;
-  background: #242321;
-  border: 1px solid #333333;
+.uno-draw-btn {
+  width: 100%;
+  padding: 9px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  background: linear-gradient(145deg, #2a2927 0%, #1e1d1b 100%);
+  border: 1px solid #44423e;
   border-radius: 6px;
   color: #eeeeee;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  transition: all 0.15s ease;
+  gap: 8px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   font-family: inherit;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
-.energy-action-btn:hover:not(:disabled) {
-  background: #2c2b29;
+.uno-draw-btn:hover:not(:disabled) {
+  background: linear-gradient(145deg, #383633 0%, #292825 100%);
   border-color: #f5c400;
   color: #f5c400;
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(245, 196, 0, 0.25);
 }
 
-.energy-action-btn:disabled {
-  opacity: 0.35;
+.uno-draw-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.uno-draw-btn:disabled {
+  opacity: 0.4;
   cursor: not-allowed;
   transform: none;
 }
@@ -1294,4 +1295,161 @@ body.mode-uno #game-sidebar {
 .brutalist-card__button:active {
   transform: translate(5px, 5px);
   box-shadow: none;
+}
+
+/* ----------------------------------------------------------
+   SPOODERY UNO CHESS EXTENSIONS
+   ---------------------------------------------------------- */
+
+/* Hand Card Count Badge */
+.hand-card-count-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent-yellow, #f5c400);
+  background: rgba(245, 196, 0, 0.12);
+  border: 1px solid rgba(245, 196, 0, 0.3);
+  padding: 1px 7px;
+  border-radius: 10px;
+  text-transform: none;
+}
+
+/* Unplayable Card Dimming */
+.uno-card.unplayable {
+  opacity: 0.38 !important;
+  filter: grayscale(45%) !important;
+  cursor: not-allowed !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+  transform: none !important;
+}
+
+/* Prompt Banner Done Button */
+.uno-done-btn {
+  background: var(--accent-yellow, #f5c400);
+  color: #161514;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+  margin-left: 6px;
+}
+.uno-done-btn:hover {
+  background: #ffd700;
+  transform: translateY(-1px);
+}
+
+/* Reverse Board Rotation Animation (180deg flip with pieces staying upright) */
+@keyframes unoReverseBoard {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(180deg); }
+}
+@keyframes unoReversePiece {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(-180deg); }
+}
+.board-reversing #board {
+  animation: unoReverseBoard 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+.board-reversing .chess-piece {
+  animation: unoReversePiece 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Color Picker Modal (Wild +4) */
+.uno-color-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.uno-color-modal-card {
+  background: #1c1b1a;
+  border: 1px solid #383633;
+  border-radius: 12px;
+  padding: 24px;
+  width: 90%;
+  max-width: 320px;
+  text-align: center;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8), 0 0 20px rgba(245, 196, 0, 0.15);
+}
+.uno-color-modal-title {
+  margin: 0 0 6px 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #eeeeee;
+}
+.uno-color-modal-subtitle {
+  margin: 0 0 18px 0;
+  font-size: 12px;
+  color: var(--text-secondary, #9a9a9a);
+}
+.uno-color-picker-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.uno-color-pick-btn {
+  padding: 14px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.18s ease;
+  font-family: inherit;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+}
+.uno-color-pick-btn:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.6);
+}
+.uno-color-pick-btn.color-red {
+  background: linear-gradient(145deg, #a83838 0%, #661e1e 100%);
+  color: #fffaf0;
+  border-color: #c94c4c;
+}
+.uno-color-pick-btn.color-blue {
+  background: linear-gradient(145deg, #2b5682 0%, #162f4d 100%);
+  color: #f0f7ff;
+  border-color: #3d75ad;
+}
+.uno-color-pick-btn.color-green {
+  background: linear-gradient(145deg, #326d40 0%, #193d22 100%);
+  color: #f2fbf4;
+  border-color: #459458;
+}
+.uno-color-pick-btn.color-yellow {
+  background: linear-gradient(145deg, #b88628 0%, #6e4e12 100%);
+  color: #fff9e6;
+  border-color: #d49f39;
+}
+
+/* Revive square candidate pulsing highlight */
+.gamecell.revive-candidate, .gamecell.swap-candidate {
+  box-shadow: inset 0 0 0 3px rgba(245, 196, 0, 0.8), inset 0 0 12px rgba(245, 196, 0, 0.45) !important;
+  cursor: pointer !important;
+  animation: revivePulse 1.4s infinite ease-in-out;
+}
+@keyframes revivePulse {
+  0%, 100% { box-shadow: inset 0 0 0 3px rgba(245, 196, 0, 0.8), inset 0 0 12px rgba(245, 196, 0, 0.3); }
+  50% { box-shadow: inset 0 0 0 4px #ffd700, inset 0 0 18px rgba(245, 196, 0, 0.6); }
+}
+.graveyard-piece-chip.selectable-revive {
+  cursor: pointer;
+  border: 1px solid #f5c400 !important;
+  box-shadow: 0 0 6px rgba(245, 196, 0, 0.5) !important;
+  transform: scale(1.08);
+}
+.graveyard-piece-chip.selected-revive {
+  border: 2px solid #ffd700 !important;
+  background: rgba(245, 196, 0, 0.25) !important;
+  box-shadow: 0 0 12px rgba(245, 196, 0, 0.8) !important;
+  transform: scale(1.15);
 }

@@ -1149,6 +1149,36 @@ const GameModeManager = {
     return false;
   },
 
+  usesPseudoLegal: function () {
+    let mode = this.modes[this.activeMode];
+    return (mode && mode.usesPseudoLegal) ? mode.usesPseudoLegal() : false;
+  },
+
+  nextTurnColor: function (prevColor) {
+    let mode = this.modes[this.activeMode];
+    if (mode && mode.nextTurnColor) {
+      return mode.nextTurnColor(prevColor);
+    }
+    return prevColor === 'w' ? 'b' : 'w';
+  },
+
+  shouldHoldTurn: function () {
+    let mode = this.modes[this.activeMode];
+    return (mode && mode.shouldHoldTurn) ? mode.shouldHoldTurn() : false;
+  },
+
+  onTurnHeld: function () {
+    let mode = this.modes[this.activeMode];
+    if (mode && mode.onTurnHeld) {
+      mode.onTurnHeld();
+    }
+  },
+
+  suppressesCheckLogic: function () {
+    let mode = this.modes[this.activeMode];
+    return (mode && mode.suppressesCheckLogic) ? mode.suppressesCheckLogic() : false;
+  },
+
   onTurnStart: function (player) {
     let mode = this.modes[this.activeMode];
     if (mode && mode.onTurnStart) {
@@ -1639,16 +1669,17 @@ let main = {
           let oppColor = color === 'w' ? 'b' : 'w';
           let rank = color === 'w' ? 1 : 8;
           let kingStart = main.methods.cellId(5, rank);
+          let skipAttacked = (typeof GameModeManager !== 'undefined' && GameModeManager.usesPseudoLegal());
 
-          if (board[kingStart] === pieceKey && !isPothole(kingStart) && !main.methods.isSquareAttacked(kingStart, oppColor, board, oppColor)) {
+          if (board[kingStart] === pieceKey && !isPothole(kingStart) && (skipAttacked || !main.methods.isSquareAttacked(kingStart, oppColor, board, oppColor))) {
             let rookKSKey = color + '_rook2';
             let rookKS = main.variables.pieces[rookKSKey];
             if (rookKS && !rookKS.moved && !rookKS.captured && board[main.methods.cellId(8, rank)] === rookKSKey && !isPothole(main.methods.cellId(8, rank))) {
               let f = main.methods.cellId(6, rank);
               let g = main.methods.cellId(7, rank);
               if (!board[f] && !board[g] && !isPothole(f) && !isPothole(g) &&
-                  !main.methods.isSquareAttacked(f, oppColor, board, oppColor) &&
-                  !main.methods.isSquareAttacked(g, oppColor, board, oppColor)) {
+                  (skipAttacked || (!main.methods.isSquareAttacked(f, oppColor, board, oppColor) &&
+                                    !main.methods.isSquareAttacked(g, oppColor, board, oppColor)))) {
                 moves.push(g + '_castleKS');
               }
             }
@@ -1660,8 +1691,8 @@ let main = {
               let c = main.methods.cellId(3, rank);
               let b = main.methods.cellId(2, rank);
               if (!board[d] && !board[c] && !board[b] && !isPothole(d) && !isPothole(c) && !isPothole(b) &&
-                  !main.methods.isSquareAttacked(d, oppColor, board, oppColor) &&
-                  !main.methods.isSquareAttacked(c, oppColor, board, oppColor)) {
+                  (skipAttacked || (!main.methods.isSquareAttacked(d, oppColor, board, oppColor) &&
+                                    !main.methods.isSquareAttacked(c, oppColor, board, oppColor)))) {
                 moves.push(c + '_castleQS');
               }
             }
@@ -1724,17 +1755,21 @@ let main = {
       let oppColor = color === 'w' ? 'b' : 'w';
       let legal = [];
 
-      pseudo.forEach(moveToken => {
-        let simulated = main.methods.simulateMove(board, pieceKey, moveToken);
-        let kingCell = main.methods.findKingCell(color, simulated);
-        // In Pothole mode, judge the king's safety as if the opponent's potholes
-        // were already gone — they will be removed at the end of this turn before
-        // the opponent moves, so they cannot permanently shield our king from attacks.
-        // Own potholes are still opaque (they survive into the opponent's turn).
-        if (kingCell && !main.methods.isSquareAttacked(kingCell, oppColor, simulated, oppColor)) {
-          legal.push(moveToken);
-        }
-      });
+      if (typeof GameModeManager !== 'undefined' && GameModeManager.usesPseudoLegal()) {
+        legal = pseudo;
+      } else {
+        pseudo.forEach(moveToken => {
+          let simulated = main.methods.simulateMove(board, pieceKey, moveToken);
+          let kingCell = main.methods.findKingCell(color, simulated);
+          // In Pothole mode, judge the king's safety as if the opponent's potholes
+          // were already gone — they will be removed at the end of this turn before
+          // the opponent moves, so they cannot permanently shield our king from attacks.
+          // Own potholes are still opaque (they survive into the opponent's turn).
+          if (kingCell && !main.methods.isSquareAttacked(kingCell, oppColor, simulated, oppColor)) {
+            legal.push(moveToken);
+          }
+        });
+      }
       if (typeof GameModeManager !== 'undefined') {
         legal = GameModeManager.filterLegalMoves(pieceKey, legal);
       }
@@ -1969,6 +2004,7 @@ let main = {
         moveHistory: JSON.parse(JSON.stringify(main.variables.moveHistory)),
         clockWhiteMs: ClockManager.state.whiteMs,
         clockBlackMs: ClockManager.state.blackMs,
+        orientation: main.variables.orientation,
         modeSnapshot: (typeof GameModeManager !== 'undefined') ? GameModeManager.createSnapshot() : null
       };
     },
@@ -1987,6 +2023,20 @@ let main = {
       main.variables.selectedpiece = '';
       main.variables.highlighted = [];
       main.variables.isPromoting = false;
+
+      if (snap.orientation !== undefined) {
+        let prevOrient = main.variables.orientation;
+        main.variables.orientation = snap.orientation;
+        if (snap.orientation === 'b') {
+          $('#board-stage').addClass('orientation-black');
+        } else {
+          $('#board-stage').removeClass('orientation-black');
+        }
+        if (prevOrient !== snap.orientation) {
+          main.methods.renderBoard();
+          main.methods.updatePlayerBars();
+        }
+      }
 
       if (snap.clockWhiteMs !== undefined) ClockManager.state.whiteMs = snap.clockWhiteMs;
       if (snap.clockBlackMs !== undefined) ClockManager.state.blackMs = snap.clockBlackMs;
@@ -2295,6 +2345,15 @@ let main = {
         if (typeof GameModeManager !== 'undefined') {
           GameModeManager.onCapture(capturedPieceName, capturedPieceObj, selectedKey);
         }
+        if (main.variables.gameOver) {
+          $('#' + targetCellId).html(pieceObj.img).attr('chess', selectedKey);
+          $('#' + fromCell).html('&nbsp;').attr('chess', 'null');
+          pieceObj.position = targetCellId;
+          pieceObj.moved = true;
+          main.variables.lastMove = { from: fromCell, to: targetCellId };
+          main.methods.updateVisualHighlights();
+          return;
+        }
         if (capturedPieceName.startsWith('b_')) {
           $('#captured-black .captured-pieces-list').append('<span>' + capturedPieceObj.img + '</span>');
         } else if (capturedPieceName.startsWith('w_')) {
@@ -2458,7 +2517,8 @@ let main = {
       }
 
       // 3. King in check takes top priority for red check danger highlight
-      if (main.methods.isInCheck(color)) {
+      let suppressCheck = (typeof GameModeManager !== 'undefined' && GameModeManager.suppressesCheckLogic());
+      if (!suppressCheck && main.methods.isInCheck(color)) {
         let kingCell = main.methods.findKingCell(color, main.methods.getBoard());
         if (kingCell) {
           $('#' + kingCell).addClass('red in-check');
@@ -2748,7 +2808,11 @@ let main = {
         if (typeof GameModeManager !== 'undefined') {
           GameModeManager.onCapture(capturedPieceName, capturedPieceObj, selectedKey);
         }
-
+        if (main.variables.gameOver) {
+          main.variables.lastMove = { from: fromCell, to: target.id };
+          main.methods.updateVisualHighlights();
+          return;
+        }
         if (capturedPieceName.startsWith('b_')) {
           $('#captured-black .captured-pieces-list').append('<span>' + capturedPieceObj.img + '</span>');
         } else if (capturedPieceName.startsWith('w_')) {
@@ -2847,10 +2911,26 @@ let main = {
       main.variables.highlighted = [];
       main.variables.enPassantTarget = nextEnPassant || null;
 
+      if (typeof GameModeManager !== 'undefined' && GameModeManager.shouldHoldTurn()) {
+        main.methods.updateVisualHighlights();
+        main.methods.updateMoveHistoryUI();
+        main.methods.updateNavButtons();
+        if (GameModeManager.onTurnHeld) {
+          GameModeManager.onTurnHeld();
+        }
+        return;
+      }
+
+      if (main.variables.gameOver) {
+        return;
+      }
+
       if (main.variables.turn === 'b') {
         main.variables.fullmoveNumber += 1;
       }
-      main.variables.turn = main.variables.turn === 'w' ? 'b' : 'w';
+      main.variables.turn = (typeof GameModeManager !== 'undefined')
+        ? GameModeManager.nextTurnColor(previousColor)
+        : (previousColor === 'w' ? 'b' : 'w');
       let color = main.variables.turn;
 
       // In Pothole mode, defer checkmate/stalemate to evaluatePostRollGameStatus
@@ -2859,20 +2939,25 @@ let main = {
       // or ending the game before the incoming player has a chance to roll (R5, R10, R11).
       let potholeActive = (typeof GameModeManager !== 'undefined' &&
                            GameModeManager.currentMode() === 'pothole');
+      let suppressCheck = (typeof GameModeManager !== 'undefined' &&
+                           GameModeManager.suppressesCheckLogic());
 
       // In Pothole mode also judge check with the opponent's (= previousColor's) potholes
       // treated as transparent — they will be gone before the opponent moves.
       let oppColorForCheck = color === 'w' ? 'b' : 'w';
-      let inCheck = potholeActive
+      let inCheck = (!suppressCheck && potholeActive)
         ? main.methods.isInCheck(color, null, oppColorForCheck)
-        : main.methods.isInCheck(color);
-      let hasMoves = main.methods.hasAnyLegalMoves(color);
+        : (!suppressCheck ? main.methods.isInCheck(color) : false);
+      let hasMoves = !suppressCheck ? main.methods.hasAnyLegalMoves(color) : true;
 
       main.methods.updateVisualHighlights();
       main.methods.updateMoveHistoryUI();
       main.methods.updateNavButtons();
 
-      if (!potholeActive && inCheck && !hasMoves) {
+      if (suppressCheck) {
+        $('#turn').removeClass('turnhighlight').text(color === 'w' ? "It's White's Turn!" : "It's Black's Turn!");
+        ClockManager.onMoveMade(previousColor, color);
+      } else if (!potholeActive && inCheck && !hasMoves) {
         main.variables.gameOver = true;
         ClockManager.stop();
         let winner = color === 'w' ? 'Black' : 'White';
@@ -2900,7 +2985,6 @@ let main = {
         $('#turn').removeClass('turnhighlight').text(color === 'w' ? "It's White's Turn!" : "It's Black's Turn!");
         ClockManager.onMoveMade(previousColor, color);
       }
-
 
       if (main.variables.autoFlip && !main.variables.gameOver) {
         if (main.variables.orientation !== color) {

@@ -1,9 +1,12 @@
 /**
  * ==========================================================
- * CHESS UNO MODE — TABLETOP PLUGIN FOR JS CHESS
+ * CHESS UNO MODE — SPOODERY CHESS UNO TABLETOP PLUGIN
  * ==========================================================
- * Integrates UNO card mechanics seamlessly into standard chess.
- * Follows FIDE rules and maintains chess as the primary strategic driver.
+ * Real "UNO Chess" variant by Spoodery Chess.
+ * Seats vs Colors, multi-move Number cards, Skips,
+ * physical 180° board-flipping Reverses, piece additions (+2 / +4),
+ * and king-capture / last-card victory conditions.
+ * Standard chess remains 100% unaffected.
  */
 
 (function (root, factory) {
@@ -14,31 +17,77 @@
   }
 })(typeof window !== 'undefined' ? window : this, function () {
 
+  const CONFIG = {
+    DECK: {
+      zerosPerColor: 1,
+      onesToNinesPerColor: 2,
+      skipsPerColor: 2,
+      reversesPerColor: 2,
+      plusTwosPerColor: 1, // 1 per color = 4 total
+      wildPlusFoursTotal: 2 // 2 total
+    },
+    INITIAL_HAND_SIZE: 6,
+    MOVE_MODE: 'free', // 'free' | 'samePiece' | 'distinctPieces'
+    REVERSE_TURN_BEHAVIOR: 'passTurn', // 'passTurn' | 'playAgain'
+    ADD_SOURCE: 'captured', // 'captured' | 'reserve'
+    NO_KING_CAPTURE_ON_FIRST_TURN: false
+  };
+
   const UnoMode = {
     name: 'uno',
     displayName: 'Chess UNO',
+    CONFIG: CONFIG,
 
     state: {
       active: false,
       deck: [],
       discardPile: [],
       hands: {
+        A: [],
+        B: []
+      },
+      graveyard: {
         w: [],
         b: []
       },
-      energy: {
-        w: 0,
-        b: 0
+      seatColor: {
+        A: 'w',
+        B: 'b'
       },
-      graveyard: {
-        w: [], // White pieces captured (now in graveyard)
-        b: []  // Black pieces captured (now in graveyard)
-      },
-      skippedPiece: null, // { pieceKey, targetCell, forTurn, appliedTurn }
-      pendingEffect: null, // { type, card, step, data }
-      turnCount: 0,
+      activeSeat: 'A', // 'A' | 'B'
+      currentColor: null, // 'red' | 'blue' | 'green' | 'yellow'
+      phase: 'playCard', // 'playCard' | 'moving' | 'colorPick' | 'addingPieces'
+      movesRemaining: 0,
+      movedPieces: [],
+      piecesToAdd: 0,
+      pendingPlacementPiece: null, // { idx, piece }
+      placedPiecesThisAction: [], // for Cancel support
       cardPlayedThisTurn: false,
+      turnCount: 0,
       cardLog: []
+    },
+
+    savedAutoFlip: undefined,
+
+    // ----------------------------------------------------------
+    // SEAT & COLOR HELPERS
+    // ----------------------------------------------------------
+    colorOf: function (seat) {
+      return this.state.seatColor[seat || this.state.activeSeat];
+    },
+
+    seatOf: function (color) {
+      if (this.state.seatColor.A === color) return 'A';
+      if (this.state.seatColor.B === color) return 'B';
+      return 'A';
+    },
+
+    otherSeat: function (seat) {
+      return (seat || this.state.activeSeat) === 'A' ? 'B' : 'A';
+    },
+
+    activeColor: function () {
+      return this.colorOf(this.state.activeSeat);
     },
 
     // ----------------------------------------------------------
@@ -51,11 +100,18 @@
 
     onActivate: function () {
       this.state.active = true;
-      if (this.state.deck.length === 0 && this.state.hands.w.length === 0) {
+
+      // Disable autoFlip while UNO mode is active; restore on deactivate
+      if (typeof main !== 'undefined' && main.variables) {
+        this.savedAutoFlip = main.variables.autoFlip;
+        main.variables.autoFlip = false;
+      }
+
+      if (this.state.deck.length === 0 && this.state.hands.A.length === 0) {
         this.startNewGame();
       }
       this.renderUI();
-      this.logCard('system', 'Chess UNO Mode activated. Draw your cards and play!');
+      this.logCard('system', 'Chess UNO Mode activated. Play a card to begin!');
 
       let tutorialPromptSeen = false;
       try {
@@ -73,8 +129,14 @@
 
     onDeactivate: function () {
       this.state.active = false;
-      this.clearPendingEffect();
-      this.clearSkipHighlight();
+      if (this.savedAutoFlip !== undefined && typeof main !== 'undefined' && main.variables) {
+        main.variables.autoFlip = this.savedAutoFlip;
+      }
+      this.clearReviveBoardHighlights();
+      this.hidePromptBanner();
+      if (typeof $ !== 'undefined') {
+        $('#uno-color-picker-modal').hide();
+      }
       if (this.help && typeof this.help.close === 'function') {
         this.help.close();
       }
@@ -83,13 +145,19 @@
     resetState: function () {
       this.state.deck = [];
       this.state.discardPile = [];
-      this.state.hands = { w: [], b: [] };
-      this.state.energy = { w: 0, b: 0 };
+      this.state.hands = { A: [], B: [] };
       this.state.graveyard = { w: [], b: [] };
-      this.state.skippedPiece = null;
-      this.state.pendingEffect = null;
-      this.state.turnCount = 0;
+      this.state.seatColor = { A: 'w', B: 'b' };
+      this.state.activeSeat = 'A';
+      this.state.currentColor = null;
+      this.state.phase = 'playCard';
+      this.state.movesRemaining = 0;
+      this.state.movedPieces = [];
+      this.state.piecesToAdd = 0;
+      this.state.pendingPlacementPiece = null;
+      this.state.placedPiecesThisAction = [];
       this.state.cardPlayedThisTurn = false;
+      this.state.turnCount = 0;
       this.state.cardLog = [];
     },
 
@@ -97,32 +165,59 @@
       this.resetState();
       this.state.deck = this.buildDeck();
       this.dealInitialHands();
+
+      // Flip one card onto the discard pile (cannot be Wild +4)
+      let initialCard = null;
+      while (this.state.deck.length > 0) {
+        let candidate = this.state.deck.pop();
+        if (candidate.type === 'wildDrawFour') {
+          this.state.deck.unshift(candidate);
+          this.state.deck = this.shuffle(this.state.deck);
+        } else {
+          initialCard = candidate;
+          break;
+        }
+      }
+      if (initialCard) {
+        this.state.discardPile.push(initialCard);
+        this.state.currentColor = initialCard.color;
+      }
+
+      this.state.activeSeat = 'A';
+      this.state.seatColor = { A: 'w', B: 'b' };
+      if (typeof main !== 'undefined' && main.variables) {
+        main.variables.turn = this.state.seatColor.A; // 'w'
+      }
+      this.state.phase = 'playCard';
       this.renderUI();
     },
 
     // ----------------------------------------------------------
-    // DECK GENERATION & SHUFFLING
+    // DECK GENERATION & SHUFFLE
     // ----------------------------------------------------------
     buildDeck: function () {
       const colors = ['red', 'blue', 'green', 'yellow'];
       let cards = [];
       let cardId = 1;
+      const dec = CONFIG.DECK;
 
       colors.forEach(color => {
-        // One '0' per color
-        cards.push({
-          id: 'card_' + (cardId++),
-          color: color,
-          type: 'number',
-          value: 0,
-          label: '0',
-          title: 'Number 0',
-          desc: '+0 Energy'
-        });
+        // Zero cards (1 per color by default)
+        for (let i = 0; i < dec.zerosPerColor; i++) {
+          cards.push({
+            id: 'card_' + (cardId++),
+            color: color,
+            type: 'number',
+            value: 0,
+            label: '0',
+            title: 'Number 0',
+            desc: '0 chess moves (pass turn)'
+          });
+        }
 
-        // Two of 1–9 per color
+        // 1-9 cards (2 each per color by default)
         for (let num = 1; num <= 9; num++) {
-          for (let c = 0; c < 2; c++) {
+          for (let i = 0; i < dec.onesToNinesPerColor; i++) {
             cards.push({
               id: 'card_' + (cardId++),
               color: color,
@@ -130,69 +225,57 @@
               value: num,
               label: String(num),
               title: 'Number ' + num,
-              desc: `+${num} Energy`
+              desc: `Make ${num} moves this turn`
             });
           }
         }
 
-        // Two Skips per color
-        for (let c = 0; c < 2; c++) {
+        // Skips (2 per color by default)
+        for (let i = 0; i < dec.skipsPerColor; i++) {
           cards.push({
             id: 'card_' + (cardId++),
             color: color,
             type: 'skip',
             label: '⊘',
             title: 'Skip',
-            desc: 'Freeze one enemy piece for their next turn'
+            desc: 'Skip opponent\'s turn, play again'
           });
         }
 
-        // Two Reverses per color
-        for (let c = 0; c < 2; c++) {
+        // Reverses (2 per color by default)
+        for (let i = 0; i < dec.reversesPerColor; i++) {
           cards.push({
             id: 'card_' + (cardId++),
             color: color,
             type: 'reverse',
             label: '⇄',
             title: 'Reverse',
-            desc: 'Swap positions of 2 friendly pieces'
+            desc: 'Swap sides with your opponent (flip the board)'
           });
         }
 
-        // Two Draw Twos per color
-        for (let c = 0; c < 2; c++) {
+        // +2 Draw Two (1 per color by default = 4 total)
+        for (let i = 0; i < dec.plusTwosPerColor; i++) {
           cards.push({
             id: 'card_' + (cardId++),
             color: color,
             type: 'drawTwo',
             label: '+2',
             title: 'Draw Two',
-            desc: 'Revive 1 captured friendly pawn'
+            desc: 'Add up to 2 pieces to your half'
           });
         }
       });
 
-      // 4 Wild cards
-      for (let i = 0; i < 4; i++) {
-        cards.push({
-          id: 'card_' + (cardId++),
-          color: 'wild',
-          type: 'wild',
-          label: '★',
-          title: 'Wild',
-          desc: 'Choose a friendly piece to make an immediate move'
-        });
-      }
-
-      // 4 Wild Draw Four cards
-      for (let i = 0; i < 4; i++) {
+      // Wild +4 (2 total by default) - NO plain Wild
+      for (let i = 0; i < dec.wildPlusFoursTotal; i++) {
         cards.push({
           id: 'card_' + (cardId++),
           color: 'wild',
           type: 'wildDrawFour',
           label: '★+4',
           title: 'Wild +4',
-          desc: 'Revive any captured friendly piece to an empty square'
+          desc: 'Choose a color, add up to 4 pieces to your half'
         });
       }
 
@@ -211,28 +294,27 @@
     },
 
     dealInitialHands: function () {
-      this.state.hands.w = [];
-      this.state.hands.b = [];
-      for (let i = 0; i < 3; i++) {
-        this.drawCard('w', true);
-        this.drawCard('b', true);
+      this.state.hands.A = [];
+      this.state.hands.B = [];
+      for (let i = 0; i < CONFIG.INITIAL_HAND_SIZE; i++) {
+        this.drawCardToSeat('A', true);
+        this.drawCardToSeat('B', true);
       }
     },
 
-    drawCard: function (color, silent) {
-      if (this.state.hands[color].length >= 5) {
-        if (!silent) this.showToast(`${color === 'w' ? 'White' : 'Black'} hand is full (max 5 cards)!`);
-        return null;
-      }
+    getTopDiscard: function () {
+      if (this.state.discardPile.length === 0) return null;
+      return this.state.discardPile[this.state.discardPile.length - 1];
+    },
 
+    drawCardToSeat: function (seat, silent) {
       if (this.state.deck.length === 0) {
-        if (this.state.discardPile.length > 0) {
-          // Reshuffle discard pile into deck
+        if (this.state.discardPile.length > 1) {
+          let top = this.state.discardPile.pop();
           this.state.deck = this.shuffle(this.state.discardPile.slice());
-          this.state.discardPile = [];
+          this.state.discardPile = [top];
           this.logCard('system', 'Discard pile reshuffled into the deck.');
         } else {
-          if (!silent) this.showToast('Deck and discard pile are empty!');
           return null;
         }
       }
@@ -240,504 +322,356 @@
       if (this.state.deck.length === 0) return null;
 
       let card = this.state.deck.pop();
-      this.state.hands[color].push(card);
+      this.state.hands[seat].push(card);
       if (!silent) {
-        this.logCard(color, `drew a card (${card.title})`);
+        this.logCard(this.colorOf(seat), `Player ${seat} drew [${card.title}]`);
       }
-      this.renderUI();
       return card;
     },
 
     // ----------------------------------------------------------
-    // ENERGY ACTIONS
+    // CARD PLAYABILITY & DRAW ACTION
     // ----------------------------------------------------------
-    addEnergy: function (color, amount) {
-      let current = this.state.energy[color] || 0;
-      this.state.energy[color] = Math.min(20, Math.max(0, current + amount));
-      this.renderUI();
-    },
+    isCardPlayable: function (card) {
+      if (!card) return false;
+      if (card.type === 'wildDrawFour') return true;
 
-    spendEnergy: function (action, color) {
-      if (typeof main !== 'undefined' && main.variables.turn !== color) {
-        this.showToast("Cannot spend energy on opponent's turn!");
-        return false;
-      }
+      let top = this.getTopDiscard();
+      if (!top) return true;
 
-      if (action === 'draw_card') {
-        const cost = 6;
-        if (this.state.energy[color] < cost) {
-          this.showToast(`Requires ${cost} Energy (You have ${this.state.energy[color]})!`);
-          return false;
-        }
-        if (this.state.hands[color].length >= 5) {
-          this.showToast('Hand is already full (max 5 cards)!');
-          return false;
-        }
-        this.state.energy[color] -= cost;
-        let drawn = this.drawCard(color);
-        if (drawn) {
-          this.logCard(color, `spent ${cost} Energy → drew ${drawn.title}`);
-        }
-        return true;
-      }
+      let targetColor = this.state.currentColor || top.color;
+      if (card.color === targetColor) return true;
 
-      if (action === 'recycle') {
-        const cost = 3;
-        if (this.state.energy[color] < cost) {
-          this.showToast(`Requires ${cost} Energy (You have ${this.state.energy[color]})!`);
-          return false;
-        }
-        if (this.state.hands[color].length === 0) {
-          this.showToast('No cards in hand to recycle!');
-          return false;
-        }
-        this.setPendingEffect({
-          type: 'recycle',
-          cost: cost,
-          color: color
-        });
-        this.showPromptBanner('Select a card from your hand to recycle (+ draw 1 fresh card)', true);
-        return true;
-      }
+      if (card.type === 'number' && top.type === 'number' && card.value === top.value) return true;
+      if (card.type !== 'number' && card.type === top.type) return true;
+      if (card.label === top.label) return true;
 
       return false;
     },
 
+    handleDrawAction: function (seat) {
+      if (this.state.phase !== 'playCard') return;
+      if (seat !== this.state.activeSeat) {
+        this.showToast("Cannot draw on opponent's turn!");
+        return;
+      }
+
+      // Snapshot history before drawing
+      if (typeof main !== 'undefined' && main.methods && main.methods.createSnapshot) {
+        main.variables.historyStack.push(main.methods.createSnapshot());
+        main.variables.redoStack = [];
+      }
+
+      let drewPlayable = false;
+      let drawnCount = 0;
+
+      while (!drewPlayable) {
+        let card = this.drawCardToSeat(seat, false);
+        if (!card) {
+          break; // Deck & discard are empty
+        }
+        drawnCount++;
+        if (this.isCardPlayable(card)) {
+          drewPlayable = true;
+          this.showToast(`Drew playable card: [${card.label} ${card.color.toUpperCase()}]!`);
+          break;
+        }
+      }
+
+      if (!drewPlayable) {
+        let hasAnyPlayable = this.state.hands[seat].some(c => this.isCardPlayable(c));
+        if (!hasAnyPlayable) {
+          this.showToast('No playable cards left and deck is empty — passing turn.');
+          this.logCard('system', `Player ${seat} has no playable cards and deck is empty → turn passes.`);
+          this.state.phase = 'playCard';
+          main.methods.endturn(null);
+          return;
+        }
+      }
+
+      this.renderUI();
+    },
+
     // ----------------------------------------------------------
-    // CARD PLAYING & SELECTION DISPATCHER
+    // CARD PLAY DISPATCHER
     // ----------------------------------------------------------
-    playCard: function (cardId, playerColor) {
+    playCard: function (cardId, seat) {
       if (typeof main !== 'undefined' && (main.variables.gameOver || main.variables.isPromoting)) {
         return;
       }
 
-      let currentTurn = (typeof main !== 'undefined') ? main.variables.turn : playerColor;
-      if (currentTurn !== playerColor) {
+      if (seat !== this.state.activeSeat) {
         this.showToast("Cannot play cards on opponent's turn!");
         return;
       }
 
-      if (this.state.cardPlayedThisTurn) {
-        this.showToast('You have already played a card this turn!');
+      if (this.state.phase !== 'playCard') {
+        this.showToast('Finish your current action first!');
         return;
       }
 
-      let hand = this.state.hands[playerColor];
+      let hand = this.state.hands[seat];
       let cardIdx = hand.findIndex(c => c.id === cardId);
       if (cardIdx === -1) return;
       let card = hand[cardIdx];
 
-      // Dispatch by Card Type
-      if (card.type === 'number') {
-        this.executeNumberCard(card, playerColor, cardIdx);
-      } else if (card.type === 'skip') {
-        this.initiateSkipCard(card, playerColor, cardIdx);
-      } else if (card.type === 'reverse') {
-        this.initiateReverseCard(card, playerColor, cardIdx);
-      } else if (card.type === 'drawTwo') {
-        this.executeDrawTwoCard(card, playerColor, cardIdx);
-      } else if (card.type === 'wild') {
-        this.initiateWildCard(card, playerColor, cardIdx);
-      } else if (card.type === 'wildDrawFour') {
-        this.initiateWildDrawFour(card, playerColor, cardIdx);
+      if (!this.isCardPlayable(card)) {
+        let top = this.getTopDiscard();
+        let targetColor = this.state.currentColor || (top ? top.color : '');
+        this.showToast(`Cannot play [${card.label} ${card.color.toUpperCase()}]: must match ${targetColor.toUpperCase()} or symbol/number (${top ? top.label : ''})!`);
+        return;
       }
-    },
 
-    discardCardFromHand: function (color, cardIdx) {
-      let card = this.state.hands[color].splice(cardIdx, 1)[0];
-      if (card) {
-        this.state.discardPile.push(card);
+      // History snapshot for undo
+      if (typeof main !== 'undefined' && main.methods && main.methods.createSnapshot) {
+        main.variables.historyStack.push(main.methods.createSnapshot());
+        main.variables.redoStack = [];
       }
-      return card;
-    },
 
-    // ----------------------------------------------------------
-    // CARD EFFECT 1: NUMBER CARD (ENERGY)
-    // ----------------------------------------------------------
-    executeNumberCard: function (card, color, cardIdx) {
-      this.discardCardFromHand(color, cardIdx);
-      let gained = card.value;
-      let oldEnergy = this.state.energy[color];
-      this.addEnergy(color, gained);
-      let newEnergy = this.state.energy[color];
+      // Commit card from hand to discard pile
+      hand.splice(cardIdx, 1);
+      this.state.discardPile.push(card);
+      if (card.type !== 'wildDrawFour') {
+        this.state.currentColor = card.color;
+      }
       this.state.cardPlayedThisTurn = true;
 
-      this.logCard(color, `played [${card.label} ${card.color.toUpperCase()}] → +${gained} Energy (${oldEnergy} → ${newEnergy})`);
-      this.renderUI();
-    },
-
-    // ----------------------------------------------------------
-    // CARD EFFECT 2: SKIP CARD
-    // ----------------------------------------------------------
-    initiateSkipCard: function (card, color, cardIdx) {
-      let oppColor = color === 'w' ? 'b' : 'w';
-
-      // Check if opponent has any non-king pieces
-      let board = (typeof main !== 'undefined') ? main.methods.getBoard() : {};
-      let hasValidTargets = false;
-      for (let cellId in board) {
-        let pieceKey = board[cellId];
-        if (!pieceKey) continue;
-        if (main.methods.pieceColor(pieceKey) === oppColor && main.methods.pieceTypeOf(pieceKey) !== 'king') {
-          hasValidTargets = true;
-          break;
-        }
-      }
-
-      if (!hasValidTargets) {
-        this.showToast('No enemy non-king pieces to skip!');
-        return;
-      }
-
-      this.setPendingEffect({
-        type: 'skip',
-        card: card,
-        cardIdx: cardIdx,
-        color: color
-      });
-
-      this.showPromptBanner('Click an enemy piece to Skip its next turn', true);
-      this.highlightSkipCandidates(oppColor);
-    },
-
-    highlightSkipCandidates: function (oppColor) {
-      $('.gamecell').removeClass('swap-candidate');
-      let board = main.methods.getBoard();
-      for (let cellId in board) {
-        let key = board[cellId];
-        if (!key) continue;
-        if (main.methods.pieceColor(key) === oppColor && main.methods.pieceTypeOf(key) !== 'king') {
-          $('#' + cellId).addClass('swap-candidate');
-        }
-      }
-    },
-
-    executeSkipOnPiece: function (cellId, pieceKey) {
-      let effect = this.state.pendingEffect;
-      if (!effect || effect.type !== 'skip') return;
-
-      let oppColor = effect.color === 'w' ? 'b' : 'w';
-
-      // Restriction: Cannot target king
-      if (main.methods.pieceTypeOf(pieceKey) === 'king') {
-        this.showToast('Cannot target the King with Skip!');
-        return;
-      }
-
-      // Restriction: Cannot prevent legal responses to check
-      if (main.methods.isInCheck(oppColor)) {
-        let pieceMoves = main.methods.getLegalMoves(pieceKey);
-        let allOppMoves = 0;
-        for (let k in main.variables.pieces) {
-          if (main.methods.pieceColor(k) === oppColor && !main.variables.pieces[k].captured) {
-            allOppMoves += main.methods.getLegalMoves(k).length;
-          }
-        }
-        if (allOppMoves > 0 && allOppMoves === pieceMoves.length) {
-          this.showToast('Cannot skip this piece: it has the only legal moves to escape check!');
-          return;
-        }
-      }
-
-      this.discardCardFromHand(effect.color, effect.cardIdx);
-      this.state.skippedPiece = {
-        pieceKey: pieceKey,
-        targetCell: cellId,
-        forTurn: oppColor
-      };
-      this.state.cardPlayedThisTurn = true;
-
-      let pieceName = main.variables.pieces[pieceKey] ? main.variables.pieces[pieceKey].type : pieceKey;
-      this.logCard(effect.color, `played [SKIP] ⊘ on ${oppColor === 'w' ? 'White' : 'Black'} ${pieceName} at ${main.methods.toAlgebraic(cellId)}`);
-
-      this.clearPendingEffect();
-      this.renderUI();
-    },
-
-    // ----------------------------------------------------------
-    // CARD EFFECT 3: REVERSE CARD (SWAP POSITIONS)
-    // ----------------------------------------------------------
-    initiateReverseCard: function (card, color, cardIdx) {
-      let board = main.methods.getBoard();
-      let friendlyPieces = [];
-      for (let cellId in board) {
-        let key = board[cellId];
-        if (!key) continue;
-        if (main.methods.pieceColor(key) === color && main.methods.pieceTypeOf(key) !== 'king') {
-          friendlyPieces.push({ cellId, key });
-        }
-      }
-
-      if (friendlyPieces.length < 2) {
-        this.showToast('Need at least 2 friendly non-king pieces to swap!');
-        return;
-      }
-
-      this.setPendingEffect({
-        type: 'reverse',
-        step: 1,
-        card: card,
-        cardIdx: cardIdx,
-        color: color,
-        firstPiece: null
-      });
-
-      this.showPromptBanner('Select the first friendly piece to swap', true);
-      this.highlightSwapCandidates(color, null);
-    },
-
-    highlightSwapCandidates: function (color, excludeCell) {
-      $('.gamecell').removeClass('swap-candidate swap-selected');
-      let board = main.methods.getBoard();
-      for (let cellId in board) {
-        let key = board[cellId];
-        if (!key) continue;
-        if (main.methods.pieceColor(key) === color && main.methods.pieceTypeOf(key) !== 'king') {
-          if (cellId !== excludeCell) {
-            $('#' + cellId).addClass('swap-candidate');
-          } else {
-            $('#' + cellId).addClass('swap-selected');
-          }
-        }
-      }
-    },
-
-    handleReverseSelection: function (cellId, pieceKey) {
-      let effect = this.state.pendingEffect;
-      if (!effect || effect.type !== 'reverse') return;
-
-      if (main.methods.pieceColor(pieceKey) !== effect.color) {
-        this.showToast('Must select friendly pieces!');
-        return;
-      }
-      if (main.methods.pieceTypeOf(pieceKey) === 'king') {
-        this.showToast('The King cannot be swapped!');
-        return;
-      }
-
-      if (effect.step === 1) {
-        effect.firstPiece = { cellId, pieceKey };
-        effect.step = 2;
-        this.showPromptBanner('Select the second friendly piece to swap with', true);
-        this.highlightSwapCandidates(effect.color, cellId);
-      } else if (effect.step === 2) {
-        if (cellId === effect.firstPiece.cellId) {
-          this.showToast('Select a DIFFERENT friendly piece!');
-          return;
-        }
-
-        let p1 = effect.firstPiece;
-        let p2 = { cellId, pieceKey };
-
-        // Test legality: Swapping must not leave own King in check
-        let board = main.methods.getBoard();
-        let simBoard = Object.assign({}, board);
-        simBoard[p1.cellId] = p2.pieceKey;
-        simBoard[p2.cellId] = p1.pieceKey;
-
-        let kingCell = main.methods.findKingCell(effect.color, simBoard);
-        let oppColor = effect.color === 'w' ? 'b' : 'w';
-        if (kingCell && main.methods.isSquareAttacked(kingCell, oppColor, simBoard)) {
-          this.showToast('Illegal swap: King would be in check!');
-          return;
-        }
-
-        // Execute Swap
-        this.discardCardFromHand(effect.color, effect.cardIdx);
-
-        let p1Obj = main.variables.pieces[p1.pieceKey];
-        let p2Obj = main.variables.pieces[p2.pieceKey];
-
-        $('#' + p1.cellId).html(p2Obj.img).attr('chess', p2.pieceKey);
-        $('#' + p2.cellId).html(p1Obj.img).attr('chess', p1.pieceKey);
-
-        p1Obj.position = p2.cellId;
-        p1Obj.moved = true;
-        p2Obj.position = p1.cellId;
-        p2Obj.moved = true;
-
-        this.state.cardPlayedThisTurn = true;
-
-        this.logCard(effect.color, `played [REVERSE] ⇄ swapped ${main.methods.toAlgebraic(p1.cellId)} and ${main.methods.toAlgebraic(p2.cellId)}`);
-
-        this.clearPendingEffect();
-        main.methods.updateVisualHighlights();
+      // Check last-card victory condition for Number / Skip / Reverse immediately
+      if (hand.length === 0 && (card.type === 'number' || card.type === 'skip' || card.type === 'reverse')) {
+        this.logCard(this.colorOf(seat), `Player ${seat} played their last card [${card.label} ${card.color.toUpperCase()}]!`);
+        this.triggerSeatWin(seat, 'Played their last card');
         this.renderUI();
+        return;
+      }
+
+      // Execute card effect
+      if (card.type === 'number') {
+        this.executeNumberCard(card, seat);
+      } else if (card.type === 'skip') {
+        this.executeSkipCard(card, seat);
+      } else if (card.type === 'reverse') {
+        this.executeReverseCard(card, seat);
+      } else if (card.type === 'drawTwo') {
+        this.executeDrawTwoCard(card, seat);
+      } else if (card.type === 'wildDrawFour') {
+        this.executeWildDrawFour(card, seat);
       }
     },
 
     // ----------------------------------------------------------
-    // CARD EFFECT 4: DRAW TWO (REVIVE PAWN)
+    // CARD EFFECTS
     // ----------------------------------------------------------
-    executeDrawTwoCard: function (card, color, cardIdx) {
-      let grave = this.state.graveyard[color];
-      let pawnIdx = grave.findIndex(p => p.type.endsWith('_pawn'));
 
-      if (pawnIdx === -1) {
-        this.showToast('No captured friendly pawns in the graveyard to revive!');
+    // NUMBER N (0-9): Player makes N chess moves this turn
+    executeNumberCard: function (card, seat) {
+      let n = card.value;
+      this.logCard(this.colorOf(seat), `Player ${seat} played [${card.label} ${card.color.toUpperCase()}] → ${n} moves`);
+
+      if (n === 0) {
+        // 0 moves: turn immediately passes
+        this.state.phase = 'playCard';
+        this.renderUI();
+        main.methods.endturn(null);
         return;
       }
 
-      let capturedPawn = grave[pawnIdx];
-      let board = main.methods.getBoard();
-
-      // Determine starting file
-      let pawnKey = capturedPawn.key; // e.g. w_pawn4
-      let fileNum = 4;
-      let match = pawnKey.match(/pawn(\d+)/);
-      if (match) {
-        fileNum = parseInt(match[1], 10);
-      }
-
-      let startRank = color === 'w' ? 2 : 7;
-      let targetCell = null;
-
-      // Find nearest empty square on that file
-      let candidateRanks = color === 'w' ? [2, 3, 4, 5, 6] : [7, 6, 5, 4, 3];
-      for (let r of candidateRanks) {
-        let cId = main.methods.cellId(fileNum, r);
-        if (!board[cId]) {
-          targetCell = cId;
-          break;
-        }
-      }
-
-      // If entire file is blocked, find any empty square on starting rank
-      if (!targetCell) {
-        for (let col = 1; col <= 8; col++) {
-          let cId = main.methods.cellId(col, startRank);
-          if (!board[cId]) {
-            targetCell = cId;
-            break;
-          }
-        }
-      }
-
-      if (!targetCell) {
-        this.showToast('No safe square available to revive pawn!');
-        return;
-      }
-
-      // Restore pawn
-      this.discardCardFromHand(color, cardIdx);
-      grave.splice(pawnIdx, 1);
-
-      let pieceObj = main.variables.pieces[capturedPawn.key];
-      if (pieceObj) {
-        pieceObj.captured = false;
-        pieceObj.position = targetCell;
-        pieceObj.moved = true;
-        $('#' + targetCell).html(pieceObj.img).attr('chess', capturedPawn.key);
-      }
-
-      this.state.cardPlayedThisTurn = true;
-      this.logCard(color, `played [DRAW TWO] +2 revived pawn at ${main.methods.toAlgebraic(targetCell)}`);
-
-      main.methods.updateVisualHighlights();
+      this.state.phase = 'moving';
+      this.state.movesRemaining = n;
+      this.state.movedPieces = [];
+      this.showPromptBanner(`Moves remaining: ${n}`, false);
       this.renderUI();
     },
 
-    // ----------------------------------------------------------
-    // CARD EFFECT 5: WILD CARD (CHESS MOVE ACTION)
-    // ----------------------------------------------------------
-    initiateWildCard: function (card, color, cardIdx) {
-      this.setPendingEffect({
-        type: 'wild',
-        card: card,
-        cardIdx: cardIdx,
-        color: color
-      });
-
-      this.showPromptBanner('Select any friendly piece to make your chess move', true);
+    // SKIP: Opponent's turn is skipped; active seat plays another card immediately
+    executeSkipCard: function (card, seat) {
+      this.logCard(this.colorOf(seat), `Player ${seat} played [SKIP] ⊘ → Player ${this.otherSeat(seat)} is skipped!`);
+      this.state.phase = 'playCard';
+      this.state.cardPlayedThisTurn = false;
+      if (typeof main !== 'undefined' && main.variables) {
+        main.variables.enPassantTarget = null;
+      }
+      this.showToast(`Player ${seat} played SKIP! Player ${this.otherSeat(seat)} is skipped. Play another card.`);
+      this.renderUI();
     },
 
-    onWildMoveMade: function () {
-      let effect = this.state.pendingEffect;
-      if (effect && effect.type === 'wild') {
-        this.discardCardFromHand(effect.color, effect.cardIdx);
-        this.state.cardPlayedThisTurn = true;
-        this.logCard(effect.color, 'played [WILD] ★ executed chess move');
-        this.clearPendingEffect();
+    // REVERSE: Swap sides (seatColor.A <-> seatColor.B) and rotate board 180°
+    executeReverseCard: function (card, seat) {
+      this.logCard(this.colorOf(seat), `Player ${seat} played [REVERSE] ⇄ → Swapped sides!`);
+
+      // 1. Swap seat colors immediately
+      let temp = this.state.seatColor.A;
+      this.state.seatColor.A = this.state.seatColor.B;
+      this.state.seatColor.B = temp;
+
+      // 2. Clear en passant target (colors changed)
+      if (typeof main !== 'undefined' && main.variables) {
+        main.variables.enPassantTarget = null;
+      }
+
+      // 3. Physically rotate board 180° with CSS animation
+      if (typeof $ !== 'undefined') {
+        $('#board-wrapper').addClass('board-reversing');
+        setTimeout(() => {
+          $('#board-wrapper').removeClass('board-reversing');
+        }, 650);
+      }
+      if (typeof main !== 'undefined' && main.methods && main.methods.flipBoard) {
+        main.methods.flipBoard();
+      }
+
+      this.renderUI();
+
+      // 4. Handle turn behavior
+      if (CONFIG.REVERSE_TURN_BEHAVIOR === 'playAgain') {
+        // Reverser keeps turn and gets 1 move with their new color
+        if (typeof main !== 'undefined' && main.variables) {
+          main.variables.turn = this.state.seatColor[seat];
+        }
+        this.state.phase = 'moving';
+        this.state.movesRemaining = 1;
+        this.state.movedPieces = [];
+        this.showPromptBanner('Moves remaining: 1', false);
+        this.renderUI();
+      } else {
+        // Default: 'passTurn' - Reverse uses up turn; turn passes to other seat
+        this.state.phase = 'playCard';
+        main.methods.endturn(null);
       }
     },
 
+    // +2 DRAW TWO: Add up to 2 pieces to empty squares on own half
+    executeDrawTwoCard: function (card, seat) {
+      this.logCard(this.colorOf(seat), `Player ${seat} played [+2] → Add up to 2 pieces to own half`);
+      this.initiatePieceAddition(2, false, seat);
+    },
+
+    // WILD +4: Choose color, add up to 4 pieces to own half
+    executeWildDrawFour: function (card, seat) {
+      this.state.phase = 'colorPick';
+      this.showColorPickerModal(seat);
+    },
+
+    showColorPickerModal: function (seat) {
+      if (typeof $ === 'undefined') return;
+      $('#uno-color-picker-modal').css('display', 'flex');
+    },
+
+    handleColorChosen: function (chosenColor, seat) {
+      if (typeof $ === 'undefined') return;
+      $('#uno-color-picker-modal').hide();
+      this.state.currentColor = chosenColor;
+      this.logCard(this.colorOf(seat), `Player ${seat} set active color to ${chosenColor.toUpperCase()}`);
+      this.initiatePieceAddition(4, true, seat);
+    },
+
     // ----------------------------------------------------------
-    // CARD EFFECT 6: WILD DRAW FOUR (REVIVE ANY PIECE)
+    // PIECE ADDITION (+2 / +4 REVIVAL) SYSTEM
     // ----------------------------------------------------------
-    initiateWildDrawFour: function (card, color, cardIdx) {
-      let grave = this.state.graveyard[color];
-      if (grave.length === 0) {
-        this.showToast('No captured pieces in your graveyard to revive!');
-        return;
+    initiatePieceAddition: function (count, isWild, seat) {
+      this.state.phase = 'addingPieces';
+      this.state.piecesToAdd = count;
+      this.state.pendingPlacementPiece = null;
+      this.state.placedPiecesThisAction = [];
+
+      let color = this.colorOf(seat);
+      let available = this.getAvailableRevivePieces(color);
+
+      if (available.length === 0) {
+        this.showToast('No captured pieces in Graveyard to revive! Click Done to finish.');
+      } else if (available.length === 1) {
+        // Auto-select the only available piece
+        this.state.pendingPlacementPiece = { idx: 0, piece: available[0] };
       }
 
-      this.setPendingEffect({
-        type: 'wildDrawFour',
-        step: 1,
-        card: card,
-        cardIdx: cardIdx,
-        color: color,
-        revivePiece: null
-      });
-
-      this.showGraveyardRevivalModal(color);
+      this.updateReviveUIAndHighlights();
     },
 
-    showGraveyardRevivalModal: function (color) {
-      let grave = this.state.graveyard[color];
-      let optionsHtml = '';
-
-      grave.forEach((p, idx) => {
-        optionsHtml += `
-          <div class="promo-choice graveyard-revive-btn" data-idx="${idx}">
-            ${p.img}
-          </div>
-        `;
-      });
-
-      $('#promotion-options').html(optionsHtml);
-      $('#promotion-modal h3').text('Select a Captured Piece to Revive');
-      $('#promotion-modal').css('display', 'flex');
-
-      $('.graveyard-revive-btn').off('click').on('click', function () {
-        let idx = parseInt($(this).data('idx'), 10);
-        let selectedPiece = grave[idx];
-        $('#promotion-modal').css('display', 'none');
-        $('#promotion-modal h3').text('Choose Promotion Piece');
-
-        UnoMode.handleGraveyardPieceChosen(selectedPiece, idx);
-      });
+    getAvailableRevivePieces: function (color) {
+      if (CONFIG.ADD_SOURCE === 'reserve') {
+        // Reserve piece fallback if configured
+        return [
+          { key: color + '_queen_res', type: color + '_queen', img: color === 'w' ? '&#9813;' : '&#9819;' },
+          { key: color + '_rook_res', type: color + '_rook', img: color === 'w' ? '&#9814;' : '&#9820;' },
+          { key: color + '_bishop_res', type: color + '_bishop', img: color === 'w' ? '&#9815;' : '&#9821;' },
+          { key: color + '_knight_res', type: color + '_knight', img: color === 'w' ? '&#9816;' : '&#9822;' },
+          { key: color + '_pawn_res', type: color + '_pawn', img: color === 'w' ? '&#9817;' : '&#9823;' }
+        ];
+      }
+      return this.state.graveyard[color] || [];
     },
 
-    handleGraveyardPieceChosen: function (pieceData, graveIdx) {
-      let effect = this.state.pendingEffect;
-      if (!effect || effect.type !== 'wildDrawFour') return;
+    updateReviveUIAndHighlights: function () {
+      let color = this.activeColor();
+      let piece = this.state.pendingPlacementPiece ? this.state.pendingPlacementPiece.piece : null;
+      let isPawn = piece ? (piece.type.endsWith('_pawn') || piece.key.includes('pawn')) : false;
 
-      effect.revivePiece = pieceData;
-      effect.graveIdx = graveIdx;
-      effect.step = 2;
+      this.highlightEmptySquaresForRevive(color, isPawn);
+      let canCancel = this.state.placedPiecesThisAction.length === 0;
 
-      this.showPromptBanner(`Click an empty square to place the revived ${pieceData.type}`, true);
-      this.highlightEmptySquaresForPlacement(pieceData.type.endsWith('_pawn'));
+      let msg = `Add up to ${this.state.piecesToAdd} piece(s) to your half.`;
+      if (piece) {
+        msg += ` Click a highlighted square to place ${piece.type.replace(/^[wb]_/, '')}.`;
+      } else {
+        msg += ' Select a piece from Graveyard.';
+      }
+      this.showPromptBanner(msg, canCancel, true);
+      this.renderUI();
     },
 
-    highlightEmptySquaresForPlacement: function (isPawn) {
-      $('.gamecell').removeClass('swap-candidate');
-      let board = main.methods.getBoard();
-      for (let cellId in board) {
-        if (!board[cellId]) {
-          if (isPawn) {
-            let row = parseInt(cellId.split('_')[1], 10);
-            if (row === 1 || row === 8) continue; // Pawns cannot be placed on back ranks
+    highlightEmptySquaresForRevive: function (color, isPawn) {
+      $('.gamecell').removeClass('revive-candidate swap-candidate');
+      let board = (typeof main !== 'undefined' && main.methods) ? main.methods.getBoard() : {};
+
+      // White home half: ranks 1-4 (pawns: 2-4)
+      // Black home half: ranks 5-8 (pawns: 5-7)
+      let minRow = color === 'w' ? 1 : 5;
+      let maxRow = color === 'w' ? 4 : 8;
+
+      for (let col = 1; col <= 8; col++) {
+        for (let row = minRow; row <= maxRow; row++) {
+          if (isPawn && (row === 1 || row === 8)) continue;
+          let cellId = main.methods.cellId(col, row);
+          if (!board[cellId]) {
+            $('#' + cellId).addClass('revive-candidate');
           }
-          $('#' + cellId).addClass('swap-candidate');
         }
       }
     },
 
-    executeWildDrawFourPlacement: function (cellId) {
-      let effect = this.state.pendingEffect;
-      if (!effect || effect.type !== 'wildDrawFour' || effect.step !== 2) return;
+    clearReviveBoardHighlights: function () {
+      $('.gamecell').removeClass('revive-candidate swap-candidate');
+      $('.graveyard-piece-chip').removeClass('selected-revive');
+    },
+
+    handleGraveyardChipClick: function (idx, color) {
+      if (this.state.phase !== 'addingPieces') return;
+      if (color !== this.activeColor()) {
+        this.showToast('You can only revive pieces of the color you currently control!');
+        return;
+      }
+
+      let grave = this.state.graveyard[color];
+      if (!grave || !grave[idx]) return;
+
+      this.state.pendingPlacementPiece = { idx: idx, piece: grave[idx] };
+      this.updateReviveUIAndHighlights();
+    },
+
+    executeRevivePlacementOnSquare: function (cellId) {
+      if (this.state.phase !== 'addingPieces') return;
+      let color = this.activeColor();
+      let pending = this.state.pendingPlacementPiece;
+
+      if (!pending) {
+        let available = this.getAvailableRevivePieces(color);
+        if (available.length > 0) {
+          pending = { idx: 0, piece: available[0] };
+          this.state.pendingPlacementPiece = pending;
+        } else {
+          this.showToast('No captured pieces in Graveyard to place!');
+          return;
+        }
+      }
 
       let board = main.methods.getBoard();
       if (board[cellId]) {
@@ -745,83 +679,494 @@
         return;
       }
 
-      let isPawn = effect.revivePiece.type.endsWith('_pawn');
-      let row = parseInt(cellId.split('_')[1], 10);
+      let parsed = main.methods.parseCell(cellId);
+      let row = parsed.row;
+
+      // Validate home half
+      if (color === 'w' && (row < 1 || row > 4)) {
+        this.showToast('White pieces can only be placed on ranks 1–4!');
+        return;
+      }
+      if (color === 'b' && (row < 5 || row > 8)) {
+        this.showToast('Black pieces can only be placed on ranks 5–8!');
+        return;
+      }
+
+      let isPawn = pending.piece.type.endsWith('_pawn') || pending.piece.key.includes('pawn');
       if (isPawn && (row === 1 || row === 8)) {
         this.showToast('Pawns cannot be placed on rank 1 or 8!');
         return;
       }
 
-      // Check King safety
-      let simBoard = Object.assign({}, board);
-      simBoard[cellId] = effect.revivePiece.key;
-      let kingCell = main.methods.findKingCell(effect.color, simBoard);
-      let oppColor = effect.color === 'w' ? 'b' : 'w';
-      if (kingCell && main.methods.isSquareAttacked(kingCell, oppColor, simBoard)) {
-        this.showToast('Illegal placement: King would be in check!');
-        return;
-      }
-
-      // Execute revival
-      this.discardCardFromHand(effect.color, effect.cardIdx);
-      this.state.graveyard[effect.color].splice(effect.graveIdx, 1);
-
-      let pieceObj = main.variables.pieces[effect.revivePiece.key];
+      // Execute revival on board
+      let pieceKey = pending.piece.key;
+      let pieceObj = main.variables.pieces[pieceKey];
       if (pieceObj) {
         pieceObj.captured = false;
         pieceObj.position = cellId;
         pieceObj.moved = true;
-        $('#' + cellId).html(pieceObj.img).attr('chess', effect.revivePiece.key);
+        $('#' + cellId).html(pieceObj.img).attr('chess', pieceKey);
       }
 
-      this.state.cardPlayedThisTurn = true;
-      this.logCard(effect.color, `played [WILD DRAW FOUR] ★+4 revived ${effect.revivePiece.type} at ${main.methods.toAlgebraic(cellId)}`);
+      // Remove piece icon from #captured-white / #captured-black HTML
+      let listSel = pieceKey.startsWith('w_') ? '#captured-white .captured-pieces-list' : '#captured-black .captured-pieces-list';
+      let $list = $(listSel);
+      if ($list && typeof $list.children === 'function') {
+        let $spans = $list.children('span');
+        if ($spans) {
+          for (let i = 0; i < $spans.length; i++) {
+            if ($($spans[i]).html && $($spans[i]).html().trim() === pieceObj.img.trim()) {
+              if (typeof $($spans[i]).remove === 'function') {
+                $($spans[i]).remove();
+              }
+              break;
+            }
+          }
+        }
+      } else if ($list && typeof $list.html === 'function') {
+        let h = $list.html();
+        if (h && typeof h === 'string') {
+          $list.html(h.replace(`<span>${pieceObj.img}</span>`, ''));
+        }
+      }
 
-      this.clearPendingEffect();
+      // Remove from graveyard
+      this.state.graveyard[color].splice(pending.idx, 1);
+      this.state.placedPiecesThisAction.push(pending.piece);
+      this.state.piecesToAdd--;
+      this.state.pendingPlacementPiece = null;
+
+      // History snapshot for undo
+      if (typeof main !== 'undefined' && main.methods && main.methods.createSnapshot) {
+        main.variables.historyStack.push(main.methods.createSnapshot());
+        main.variables.redoStack = [];
+      }
+
       main.methods.updateVisualHighlights();
-      this.renderUI();
+
+      let available = this.getAvailableRevivePieces(color);
+      if (this.state.piecesToAdd <= 0 || available.length === 0) {
+        this.finishPieceAddition();
+      } else {
+        if (available.length === 1) {
+          this.state.pendingPlacementPiece = { idx: 0, piece: available[0] };
+        }
+        this.updateReviveUIAndHighlights();
+      }
     },
 
-    // ----------------------------------------------------------
-    // RECYCLE ACTION (ENERGY SPEND)
-    // ----------------------------------------------------------
-    executeRecycleCard: function (cardId, color) {
-      let effect = this.state.pendingEffect;
-      if (!effect || effect.type !== 'recycle') return;
-
-      let hand = this.state.hands[color];
-      let cardIdx = hand.findIndex(c => c.id === cardId);
-      if (cardIdx === -1) return;
-
-      let recycled = this.discardCardFromHand(color, cardIdx);
-      let drawn = this.drawCard(color);
-
-      this.logCard(color, `spent 3 Energy → recycled [${recycled.title}] and drew [${drawn ? drawn.title : 'Card'}]`);
-      this.clearPendingEffect();
-      this.renderUI();
-    },
-
-    // ----------------------------------------------------------
-    // PENDING EFFECT & PROMPT BANNER CONTROLS
-    // ----------------------------------------------------------
-    setPendingEffect: function (eff) {
-      this.state.pendingEffect = eff;
-    },
-
-    clearPendingEffect: function () {
-      this.state.pendingEffect = null;
-      $('.gamecell').removeClass('swap-candidate swap-selected');
+    finishPieceAddition: function () {
+      let seat = this.state.activeSeat;
+      this.clearReviveBoardHighlights();
       this.hidePromptBanner();
+      this.state.phase = 'playCard';
+
+      // Check last-card win right after piece placement completes
+      if (this.state.hands[seat].length === 0) {
+        this.logCard(this.colorOf(seat), `Player ${seat} played their last card!`);
+        this.triggerSeatWin(seat, 'Played their last card');
+        this.renderUI();
+        return;
+      }
+
+      this.renderUI();
+      main.methods.endturn(null);
     },
 
-    showPromptBanner: function (msg, showCancel) {
+    cancelPieceAddition: function () {
+      if (this.state.placedPiecesThisAction.length > 0) {
+        this.showToast('Cannot cancel after placing pieces; click Done instead.');
+        return;
+      }
+
+      let seat = this.state.activeSeat;
+      // Refund card to hand
+      let topCard = this.state.discardPile.pop();
+      if (topCard) {
+        this.state.hands[seat].push(topCard);
+      }
+
+      // Reset active color to previous discard if Wild +4
+      let prevTop = this.getTopDiscard();
+      this.state.currentColor = prevTop ? prevTop.color : null;
+      this.state.cardPlayedThisTurn = false;
+      this.state.phase = 'playCard';
+      this.clearReviveBoardHighlights();
+      this.hidePromptBanner();
+
+      // Undo the snapshot pushed on card play
+      if (typeof main !== 'undefined' && main.variables && main.variables.historyStack.length > 0) {
+        let prevSnap = main.variables.historyStack.pop();
+        if (prevSnap) {
+          main.methods.restoreSnapshot(prevSnap);
+          return;
+        }
+      }
+
+      this.renderUI();
+    },
+
+    // ----------------------------------------------------------
+    // WIN DETECTION & GAME OVER
+    // ----------------------------------------------------------
+    triggerSeatWin: function (seat, reason) {
+      if (typeof main !== 'undefined' && main.variables) {
+        main.variables.gameOver = true;
+      }
+      if (typeof ClockManager !== 'undefined') {
+        ClockManager.stop();
+      }
+      let winnerTitle = `Player ${seat} Wins!`;
+      let subtitle = reason || 'Game Over';
+      $('#turn').addClass('turnhighlight').text(`${winnerTitle} — ${subtitle}`);
+      if (typeof BoardStatusOverlay !== 'undefined') {
+        BoardStatusOverlay.show(winnerTitle, subtitle, { isGameOver: true });
+      }
+      $('#rematch-btn').addClass('highlight-rematch');
+      if (typeof AudioManager !== 'undefined') {
+        AudioManager.playGameOver();
+      }
+      this.logCard('system', `${winnerTitle} (${subtitle})`);
+    },
+
+    // ----------------------------------------------------------
+    // GAME ENGINE HOOKS
+    // ----------------------------------------------------------
+    usesPseudoLegal: function () {
+      return this.state.active;
+    },
+
+    suppressesCheckLogic: function () {
+      return this.state.active;
+    },
+
+    isActionBlocked: function () {
+      if (!this.state.active) return false;
+      return this.state.phase !== 'moving';
+    },
+
+    nextTurnColor: function (prevColor) {
+      // Pure helper: returns the color of the other seat
+      let nextSeat = this.otherSeat(this.state.activeSeat);
+      return this.state.seatColor[nextSeat];
+    },
+
+    shouldHoldTurn: function () {
+      if (!this.state.active) return false;
+      if (this.state.phase === 'moving' && this.state.movesRemaining > 0) {
+        let color = this.activeColor();
+        if (this.hasAnyLegalMovesUnderMode(color)) {
+          return true;
+        }
+      }
+      return false;
+    },
+
+    onTurnHeld: function () {
+      if (!this.state.active) return;
+      if (this.state.phase === 'moving') {
+        this.showPromptBanner(`Moves remaining: ${this.state.movesRemaining}`, false);
+        this.renderUI();
+      }
+    },
+
+    hasAnyLegalMovesUnderMode: function (color) {
+      if (typeof main === 'undefined' || !main.variables) return false;
+      for (let key in main.variables.pieces) {
+        let p = main.variables.pieces[key];
+        if (p.captured || !p.position) continue;
+        if (main.methods.pieceColor(key) !== color) continue;
+        let legal = main.methods.getLegalMoves(key);
+        if (legal && legal.length > 0) return true;
+      }
+      return false;
+    },
+
+    filterLegalMoves: function (pieceKey, moves) {
+      if (!this.state.active) return moves;
+      if (this.state.phase !== 'moving') return [];
+
+      let color = main.methods.pieceColor(pieceKey);
+      if (color !== this.activeColor()) return [];
+
+      if (CONFIG.MOVE_MODE === 'samePiece') {
+        if (this.state.movedPieces.length > 0 && pieceKey !== this.state.movedPieces[0]) {
+          return [];
+        }
+      } else if (CONFIG.MOVE_MODE === 'distinctPieces') {
+        if (this.state.movedPieces.indexOf(pieceKey) !== -1) {
+          return [];
+        }
+      }
+
+      return moves;
+    },
+
+    onMove: function (fromCell, toCell, pieceKey, isCapture) {
+      if (!this.state.active) return;
+      if (this.state.phase === 'moving') {
+        this.state.movesRemaining--;
+        this.state.movedPieces.push(pieceKey);
+        this.logCard(this.activeColor(), `Player ${this.state.activeSeat} moved ${pieceKey} to ${main.methods.toAlgebraic(toCell)} (${this.state.movesRemaining} moves left)`);
+      }
+    },
+
+    onCapture: function (capturedKey, capturedPieceObj, capturingKey) {
+      if (!this.state.active) return;
+
+      // King capture ends the game immediately
+      if (capturedKey.endsWith('_king')) {
+        let isFirstTurn = (this.state.turnCount === 0);
+        if (CONFIG.NO_KING_CAPTURE_ON_FIRST_TURN && isFirstTurn) {
+          return;
+        }
+        let winningSeat = this.state.activeSeat;
+        this.triggerSeatWin(winningSeat, 'King captured');
+        return; // Kings never enter the Graveyard
+      }
+
+      let color = capturedKey.startsWith('w_') ? 'w' : 'b';
+      this.state.graveyard[color].push({
+        key: capturedKey,
+        type: capturedPieceObj.type,
+        img: capturedPieceObj.img,
+        capturedAtTurn: this.state.turnCount,
+        moveNumber: (typeof main !== 'undefined') ? main.variables.fullmoveNumber : 1
+      });
+
+      this.renderUI();
+    },
+
+    onTurnStart: function (playerColor) {
+      if (!this.state.active) return;
+      this.state.phase = 'playCard';
+      this.state.movesRemaining = 0;
+      this.state.movedPieces = [];
+      this.state.cardPlayedThisTurn = false;
+      this.hidePromptBanner();
+      this.renderUI();
+    },
+
+    onTurnEnd: function (previousColor, nextColor) {
+      if (!this.state.active) return;
+      this.state.turnCount++;
+      this.state.activeSeat = this.otherSeat(this.state.activeSeat);
+      this.state.cardPlayedThisTurn = false;
+      this.state.phase = 'playCard';
+      this.clearReviveBoardHighlights();
+      this.hidePromptBanner();
+      this.renderUI();
+    },
+
+    onReset: function () {
+      if (!this.state.active) return;
+      this.startNewGame();
+    },
+
+    // ----------------------------------------------------------
+    // STATE SNAPSHOTS (FOR UNDO / REDO)
+    // ----------------------------------------------------------
+    createSnapshot: function () {
+      if (!this.state.active) return null;
+      return JSON.parse(JSON.stringify({
+        deck: this.state.deck,
+        discardPile: this.state.discardPile,
+        hands: this.state.hands,
+        graveyard: this.state.graveyard,
+        seatColor: this.state.seatColor,
+        activeSeat: this.state.activeSeat,
+        currentColor: this.state.currentColor,
+        phase: this.state.phase,
+        movesRemaining: this.state.movesRemaining,
+        movedPieces: this.state.movedPieces,
+        piecesToAdd: this.state.piecesToAdd,
+        cardPlayedThisTurn: this.state.cardPlayedThisTurn,
+        turnCount: this.state.turnCount,
+        cardLog: this.state.cardLog
+      }));
+    },
+
+    restoreSnapshot: function (snap) {
+      if (!snap) return;
+      this.state.deck = snap.deck || [];
+      this.state.discardPile = snap.discardPile || [];
+      this.state.hands = snap.hands || { A: [], B: [] };
+      this.state.graveyard = snap.graveyard || { w: [], b: [] };
+      this.state.seatColor = snap.seatColor || { A: 'w', B: 'b' };
+      this.state.activeSeat = snap.activeSeat || 'A';
+      this.state.currentColor = snap.currentColor || null;
+      this.state.phase = snap.phase || 'playCard';
+      this.state.movesRemaining = snap.movesRemaining || 0;
+      this.state.movedPieces = snap.movedPieces || [];
+      this.state.piecesToAdd = snap.piecesToAdd || 0;
+      this.state.pendingPlacementPiece = null;
+      this.state.placedPiecesThisAction = [];
+      this.state.cardPlayedThisTurn = snap.cardPlayedThisTurn || false;
+      this.state.turnCount = snap.turnCount || 0;
+      this.state.cardLog = snap.cardLog || [];
+
+      this.clearReviveBoardHighlights();
+      this.hidePromptBanner();
+      if (typeof $ !== 'undefined') {
+        $('#uno-color-picker-modal').hide();
+      }
+      this.renderUI();
+    },
+
+    // ----------------------------------------------------------
+    // UI RENDERING
+    // ----------------------------------------------------------
+    renderUI: function () {
+      if (typeof $ === 'undefined' || !this.state.active) return;
+
+      let activeSeat = this.state.activeSeat;
+      let activeColor = this.activeColor();
+
+      // 1. Deck & Discard Counts
+      $('#deck-count-badge').text(this.state.deck.length);
+      $('#discard-count-badge').text(this.state.discardPile.length);
+
+      let topDiscard = this.getTopDiscard();
+      if (topDiscard) {
+        let discardEl = this.renderSingleCardHtml(topDiscard, false, true, null);
+        $('#discard-top-display').html(discardEl);
+      } else {
+        $('#discard-top-display').html('<div class="uno-card mini-card empty-card"><span class="card-center empty-icon">∅</span></div>');
+      }
+
+      // 2. Active Color Swatch / Badge
+      let currentC = this.state.currentColor || (topDiscard ? topDiscard.color : 'red');
+      let $colorBadge = $('#uno-current-color-badge');
+      if ($colorBadge.length) {
+        $colorBadge.attr('class', 'uno-color-badge color-' + currentC).text(currentC.charAt(0).toUpperCase() + currentC.slice(1));
+      }
+
+      // 3. Hand Header Labels & Counts
+      $('#hand-a-label').text(`Player A · ${this.state.seatColor.A === 'w' ? 'White' : 'Black'}`);
+      $('#hand-b-label').text(`Player B · ${this.state.seatColor.B === 'w' ? 'White' : 'Black'}`);
+      $('#hand-a-count').text(`${this.state.hands.A.length} cards`);
+      $('#hand-b-count').text(`${this.state.hands.B.length} cards`);
+
+      // 4. Hands: Active player face-up, inactive player face-down
+      let aFaceDown = activeSeat !== 'A';
+      let bFaceDown = activeSeat !== 'B';
+      this.renderHand('A', '#hand-white-cards', aFaceDown);
+      this.renderHand('B', '#hand-black-cards', bFaceDown);
+
+      // 5. Draw button state
+      $('#uno-draw-btn').prop('disabled', this.state.phase !== 'playCard');
+
+      // 6. Turn Status Header
+      if (typeof main !== 'undefined' && !main.variables.gameOver) {
+        let colorName = activeColor === 'w' ? 'White' : 'Black';
+        $('#turn').removeClass('turnhighlight').text(`Player ${activeSeat} (${colorName})'s Turn`);
+      }
+
+      // 7. Graveyard Trays
+      this.renderGraveyard();
+
+      // 8. Card Log
+      this.renderCardLog();
+    },
+
+    renderHand: function (seat, containerSelector, isFaceDown) {
+      let hand = this.state.hands[seat];
+      let html = '';
+
+      if (hand.length === 0) {
+        html = '<div class="empty-hand-msg">No cards in hand</div>';
+      } else {
+        hand.forEach(card => {
+          html += this.renderSingleCardHtml(card, isFaceDown, false, seat);
+        });
+      }
+
+      $(containerSelector).html(html);
+    },
+
+    renderSingleCardHtml: function (card, isFaceDown, isMini, seat) {
+      let miniCls = isMini ? ' mini-card' : '';
+      if (isFaceDown) {
+        return `
+          <div class="uno-card face-down${miniCls}">
+            <div class="card-back-pattern">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="5" y="5" width="14" height="14" rx="2" transform="rotate(45 12 12)"/>
+                <circle cx="12" cy="12" r="2.5" fill="currentColor"/>
+              </svg>
+            </div>
+          </div>
+        `;
+      }
+
+      let colorCls = ' card-' + card.color;
+      let isPlayable = this.isCardPlayable(card);
+      let disabledCls = (!isPlayable || this.state.phase !== 'playCard') ? ' unplayable' : '';
+
+      return `
+        <div class="uno-card${colorCls}${miniCls}${disabledCls}" data-id="${card.id}" data-seat="${seat || ''}" title="${card.title}: ${card.desc}">
+          <div class="card-corner top-corner">${card.label}</div>
+          <div class="card-center">${card.label}</div>
+          <div class="card-type-label">${card.title}</div>
+          <div class="card-corner bottom-corner">${card.label}</div>
+        </div>
+      `;
+    },
+
+    renderGraveyard: function () {
+      let wGrave = this.state.graveyard.w;
+      let bGrave = this.state.graveyard.b;
+      let activeCol = this.activeColor();
+      let isAdding = this.state.phase === 'addingPieces';
+
+      let renderPieceChips = (grave, col) => {
+        if (!grave || grave.length === 0) return '<span class="empty-grave">—</span>';
+        return grave.map((p, idx) => {
+          let isSel = (this.state.pendingPlacementPiece && this.state.pendingPlacementPiece.idx === idx && col === activeCol);
+          let extraCls = (isAdding && col === activeCol) ? ' selectable-revive' : '';
+          if (isSel) extraCls += ' selected-revive';
+          return `<span class="graveyard-piece-chip${extraCls}" data-idx="${idx}" data-color="${col}" title="${col === 'w' ? 'White' : 'Black'} ${p.type}">${p.img}</span>`;
+        }).join('');
+      };
+
+      $('#graveyard-white-pieces').html(renderPieceChips(wGrave, 'w'));
+      $('#graveyard-black-pieces').html(renderPieceChips(bGrave, 'b'));
+    },
+
+    renderCardLog: function () {
+      if (typeof $ === 'undefined') return;
+      let html = '';
+      this.state.cardLog.slice(0, 20).forEach(entry => {
+        let tag = entry.color === 'system' ? 'SYSTEM' : (entry.color === 'w' ? 'White' : 'Black');
+        html += `
+          <div class="card-log-entry">
+            <span class="log-color">${tag}:</span> ${entry.text}
+          </div>
+        `;
+      });
+      if (this.state.cardLog.length === 0) {
+        html = '<div class="empty-log-msg">No cards played yet</div>';
+      }
+      $('#card-log-box').html(html);
+    },
+
+    logCard: function (color, actionText) {
+      let turnNum = (typeof main !== 'undefined') ? main.variables.fullmoveNumber : 1;
+      this.state.cardLog.unshift({
+        turn: turnNum,
+        color: color,
+        text: actionText,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      });
+      if (this.state.cardLog.length > 50) this.state.cardLog.pop();
+      this.renderCardLog();
+    },
+
+    showPromptBanner: function (msg, showCancel, showDone) {
       if (typeof $ === 'undefined') return;
       $('#uno-prompt-text').text(msg);
-      if (showCancel) {
-        $('#uno-prompt-cancel').css('display', 'inline-block');
-      } else {
-        $('#uno-prompt-cancel').css('display', 'none');
-      }
+      $('#uno-prompt-cancel').css('display', showCancel ? 'inline-block' : 'none');
+      $('#uno-prompt-done').css('display', showDone ? 'inline-block' : 'none');
       $('#uno-prompt-banner').addClass('active');
     },
 
@@ -830,8 +1175,23 @@
       $('#uno-prompt-banner').removeClass('active');
     },
 
+    showToast: function (msg) {
+      if (typeof $ === 'undefined' || typeof document === 'undefined') return;
+      let body = $('body');
+      if (!body || typeof body.append !== 'function') return;
+      let toast = $('<div class="uno-toast"></div>').text(msg);
+      body.append(toast);
+      setTimeout(() => {
+        toast.addClass('visible');
+      }, 10);
+      setTimeout(() => {
+        toast.removeClass('visible');
+        setTimeout(() => toast.remove(), 300);
+      }, 2500);
+    },
+
     // ----------------------------------------------------------
-    // UNO MODE TUTORIAL PROMPT (brutalist card style)
+    // TUTORIAL PROMPT DIALOG
     // ----------------------------------------------------------
     showTutorialPrompt: function () {
       if (typeof $ === 'undefined' || typeof document === 'undefined') return;
@@ -847,7 +1207,7 @@
             <div class="brutalist-card__alert">UNO Mode</div>
           </div>
           <div class="brutalist-card__message">
-            New to Chess UNO? Would you like a quick tutorial to learn the card mechanics?
+            New to Spoodery Chess UNO? Would you like a quick tutorial to learn the card mechanics?
           </div>
           <div class="brutalist-card__actions">
             <label class="brutalist-card__dont-show">
@@ -882,284 +1242,6 @@
       $el.remove();
     },
 
-    showToast: function (msg) {
-      if (typeof $ === 'undefined' || typeof document === 'undefined') return;
-      let body = $('body');
-      if (!body || typeof body.append !== 'function') return;
-      let toast = $('<div class="uno-toast"></div>').text(msg);
-      body.append(toast);
-      setTimeout(() => {
-        toast.addClass('visible');
-      }, 10);
-      setTimeout(() => {
-        toast.removeClass('visible');
-        setTimeout(() => toast.remove(), 300);
-      }, 2500);
-    },
-
-    // ----------------------------------------------------------
-    // MOVE FILTERING HOOK (SKIP CARD INTEGRATION)
-    // ----------------------------------------------------------
-    filterLegalMoves: function (pieceKey, moves) {
-      if (!this.state.active) return moves;
-
-      let skip = this.state.skippedPiece;
-      if (!skip) return moves;
-
-      if (skip.pieceKey === pieceKey) {
-        let color = main.methods.pieceColor(pieceKey);
-
-        // FIDE Rule: Cannot prevent legal responses to check
-        if (main.methods.isInCheck(color)) {
-          // Check if other pieces have moves to escape check
-          let otherHasMoves = false;
-          for (let k in main.variables.pieces) {
-            if (k === pieceKey) continue;
-            let p = main.variables.pieces[k];
-            if (p.captured || !p.position) continue;
-            if (main.methods.pieceColor(k) === color) {
-              if (main.methods.getLegalMoves(k).length > 0) {
-                otherHasMoves = true;
-                break;
-              }
-            }
-          }
-          if (!otherHasMoves) {
-            // Must allow this piece to respond to check
-            return moves;
-          }
-        }
-
-        // Piece is frozen!
-        return [];
-      }
-
-      return moves;
-    },
-
-    clearSkipHighlight: function () {
-      $('.gamecell').removeClass('skipped-piece');
-    },
-
-    // ----------------------------------------------------------
-    // GAME ENGINE HOOKS
-    // ----------------------------------------------------------
-    onTurnEnd: function (previousColor, nextColor) {
-      if (!this.state.active) return;
-
-      this.state.turnCount++;
-
-      // Auto-draw every 3 completed turns
-      if (this.state.turnCount % 3 === 0) {
-        this.drawCard(previousColor, false);
-      }
-
-      // Expire skip effect
-      if (this.state.skippedPiece && this.state.skippedPiece.forTurn === previousColor) {
-        this.state.skippedPiece = null;
-      }
-
-      // Reset turn flags
-      this.state.cardPlayedThisTurn = false;
-      this.clearPendingEffect();
-
-      this.renderUI();
-    },
-
-    onCapture: function (capturedKey, capturedPieceObj, capturingKey) {
-      if (!this.state.active) return;
-
-      let color = capturedKey.startsWith('w_') ? 'w' : 'b';
-      this.state.graveyard[color].push({
-        key: capturedKey,
-        type: capturedPieceObj.type,
-        img: capturedPieceObj.img,
-        capturedAtTurn: this.state.turnCount,
-        moveNumber: (typeof main !== 'undefined') ? main.variables.fullmoveNumber : 1
-      });
-
-      this.renderUI();
-    },
-
-    onReset: function () {
-      if (!this.state.active) return;
-      this.startNewGame();
-    },
-
-    // ----------------------------------------------------------
-    // STATE SNAPSHOTS (FOR UNDO / REDO)
-    // ----------------------------------------------------------
-    createSnapshot: function () {
-      if (!this.state.active) return null;
-      return JSON.parse(JSON.stringify({
-        deck: this.state.deck,
-        discardPile: this.state.discardPile,
-        hands: this.state.hands,
-        energy: this.state.energy,
-        graveyard: this.state.graveyard,
-        skippedPiece: this.state.skippedPiece,
-        cardPlayedThisTurn: this.state.cardPlayedThisTurn,
-        turnCount: this.state.turnCount,
-        cardLog: this.state.cardLog
-      }));
-    },
-
-    restoreSnapshot: function (snap) {
-      if (!snap) return;
-      this.state.deck = snap.deck || [];
-      this.state.discardPile = snap.discardPile || [];
-      this.state.hands = snap.hands || { w: [], b: [] };
-      this.state.energy = snap.energy || { w: 0, b: 0 };
-      this.state.graveyard = snap.graveyard || { w: [], b: [] };
-      this.state.skippedPiece = snap.skippedPiece || null;
-      this.state.cardPlayedThisTurn = snap.cardPlayedThisTurn || false;
-      this.state.turnCount = snap.turnCount || 0;
-      this.state.cardLog = snap.cardLog || [];
-      this.clearPendingEffect();
-      this.renderUI();
-    },
-
-    // ----------------------------------------------------------
-    // CARD ACTION LOG
-    // ----------------------------------------------------------
-    logCard: function (color, actionText) {
-      let turnNum = (typeof main !== 'undefined') ? main.variables.fullmoveNumber : 1;
-      this.state.cardLog.unshift({
-        turn: turnNum,
-        color: color,
-        text: actionText,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-      });
-      if (this.state.cardLog.length > 50) this.state.cardLog.pop();
-      this.renderCardLog();
-    },
-
-    // ----------------------------------------------------------
-    // UI RENDERING
-    // ----------------------------------------------------------
-    renderUI: function () {
-      if (typeof $ === 'undefined' || !this.state.active) return;
-
-      let currentTurn = (typeof main !== 'undefined') ? main.variables.turn : 'w';
-
-      // 1. Deck & Discard Pile counts
-      $('#deck-count-badge').text(this.state.deck.length);
-      $('#discard-count-badge').text(this.state.discardPile.length);
-
-      let topDiscard = this.state.discardPile[this.state.discardPile.length - 1];
-      if (topDiscard) {
-        let discardEl = this.renderSingleCardHtml(topDiscard, false, true);
-        $('#discard-top-display').html(discardEl);
-      } else {
-        $('#discard-top-display').html('<div class="uno-card mini-card empty-card"><span class="card-center empty-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3 3"><rect x="3" y="3" width="18" height="18" rx="3"/></svg></span></div>');
-      }
-
-      // 2. Energy Meters
-      let wEnergy = this.state.energy.w;
-      let bEnergy = this.state.energy.b;
-      $('#energy-white-val').text(`${wEnergy} / 20`);
-      $('#energy-black-val').text(`${bEnergy} / 20`);
-      $('#energy-white-fill').css('width', `${(wEnergy / 20) * 100}%`);
-      $('#energy-black-fill').css('width', `${(bEnergy / 20) * 100}%`);
-
-      // Energy Buttons disabled states
-      $('#energy-draw-btn').prop('disabled', currentTurn ? this.state.energy[currentTurn] < 6 : true);
-      $('#energy-recycle-btn').prop('disabled', currentTurn ? this.state.energy[currentTurn] < 3 : true);
-
-      // 3. Hands (Active player face-up, inactive face-down)
-      let wFaceDown = currentTurn !== 'w';
-      let bFaceDown = currentTurn !== 'b';
-
-      this.renderHand('w', '#hand-white-cards', wFaceDown);
-      this.renderHand('b', '#hand-black-cards', bFaceDown);
-
-      // 4. Graveyard Trays
-      this.renderGraveyard();
-
-      // 5. Skipped piece badge on chessboard
-      this.clearSkipHighlight();
-      if (this.state.skippedPiece && this.state.skippedPiece.targetCell) {
-        $('#' + this.state.skippedPiece.targetCell).addClass('skipped-piece');
-      }
-
-      // 6. Card Log
-      this.renderCardLog();
-    },
-
-    renderHand: function (color, containerSelector, isFaceDown) {
-      let hand = this.state.hands[color];
-      let html = '';
-
-      if (hand.length === 0) {
-        html = '<div class="empty-hand-msg">No cards in hand</div>';
-      } else {
-        hand.forEach(card => {
-          html += this.renderSingleCardHtml(card, isFaceDown, false, color);
-        });
-      }
-
-      $(containerSelector).html(html);
-    },
-
-    renderSingleCardHtml: function (card, isFaceDown, isMini, playerColor) {
-      let miniCls = isMini ? ' mini-card' : '';
-      if (isFaceDown) {
-        return `
-          <div class="uno-card face-down${miniCls}">
-            <div class="card-back-pattern">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="5" y="5" width="14" height="14" rx="2" transform="rotate(45 12 12)"/>
-                <circle cx="12" cy="12" r="2.5" fill="currentColor"/>
-              </svg>
-            </div>
-          </div>
-        `;
-      }
-
-      let colorCls = ' card-' + card.color;
-      let disabledCls = this.state.cardPlayedThisTurn ? ' disabled' : '';
-
-      return `
-        <div class="uno-card${colorCls}${miniCls}${disabledCls}" data-id="${card.id}" data-color="${playerColor || ''}" title="${card.title}: ${card.desc}">
-          <div class="card-corner top-corner">${card.label}</div>
-          <div class="card-center">${card.label}</div>
-          <div class="card-type-label">${card.type === 'number' ? 'ENERGY' : card.title}</div>
-          <div class="card-corner bottom-corner">${card.label}</div>
-        </div>
-      `;
-    },
-
-    renderGraveyard: function () {
-      let wGrave = this.state.graveyard.w;
-      let bGrave = this.state.graveyard.b;
-
-      let wHtml = wGrave.length === 0 ? '<span class="empty-grave">—</span>' :
-        wGrave.map(p => `<span class="graveyard-piece-chip" title="White ${p.type}">${p.img}</span>`).join('');
-
-      let bHtml = bGrave.length === 0 ? '<span class="empty-grave">—</span>' :
-        bGrave.map(p => `<span class="graveyard-piece-chip" title="Black ${p.type}">${p.img}</span>`).join('');
-
-      $('#graveyard-white-pieces').html(wHtml);
-      $('#graveyard-black-pieces').html(bHtml);
-    },
-
-    renderCardLog: function () {
-      if (typeof $ === 'undefined') return;
-      let html = '';
-      this.state.cardLog.slice(0, 20).forEach(entry => {
-        let tag = entry.color === 'system' ? 'SYSTEM' : (entry.color === 'w' ? 'White' : 'Black');
-        html += `
-          <div class="card-log-entry">
-            <span class="log-color">${tag}:</span> ${entry.text}
-          </div>
-        `;
-      });
-      if (this.state.cardLog.length === 0) {
-        html = '<div class="empty-log-msg">No cards played yet</div>';
-      }
-      $('#card-log-box').html(html);
-    },
-
     // ----------------------------------------------------------
     // EVENT BINDINGS
     // ----------------------------------------------------------
@@ -1169,58 +1251,54 @@
       // Card click in hand
       $(document).on('click', '.uno-card:not(.face-down)', function () {
         let cardId = $(this).data('id');
+        let seat = $(this).data('seat');
+        if (!cardId || !seat) return;
+        UnoMode.playCard(cardId, seat);
+      });
+
+      // Draw button click
+      $(document).on('click', '#uno-draw-btn', function () {
+        UnoMode.handleDrawAction(UnoMode.state.activeSeat);
+      });
+
+      // Color picker modal buttons (Wild +4)
+      $(document).on('click', '.uno-color-pick-btn', function () {
         let color = $(this).data('color');
-        if (!cardId || !color) return;
-
-        if (UnoMode.state.pendingEffect && UnoMode.state.pendingEffect.type === 'recycle') {
-          UnoMode.executeRecycleCard(cardId, color);
-          return;
+        if (color) {
+          UnoMode.handleColorChosen(color, UnoMode.state.activeSeat);
         }
-
-        UnoMode.playCard(cardId, color);
       });
 
-      // Energy Spend Buttons
-      $(document).on('click', '#energy-draw-btn', function () {
-        let currentTurn = main.variables.turn;
-        UnoMode.spendEnergy('draw_card', currentTurn);
+      // Graveyard piece chip click (for piece addition)
+      $(document).on('click', '.graveyard-piece-chip', function () {
+        let idx = parseInt($(this).data('idx'), 10);
+        let color = $(this).data('color');
+        if (!isNaN(idx) && color) {
+          UnoMode.handleGraveyardChipClick(idx, color);
+        }
       });
 
-      $(document).on('click', '#energy-recycle-btn', function () {
-        let currentTurn = main.variables.turn;
-        UnoMode.spendEnergy('recycle', currentTurn);
+      // Board square click during piece addition
+      $(document).on('click', '.gamecell', function () {
+        if (UnoMode.state.phase === 'addingPieces') {
+          let cellId = $(this).attr('id');
+          if (cellId) {
+            UnoMode.executeRevivePlacementOnSquare(cellId);
+          }
+        }
       });
 
-      // Cancel Pending Action Banner
+      // Banner Done button (finish piece addition early)
+      $(document).on('click', '#uno-prompt-done', function () {
+        if (UnoMode.state.phase === 'addingPieces') {
+          UnoMode.finishPieceAddition();
+        }
+      });
+
+      // Banner Cancel button (refund card if nothing placed yet)
       $(document).on('click', '#uno-prompt-cancel', function () {
-        UnoMode.clearPendingEffect();
-      });
-
-      // Board clicks for Special Card targeting
-      $(document).on('click', '.gamecell', function (e) {
-        let eff = UnoMode.state.pendingEffect;
-        if (!eff) return;
-
-        let cellId = $(this).attr('id');
-        let chessPiece = $(this).attr('chess');
-
-        if (eff.type === 'skip') {
-          if (chessPiece && chessPiece !== 'null') {
-            UnoMode.executeSkipOnPiece(cellId, chessPiece);
-          }
-          return;
-        }
-
-        if (eff.type === 'reverse') {
-          if (chessPiece && chessPiece !== 'null') {
-            UnoMode.handleReverseSelection(cellId, chessPiece);
-          }
-          return;
-        }
-
-        if (eff.type === 'wildDrawFour' && eff.step === 2) {
-          UnoMode.executeWildDrawFourPlacement(cellId);
-          return;
+        if (UnoMode.state.phase === 'addingPieces') {
+          UnoMode.cancelPieceAddition();
         }
       });
 
@@ -1286,7 +1364,7 @@
     },
 
     // ----------------------------------------------------------
-    // INTERACTIVE ONBOARDING TUTORIAL CONTROLLER
+    // INTERACTIVE ONBOARDING TUTORIAL CONTROLLER (7 Steps)
     // ----------------------------------------------------------
     tutorial: {
       active: false,
@@ -1295,43 +1373,43 @@
         {
           target: '#board-stage',
           title: 'Welcome to Chess UNO',
-          desc: 'Chess UNO combines classical FIDE chess with tactical UNO cards! All standard rules (Check, Checkmate, Castling, En Passant) remain fully in effect.',
+          desc: 'Chess UNO brings Spoodery Chess\'s tabletop card variant to your screen! Players sit in fixed seats (A & B) controlling colors, playing cards, and racing to capture the enemy King or empty their hand!',
           placement: 'center'
         },
         {
           target: '#uno-hand-white',
           title: 'Your Card Hand',
-          desc: 'Each player starts with 3 cards (max 5). On your turn, you can optionally play 1 card before or after your chess move.',
+          desc: 'Each player is dealt 6 cards. On your turn, you must play exactly one card matching the top discard by color, symbol, or number (Wild +4 is always playable).',
           placement: 'top'
         },
         {
           target: '#uno-main-panel .deck-status-bar',
           title: 'Draw Deck & Discard Pile',
-          desc: 'You automatically draw 1 card every 3 turns. If the draw pile empties, the discard pile reshuffles into the deck automatically.',
+          desc: 'If you have no playable card, click Draw to draw until a playable card appears. When the deck runs out, the discard pile reshuffles automatically.',
           placement: 'left'
         },
         {
-          target: '#uno-main-panel .energy-tracker',
-          title: 'Energy System (0–20)',
-          desc: 'Playing Number cards converts them into Energy. Track your reserves to activate special powers on your turn.',
+          target: '#uno-main-panel .deck-status-bar',
+          title: 'Number Cards (0–9)',
+          desc: 'Playing a Number N gives you N chess moves this turn! Move any friendly piece, or move the same piece multiple times. Playing a 0 passes your turn.',
           placement: 'left'
         },
         {
-          target: '#uno-main-panel .energy-actions',
-          title: 'Energy Actions',
-          desc: 'Spend 6 Energy to draw an extra tactical card, or spend 3 Energy to recycle an unwanted card into the deck.',
-          placement: 'left'
+          target: '#board-stage',
+          title: 'Action Cards: Skip & Reverse',
+          desc: 'Skip bypasses your opponent so you play again! Reverse physically rotates the board 180° and swaps piece colors between players—taking over the opponent\'s army!',
+          placement: 'center'
         },
         {
           target: '#uno-graveyard-panel',
-          title: 'The Graveyard Pool',
-          desc: 'Captured pieces enter the Graveyard. Use special cards like Draw Two (+2) and Wild Draw Four (★+4) to revive fallen pieces back into battle!',
+          title: 'Revival Cards: +2 and Wild +4',
+          desc: '+2 lets you add up to 2 captured pieces back onto your home half of the board! Wild +4 lets you choose a color and place up to 4 captured pieces.',
           placement: 'right'
         },
         {
           target: '#turn',
-          title: 'Victory Condition',
-          desc: 'Your objective is the same as classical chess: Checkmate the opponent King! Cards enhance your strategy—play smart and have fun!',
+          title: 'Victory Conditions',
+          desc: 'Win instantly by capturing the enemy King (even mid-turn!) or by being the first player to empty your hand of cards! Have fun playing Chess UNO!',
           placement: 'bottom'
         }
       ],
@@ -1344,7 +1422,6 @@
           } catch (e) {}
         }
 
-        // Ensure UNO mode is active
         if (typeof GameModeManager !== 'undefined' && GameModeManager.activeMode !== 'uno') {
           GameModeManager.setMode('uno');
         }
@@ -1371,11 +1448,10 @@
         }
         $('#tutorial-dots').html(dotsHtml);
 
-        // Nav buttons
+        // Navigation buttons
         $('#tutorial-prev-btn').prop('disabled', idx === 0);
         $('#tutorial-next-btn').text(idx === this.steps.length - 1 ? 'Finish' : 'Next ▶');
 
-        // Position spotlight & box
         let $target = $(step.target);
         if ($target.length && $target.is(':visible')) {
           let targetEl = $target[0];
@@ -1410,7 +1486,6 @@
               boxLeft = rect.left + (rect.width / 2) - (boxWidth / 2);
             }
 
-            // Viewport clamping
             if (typeof window !== 'undefined') {
               let maxLeft = window.innerWidth - boxWidth - 16;
               let maxTop = window.innerHeight - boxHeight - 16;
@@ -1427,7 +1502,6 @@
           }
         }
 
-        // Fallback center positioning
         $('#uno-tutorial-overlay').addClass('no-spotlight');
         $('#uno-tutorial-spotlight').css('display', 'none');
         $('#uno-tutorial-box').css({
@@ -1471,4 +1545,3 @@
 
   return UnoMode;
 });
-

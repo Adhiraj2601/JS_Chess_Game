@@ -519,11 +519,15 @@
     <!-- UNO MODE Elements (visible only in UNO mode) -->
     <div id="uno-prompt-banner" class="uno-only">
       <span id="uno-prompt-text">Select target</span>
-      <button id="uno-prompt-cancel" class="uno-cancel-btn">Cancel</button>
+      <button id="uno-prompt-done" class="uno-done-btn" style="display:none;">Done</button>
+      <button id="uno-prompt-cancel" class="uno-cancel-btn" style="display:none;">Cancel</button>
     </div>
 
-    <div id="uno-hand-black" class="player-hand-container uno-only" title="Black's Card Hand">
-      <div class="hand-header-bar"><span>Black's Hand</span></div>
+    <div id="uno-hand-black" class="player-hand-container uno-only" title="Player B's Card Hand">
+      <div class="hand-header-bar">
+        <span id="hand-b-label">Player B · Black</span>
+        <span id="hand-b-count" class="hand-card-count-badge">6 cards</span>
+      </div>
       <div id="hand-black-cards" class="hand-cards-row"></div>
     </div>
 
@@ -536,51 +540,36 @@
             <circle cx="9" cy="13.5" r="1.5" fill="currentColor"/>
           </svg>
         </span>
-        <h3 class="panel-title">UNO Deck & Energy</h3>
+        <h3 class="panel-title">UNO Deck & Discard</h3>
       </div>
       <div class="deck-status-bar">
         <div class="deck-pile-info">
           <span>Deck:</span>
-          <span id="deck-count-badge" class="pile-badge">108</span>
+          <span id="deck-count-badge" class="pile-badge">85</span>
         </div>
         <div class="discard-pile-info">
           <span>Discard:</span>
-          <span id="discard-count-badge" class="pile-badge">0</span>
+          <span id="discard-count-badge" class="pile-badge">1</span>
           <div id="discard-top-display"></div>
         </div>
       </div>
-      <div class="energy-tracker">
-        <div class="energy-row">
-          <span class="energy-player-tag">White:</span>
-          <div class="energy-meter"><div id="energy-white-fill" class="energy-fill"></div></div>
-          <span id="energy-white-val" class="energy-val">0 / 20</span>
-        </div>
-        <div class="energy-row">
-          <span class="energy-player-tag">Black:</span>
-          <div class="energy-meter"><div id="energy-black-fill" class="energy-fill"></div></div>
-          <span id="energy-black-val" class="energy-val">0 / 20</span>
-        </div>
+      <div class="uno-color-status-row">
+        <span class="color-label">Active Color:</span>
+        <span id="uno-current-color-badge" class="uno-color-badge color-red">Red</span>
       </div>
-      <div class="energy-actions">
-        <button id="energy-draw-btn" class="energy-action-btn">
-          <svg class="btn-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-          </svg>
-          <span>Draw (6E)</span>
-        </button>
-        <button id="energy-recycle-btn" class="energy-action-btn">
-          <svg class="btn-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="23 4 23 10 17 10"/>
-            <polyline points="1 20 1 14 7 14"/>
-            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-          </svg>
-          <span>Recycle (3E)</span>
+      <div class="uno-deck-actions">
+        <button id="uno-draw-btn" class="uno-draw-btn" title="Draw cards until you get a playable card">
+          <span class="btn-icon">🎴</span>
+          <span>Draw Card</span>
         </button>
       </div>
     </div>
 
-    <div id="uno-hand-white" class="player-hand-container uno-only" title="White's Card Hand">
-      <div class="hand-header-bar"><span>White's Hand</span></div>
+    <div id="uno-hand-white" class="player-hand-container uno-only" title="Player A's Card Hand">
+      <div class="hand-header-bar">
+        <span id="hand-a-label">Player A · White</span>
+        <span id="hand-a-count" class="hand-card-count-badge">6 cards</span>
+      </div>
       <div id="hand-white-cards" class="hand-cards-row"></div>
     </div>
 
@@ -801,7 +790,7 @@
             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
           </svg>
         </span>
-        <span>Energy System</span>
+        <span>Seats & Deck</span>
       </button>
       <button class="help-tab-btn" data-tab="graveyard">
         <span class="tab-icon">
@@ -1030,48 +1019,36 @@
         </div>
       </div>
 
-      <!-- 4. Energy System Tab -->
+      <!-- 4. Seats & Deck Tab -->
       <div id="help-tab-energy" class="help-tab-panel">
         <div class="rulebook-section-title">
           <svg class="section-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
           </svg>
-          <span>The Energy Economy</span>
+          <span>Seats, Colors & Deck Mechanics</span>
         </div>
         <p class="rulebook-intro-p">
-          Energy is your personal tactical reserve, accumulated by converting Number cards in your hand. Each player stores up to <b>20 Energy</b>.
+          In Spoodery Chess UNO, player seats are separated from piece colors. Players sit as Player A and Player B, holding their own cards.
         </p>
 
         <div class="energy-showcase-row">
           <div class="energy-box">
             <div class="energy-box-title">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-              </svg>
-              <span>Draw Card (Cost: 6 Energy)</span>
+              <span>Deck & Initial Deal</span>
             </div>
             <p class="energy-box-p">
-              Spend 6 Energy on your turn to draw 1 extra card directly from the deck into your hand (subject to the 5-card hand maximum).
+              Each player is dealt 6 cards to begin. One starting card is flipped from the deck onto the discard pile. There is no hand cap.
             </p>
           </div>
 
           <div class="energy-box">
             <div class="energy-box-title">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="23 4 23 10 17 10"/>
-                <polyline points="1 20 1 14 7 14"/>
-                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-              </svg>
-              <span>Recycle Card (Cost: 3 Energy)</span>
+              <span>Discard Reshuffling</span>
             </div>
             <p class="energy-box-p">
-              Spend 3 Energy, select 1 unwanted card from your hand to discard, and instantly draw a fresh replacement card from the deck.
+              Whenever the draw deck runs out of cards, the discard pile (except the active top card) is automatically reshuffled into a fresh draw deck.
             </p>
           </div>
-        </div>
-
-        <div class="rulebook-callout" style="margin-top: 16px;">
-          <b>Pro Strategy:</b> Early in the opening, play high Number cards (7, 8, 9) to build an Energy reserve. Later in the game, spend energy to dig for Game-Winning special cards like Wild Draw Four or Skip!
         </div>
       </div>
 
@@ -1205,6 +1182,20 @@
   <div class="modal-content">
     <h3>Choose Promotion Piece</h3>
     <div id="promotion-options"></div>
+  </div>
+</div>
+
+<!-- UNO Color Picker Modal (Wild +4) -->
+<div id="uno-color-picker-modal" class="modal-overlay uno-color-modal" style="display:none;" role="dialog" aria-modal="true">
+  <div class="modal-content uno-color-modal-card">
+    <h3 class="uno-color-modal-title">Choose Active Color</h3>
+    <p class="uno-color-modal-subtitle">Pick the next required color for the discard pile</p>
+    <div class="uno-color-picker-grid">
+      <button type="button" class="uno-color-pick-btn color-red" data-color="red">Red</button>
+      <button type="button" class="uno-color-pick-btn color-blue" data-color="blue">Blue</button>
+      <button type="button" class="uno-color-pick-btn color-green" data-color="green">Green</button>
+      <button type="button" class="uno-color-pick-btn color-yellow" data-color="yellow">Yellow</button>
+    </div>
   </div>
 </div>
 
